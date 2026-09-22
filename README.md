@@ -17,10 +17,13 @@ is required.
 
 - [Product roadmap and Free/Pro boundary](ROADMAP.md)
 - [Framework contracts and compatibility gates](docs/framework-compatibility.md)
+- [Extension architecture](docs/architecture.md)
+- [Security model and acceptance matrix](docs/security.md)
 
-Next to write: extension architecture (`docs/architecture.md`), security model
-(`docs/security.md`), implementation sequence (`plans/README.md`), and canonical
-D01–D04 plans listed in the roadmap.
+The architecture and security documents specify the proposed preview behavior;
+their acceptance tests have not been implemented or executed. Next to write:
+implementation sequence (`plans/README.md`) and canonical D01–D04 plans listed
+in the roadmap.
 
 ## Working alongside the framework
 

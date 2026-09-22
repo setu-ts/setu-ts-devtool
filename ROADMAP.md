@@ -3,6 +3,11 @@
 Status: proposed implementation scope, updated 2026-09-22. No milestone below is
 complete.
 
+The [architecture](docs/architecture.md) defines the preview's components,
+launch lifecycle and resource budgets. The [security model](docs/security.md)
+defines its trust boundaries and acceptance cases. These are design baselines;
+the canonical implementation plans below remain to be written.
+
 ## Product boundary
 
 Free provides everyday single-application debugging. Pro adds deeper analysis

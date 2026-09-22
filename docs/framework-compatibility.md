@@ -11,6 +11,10 @@ This register replaces the earlier M98 proposal baseline. It records observed
 implementation behavior and requirements for the future extension, not
 end-to-end compatibility certification.
 
+The [architecture](architecture.md) turns these contracts into extension design
+decisions; the [security model](security.md) tracks their required acceptance
+evidence. Neither document changes the framework contracts recorded here.
+
 ## Source register
 
 Links are pinned to the inspected revision. Consume package entrypoint exports,
