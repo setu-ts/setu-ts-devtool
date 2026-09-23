@@ -295,3 +295,8 @@ Existing service APIs are not safe diagnostic feeds merely because they exist:
 Source navigation, health summaries and P02/P03 addons remain separate framework
 design and security reviews. M98a–c implementation does not authorize these
 additional data surfaces.
+
+The [addon assessment](framework-addons.md) expands these five areas with
+source-verified reuse opportunities and missing contracts. In particular,
+existing queue counters/depths and health deadlines are useful foundations; they
+do not make job enumeration or raw health reports safe devtool feeds.

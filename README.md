@@ -19,6 +19,7 @@ is required.
 - [Framework contracts and compatibility gates](docs/framework-compatibility.md)
 - [Extension architecture](docs/architecture.md)
 - [Security model and acceptance matrix](docs/security.md)
+- [Framework addons: dependencies and review boundaries](docs/framework-addons.md)
 
 The architecture and security documents specify the proposed preview behavior;
 their acceptance tests have not been implemented or executed. Next to write:

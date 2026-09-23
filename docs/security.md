@@ -253,3 +253,13 @@ require an explicit extension of this model before implementation. Any later
 entitlement service receives no diagnostic data or session credentials;
 licensing cannot authorize application access or weaken the free connection
 protections.
+
+The [addon assessment](framework-addons.md) gives each of the five inspection
+areas its own source findings and proposed acceptance evidence. That evidence is
+additional to S01–S18 and remains unexecuted. Health deadlines do not cancel
+callback work; job observation is not durable enumeration; configuration origins
+must be captured without values; explanations must observe rather than rerun
+authorization; and trace propagation does not authorize cross-service access.
+Define and review each new producer/projection/transport boundary before adding
+its devtool feature. No raw service result becomes acceptable merely by passing
+through the authenticated M98 connection.

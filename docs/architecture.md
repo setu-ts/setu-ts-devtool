@@ -337,3 +337,27 @@ connection or data protections.
 
 Fixture preview is a development/test-only command, visibly marked as sample
 data. Do not register it or include its fixture module in the production VSIX.
+
+## Later capability-specific inspectors
+
+The [framework addon assessment](framework-addons.md) records dependencies for
+health, queue investigation, configuration provenance, authorization
+explanations and distributed tracing. Keep these outside the D01–D04
+capture/display schema. The existing adapter/model/presentation boundaries
+provide places to add reviewed typed inspectors later; do not build an arbitrary
+provider bus now.
+
+A future inspector must advertise a supported schema and explicit availability
+through a reviewed authenticated contract. Plugin registration, a package
+version or an HTTP error is not feature negotiation. Separate unsupported,
+disabled, no-data, stale and collection-failed states from a successful empty
+result. Isolate optional collection failures while retaining the core session's
+existing authentication/integrity failure policy. Never hide arbitrary health
+`data`, config objects, jobs, principals or spans inside M98 labels or unknown
+fields.
+
+Multi-app presentation can precede causal tracing. Reconstructing a
+cross-service operation requires explicit parent/link evidence, authorized
+sessions and honest sampling/clock/coverage semantics; a matching trace ID is
+insufficient. This is a later contract requirement, not a reason to enlarge the
+free preview now.

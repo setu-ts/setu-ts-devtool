@@ -1,6 +1,6 @@
 # Devtool roadmap
 
-Status: proposed implementation scope, updated 2026-09-22. No milestone below is
+Status: proposed implementation scope, updated 2026-09-23. No milestone below is
 complete.
 
 The [architecture](docs/architecture.md) defines the preview's components,
@@ -18,33 +18,43 @@ never authorizes access to an application.
 
 ## Feature allocation
 
-| Feature                                                   | Tier | Delivery  | Dependency or limitation                                              |
-| --------------------------------------------------------- | ---- | --------- | --------------------------------------------------------------------- |
-| Project and monorepo discovery                            | Free | D01       | Read bounded local manifests without importing application code       |
-| Explicit local launch and pairing                         | Free | D02       | Implemented M98a–c; prepared Deno application, native extension host  |
-| Plugin/capability graph and route explorer                | Free | D03       | M98 minimized DTOs; names require application-side approval           |
-| Middleware order and individual request timeline          | Free | D03       | Inclusive elapsed durations, not CPU profiling                        |
-| Available lifecycle stages and connection state           | Free | D03       | No complete post-failure startup history                              |
-| Search, filters, capture gaps, clear/disconnect           | Free | D03       | Bounded in-memory capture only                                        |
-| Contextual documentation links                            | Free | D03       | Built-in destination allowlist                                        |
-| VSIX preview with measured compatibility                  | Free | D04       | Real framework/editor exercises                                       |
-| Generator/task UI with change preview                     | Free | After D04 | Separate execution/write plan; keep using existing CLI initially      |
-| Safe source navigation and health summary                 | Free | Follow-on | New reviewed metadata projections; never arbitrary file/data access   |
-| Route percentiles, outcome trends, slow-stage analysis    | Pro  | P01       | Derived from M98; sample size, losses and window visible              |
-| Compare two windows in the same live session              | Pro  | P01       | No persistence or cross-restart identity claim                        |
-| Focused dependency subgraphs and declared impact analysis | Pro  | P01       | Declared dependencies do not prove runtime calls                      |
-| Multi-application dashboard                               | Pro  | P01       | Independent explicitly launched/paired sessions and memory budgets    |
-| Saved filters and layouts                                 | Pro  | P01       | Preferences only; exclude diagnostic records and labels by default    |
-| Local recordings, history, architecture diffs             | Pro  | P02       | Retention/access review and semantic identity matching                |
-| Explicit investigation bundle export/import               | Pro  | P02       | Metadata can be sensitive; hostile-file validation and export preview |
-| Background operation and cross-service investigation      | Pro  | P03       | New operation observation contracts and verified causal context       |
-| Configuration provenance and authorization explanations   | Pro  | P03       | New value-free or tightly projected contracts with threat review      |
+| Feature                                                   | Tier | Delivery  | Dependency or limitation                                                                                       |
+| --------------------------------------------------------- | ---- | --------- | -------------------------------------------------------------------------------------------------------------- |
+| Project and monorepo discovery                            | Free | D01       | Read bounded local manifests without importing application code                                                |
+| Explicit local launch and pairing                         | Free | D02       | Implemented M98a–c; prepared Deno application, native extension host                                           |
+| Plugin/capability graph and route explorer                | Free | D03       | M98 minimized DTOs; names require application-side approval                                                    |
+| Middleware order and individual request timeline          | Free | D03       | Inclusive elapsed durations, not CPU profiling                                                                 |
+| Available lifecycle stages and connection state           | Free | D03       | No complete post-failure startup history                                                                       |
+| Search, filters, capture gaps, clear/disconnect           | Free | D03       | Bounded in-memory capture only                                                                                 |
+| Contextual documentation links                            | Free | D03       | Built-in destination allowlist                                                                                 |
+| VSIX preview with measured compatibility                  | Free | D04       | Real framework/editor exercises                                                                                |
+| Generator/task UI with change preview                     | Free | After D04 | Separate execution/write plan; keep using existing CLI initially                                               |
+| Safe source navigation and health summary                 | Free | Follow-on | New reviewed metadata projections; never arbitrary file/data access                                            |
+| Route percentiles, outcome trends, slow-stage analysis    | Pro  | P01       | Derived from M98; sample size, losses and window visible                                                       |
+| Compare two windows in the same live session              | Pro  | P01       | No persistence or cross-restart identity claim                                                                 |
+| Focused dependency subgraphs and declared impact analysis | Pro  | P01       | Declared dependencies do not prove runtime calls                                                               |
+| Multi-application dashboard                               | Pro  | P01       | Independent explicitly launched/paired sessions and memory budgets                                             |
+| Saved filters and layouts                                 | Pro  | P01       | Preferences only; exclude diagnostic records and labels by default                                             |
+| Local recordings, history, architecture diffs             | Pro  | P02       | Retention/access review and semantic identity matching                                                         |
+| Explicit investigation bundle export/import               | Pro  | P02       | Metadata can be sensitive; hostile-file validation and export preview                                          |
+| Queue attempt and outcome investigation                   | Pro  | P03       | New minimized observations; existing counters do not prove durable settlement; job listing is separately gated |
+| Distributed operation tracing                             | Pro  | P03       | Readable minimized span/operation feed and verified causal context; M98 identifiers alone are insufficient     |
+| Configuration provenance                                  | Pro  | P03       | Origin metadata captured during resolution, without values; new reviewed contract                              |
+| Authorization explanations                                | Pro  | P03       | Bounded observations from actual decisions; no policy re-evaluation or principal/claim export                  |
 
 P01–P03 describe product direction, not approved implementation plans. Write
 canonical plans and acceptance tests before starting each. Generator/task
 management UI remains free but follows the preview. D02 already consumes M98c's
 prepared development entry and launch tasks; users enable or migrate projects
 through the existing CLI before launch.
+
+The [five-area framework assessment](docs/framework-addons.md) identifies
+reusable code, missing contracts and security evidence for health, queues,
+configuration, authorization and tracing. These addons do not block D01–D04;
+their individual feature plans must wait for the relevant framework design and
+review. P01's side-by-side application dashboard does not promise distributed
+trace reconstruction. Queue job/dead-letter enumeration remains a separate
+proposal, even after live queue observations become available.
 
 ## First release
 
@@ -97,14 +107,16 @@ contexts must be refused explicitly.
 4. Before P02, review storage, deletion, import/export and identity across
    instances. M98 IDs are instance-local; matching `r1` between launches is
    incorrect.
-5. Before P03, review background-operation correlation, configuration
-   provenance, and policy explanations individually. Existing payload-bearing
-   service APIs are not diagnostic feeds.
+5. Before the corresponding P03 feature plans, review configuration provenance,
+   then queue observations and tracing together, then authorization
+   explanations. The order is a recommendation for contract/security review, not
+   a release commitment. Existing payload-bearing service APIs are not
+   diagnostic feeds.
 
-Database/cache/storage browsing, retries, scheduler control, tenant switching,
-replay and fault injection remain outside these releases. They require separate
-authorization and mutation designs. Resending a request is not deterministic
-replay.
+Database/cache/storage browsing, durable queue enumeration, retries, scheduler
+control, tenant switching, replay and fault injection remain outside these
+releases. They require capability-specific inspection or control contracts and
+authorization reviews. Resending a request is not deterministic replay.
 
 ## Subscription without a custom portal
 
