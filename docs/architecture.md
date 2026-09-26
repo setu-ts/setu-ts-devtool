@@ -147,8 +147,12 @@ Drop launch environment objects and key-string references after spawn.
 JavaScript strings, child environments and framework copies cannot be promised
 erased.
 
-D02's initial Linux launcher starts an owned process group and retains its
-handle; it does not call `unref()`. Ignore stdin/stdout/stderr for the preview:
+D02's [connection plan](../plans/d02-connection.md) refines the Linux launcher:
+a packaged supervisor is the detached process-group leader and starts Deno in
+that group. It remains alive after the application root exits and signals only
+its own current group; the parent never escalates against a remembered PID.
+The launcher retains its handle and does not call `unref()`.
+Ignore stdin/stdout/stderr for the preview:
 arbitrary application output is neither captured nor persisted as extension
 logs. Native status reports fixed launch/connection errors and child exit codes.
 An application log viewer requires a later explicit design; do not hide
@@ -202,17 +206,19 @@ occupied-port error rather than attaching to this window's session.
 Disconnect means **stop application and clear capture**, including all members
 started by a workspace runner. Apply it on deadline, connection/validation
 failure, owned root exit, selected folder removal, extension deactivation and
-editor shutdown when disposal runs. Linux cleanup sends SIGTERM to the owned
-group, waits up to five seconds, then SIGKILL if still owned/present and waits
-two more seconds. Root exit alone is not cleanup evidence. Never kill by port,
+editor shutdown when disposal runs. The supervisor sends SIGTERM to its own
+group, waits up to five seconds, then sends group SIGKILL if necessary; the
+parent has two more seconds for read-only disappearance confirmation.
+Root exit alone is not cleanup evidence. Never kill by port,
 process name, an arbitrary PID from a manifest, or persisted PID after restart.
 
-D02's plan must specify how group identity remains verifiable after its leader
-exits and how PID reuse is excluded before escalation. An unverified group is an
-incomplete cleanup, not permission to signal a replacement process. A normal
-Stop returns to Idle after confirmed cleanup; deadline/failure keeps a fixed
-reason in Failed. Cleanup required cannot transition to a new launch until the
-old ownership has been resolved.
+The supervisor retains group identity while it is alive; its group-relative
+signals avoid a parent check-then-kill PID reuse race. Unexpected supervisor
+loss, unverifiable membership or surviving processes cause Cleanup required,
+never a signal to a possibly replaced process. The plan bounds Linux `/proc`
+inspection and requires real host/root-exit/escalation tests before Launch is
+enabled. Cleanup required blocks another launch until read-only checks confirm
+no live remainder. This is a planned design, not measured cleanup evidence.
 
 Applications that deliberately detach descendants are outside the supported
 recipe. A forced host/editor crash may leave application processes running;

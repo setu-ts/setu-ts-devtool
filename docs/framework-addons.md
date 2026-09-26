@@ -1,5 +1,11 @@
 # Framework addons: dependencies and review boundaries
 
+Historical assessment: the missing-contract analysis below predates merged
+M98d–g. See the [current D02 contract audit](d02-contract-audit.md) and
+[contract register](framework-compatibility.md) for the updated client surface.
+This assessment is not current addon implementation status; refresh each area
+before its devtool feature plan. No addon inspector is included in D02.
+
 Source assessment, reviewed 2026-09-23, against framework commit
 [`6de620d6206e087c601c6067786f6b4d8a219ca6`](https://github.com/setu-ts/setu-ts/commit/6de620d6206e087c601c6067786f6b4d8a219ca6).
 This refines the five deferred feature areas before writing devtool milestone

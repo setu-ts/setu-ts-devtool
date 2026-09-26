@@ -35,7 +35,8 @@ implementation milestone gets its own branch and keeps its follow-up fixes there
 until merge.
 
 The contract register is pinned to merged framework commit
-`6de620d6206e087c601c6067786f6b4d8a219ca6`. It covers M98a–c source contracts,
+`f89fd615ad2d4b15d4dfc1e12ed74e51857db025`. It covers core M98a–c contracts
+and current M98d–g client additions,
 generated development entries, credential handoff and integration gaps. Local
 D02 experiments can use artifacts from that revision before publication; editor
 compatibility and released package availability still need separate evidence.
@@ -73,5 +74,6 @@ code with `vscode` in scope. The command is intentionally absent from the
 production bundle and command palette. Refresh returns to real project discovery.
 
 This milestone creates no network connection, account, billing integration or
-VSIX release. D02 must re-audit the framework register against the actual revision
-chosen for integration before implementing launch and pairing.
+VSIX release. The [D02 plan](plans/d02-connection.md) and [contract audit](docs/d02-contract-audit.md)
+are ready. Live pairing acceptance requires a framework instance-binding fix
+and requalification of the resulting revision.
