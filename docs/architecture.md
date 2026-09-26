@@ -1,7 +1,8 @@
 # Extension architecture
 
 Design baseline, 2026-09-22. This document specifies the D01–D04 free preview;
-it describes planned behavior, not an implemented extension. The
+D01 foundation is implemented with [local evidence](d01-validation.md).
+The remaining behavior is planned. The
 [roadmap](../ROADMAP.md) owns feature allocation, the
 [contract register](framework-compatibility.md) owns framework facts, and the
 [security model](security.md) owns threat cases and acceptance evidence.
