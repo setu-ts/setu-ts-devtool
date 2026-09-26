@@ -1,12 +1,12 @@
 # Devtool roadmap
 
-Status: proposed implementation scope, updated 2026-09-23. No milestone below is
-complete.
+Status: D01 foundation implemented and locally verified, updated 2026-09-27.
+D02–D04 remain pending. See [D01 evidence](docs/d01-validation.md).
 
 The [architecture](docs/architecture.md) defines the preview's components,
 launch lifecycle and resource budgets. The [security model](docs/security.md)
 defines its trust boundaries and acceptance cases. These are design baselines;
-the canonical implementation plans below remain to be written.
+D01 has a canonical implementation plan; later plans remain to be written.
 
 ## Product boundary
 
@@ -78,15 +78,15 @@ contexts must be refused explicitly.
 
 ## Milestones
 
-| ID  | State                                | Deliverable                                                    | Prerequisites                                                        | Canonical plan                     |
-| --- | ------------------------------------ | -------------------------------------------------------------- | -------------------------------------------------------------------- | ---------------------------------- |
-| D01 | Planned                              | Extension shell, trust gate, workspace discovery, fixtures, CI | None                                                                 | Pending: `plans/d01-foundation.md` |
-| D02 | Planned; framework integration gated | Explicit launch, pairing, bounded reader, teardown             | D01 + implemented M98a–c + local compatibility evidence              | Pending: `plans/d02-connection.md` |
-| D03 | Planned                              | Composition graph, route/middleware views, request timeline    | D01 fixtures for parallel UI work; D02 for integration               | Pending: `plans/d03-inspection.md` |
-| D04 | Planned                              | Security/compatibility exercises, VSIX, free preview docs      | D01–D03, pinned published framework packages and acceptance evidence | Pending: `plans/d04-release.md`    |
-| P01 | Direction only                       | Live Pro analysis, multi-app workflows, licensing              | Validated free workflow; separate plan                               |                                    |
-| P02 | Direction only                       | Retained investigations and comparisons                        | Persistence/export threat review; separate plan                      |                                    |
-| P03 | Direction only                       | Capability-specific inspectors                                 | Framework addons individually designed and audited                   |                                    |
+| ID  | State                                | Deliverable                                                    | Prerequisites                                                        | Canonical plan                      |
+| --- | ------------------------------------ | -------------------------------------------------------------- | -------------------------------------------------------------------- | ----------------------------------- |
+| D01 | Implemented; locally verified        | Extension shell, trust gate, workspace discovery, fixtures, CI | None                                                                 | [D01 plan](plans/d01-foundation.md) |
+| D02 | Planned; framework integration gated | Explicit launch, pairing, bounded reader, teardown             | D01 + implemented M98a–c + local compatibility evidence              | Pending: `plans/d02-connection.md`  |
+| D03 | Planned                              | Composition graph, route/middleware views, request timeline    | D01 fixtures for parallel UI work; D02 for integration               | Pending: `plans/d03-inspection.md`  |
+| D04 | Planned                              | Security/compatibility exercises, VSIX, free preview docs      | D01–D03, pinned published framework packages and acceptance evidence | Pending: `plans/d04-release.md`     |
+| P01 | Direction only                       | Live Pro analysis, multi-app workflows, licensing              | Validated free workflow; separate plan                               |                                     |
+| P02 | Direction only                       | Retained investigations and comparisons                        | Persistence/export threat review; separate plan                      |                                     |
+| P03 | Direction only                       | Capability-specific inspectors                                 | Framework addons individually designed and audited                   |                                     |
 
 ## Framework work and reviews in priority order
 

@@ -263,3 +263,13 @@ authorization; and trace propagation does not authorize cross-service access.
 Define and review each new producer/projection/transport boundary before adding
 its devtool feature. No raw service result becomes acceptable merely by passing
 through the authenticated M98 connection.
+
+## D01 implementation evidence
+
+[D01 validation](d01-validation.md) records the bounded parser/filesystem and
+refresh tests, context-policy tests, and actual trusted/restricted Code OSS runs.
+This covers D01 portions of S01/S02/S14 only. The development host can activate
+an extension in Restricted Mode despite its manifest declaration; the runtime
+command gate still refuses discovery. Packaged-install activation behavior,
+launch preflight races, transport, process cleanup, webview and stress gates
+remain unverified until their owning milestones. No full S01–S18 row is closed.

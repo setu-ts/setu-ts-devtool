@@ -1,0 +1,75 @@
+{
+  "name": "setu-ts-devtool",
+  "displayName": "Setu-TS Devtool",
+  "description": "Local Setu-TS project discovery. Connection and inspection are under development.",
+  "publisher": "setu-ts",
+  "version": "0.0.1",
+  "private": true,
+  "license": "UNLICENSED",
+  "preview": true,
+  "engines": {
+    "vscode": "^1.138.0",
+    "node": ">=24"
+  },
+  "main": "./dist/extension.cjs",
+  "extensionKind": [
+    "ui"
+  ],
+  "categories": [
+    "Other"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false
+    },
+    "virtualWorkspaces": false
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "setuDevtool.refresh",
+        "title": "Setu-TS: Refresh Projects"
+      },
+      {
+        "command": "setuDevtool.select",
+        "title": "Setu-TS: Select Project"
+      }
+    ],
+    "views": {
+      "explorer": [
+        {
+          "id": "setuDevtool.projects",
+          "name": "Setu-TS Projects"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "setuDevtool.refresh",
+          "when": "view == setuDevtool.projects",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "build:dev": "node scripts/build.mjs --dev",
+    "check": "tsc --noEmit",
+    "test": "node scripts/build.mjs --tests && node --test out/unit/*.test.cjs",
+    "test:host": "node scripts/host-test.mjs",
+    "format": "prettier --write src test scripts package.json tsconfig.json plans/d01-foundation.md plans/README.md README.md ROADMAP.md docs/d01-validation.md docs/security.md .github .vscode",
+    "format:check": "prettier --check src test scripts package.json tsconfig.json plans/d01-foundation.md plans/README.md README.md ROADMAP.md docs/d01-validation.md docs/security.md .github .vscode"
+  },
+  "dependencies": {
+    "jsonc-parser": "3.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.0",
+    "@types/vscode": "1.138.0",
+    "esbuild": "0.28.2",
+    "typescript": "7.0.2",
+    "prettier": "3.8.1"
+  }
+}
