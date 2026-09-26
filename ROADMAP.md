@@ -1,12 +1,13 @@
 # Devtool roadmap
 
 Status: D01 foundation implemented and locally verified, updated 2026-09-27.
-D02–D04 remain pending. See [D01 evidence](docs/d01-validation.md).
+D02 has an implementation plan and refreshed audit; its core instance-binding
+gate remains open. D03–D04 remain pending. See [D01 evidence](docs/d01-validation.md).
 
 The [architecture](docs/architecture.md) defines the preview's components,
 launch lifecycle and resource budgets. The [security model](docs/security.md)
 defines its trust boundaries and acceptance cases. These are design baselines;
-D01 has a canonical implementation plan; later plans remain to be written.
+D01 and D02 have canonical implementation plans; D03/D04 plans remain to be written.
 
 ## Product boundary
 
@@ -81,7 +82,7 @@ contexts must be refused explicitly.
 | ID  | State                                | Deliverable                                                    | Prerequisites                                                        | Canonical plan                      |
 | --- | ------------------------------------ | -------------------------------------------------------------- | -------------------------------------------------------------------- | ----------------------------------- |
 | D01 | Implemented; locally verified        | Extension shell, trust gate, workspace discovery, fixtures, CI | None                                                                 | [D01 plan](plans/d01-foundation.md) |
-| D02 | Planned; framework integration gated | Explicit launch, pairing, bounded reader, teardown             | D01 + implemented M98a–c + local compatibility evidence              | Pending: `plans/d02-connection.md`  |
+| D02 | Planned; framework integration gated | Explicit launch, pairing, bounded reader, teardown             | D01 + implemented M98a–c + local compatibility evidence              | [D02 plan](plans/d02-connection.md) |
 | D03 | Planned                              | Composition graph, route/middleware views, request timeline    | D01 fixtures for parallel UI work; D02 for integration               | Pending: `plans/d03-inspection.md`  |
 | D04 | Planned                              | Security/compatibility exercises, VSIX, free preview docs      | D01–D03, pinned published framework packages and acceptance evidence | Pending: `plans/d04-release.md`     |
 | P01 | Direction only                       | Live Pro analysis, multi-app workflows, licensing              | Validated free workflow; separate plan                               |                                     |

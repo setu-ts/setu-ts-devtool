@@ -19,7 +19,7 @@ webview messages as untrusted input. Consider a crafted repository, an unrelated
 loopback listener, a web page attempting to reach the connector, malformed
 authenticated records, stale responses after disconnect and a compromised
 renderer. The editor, installed extension bundle, host runtime and selected Deno
-executable are trusted components. Selecting a trusted project authorizes
+executable are trusted components. Confirming the native launch of a trusted project authorizes
 application execution; it does not turn arbitrary input into safe HTML or a safe
 extension command.
 
@@ -273,3 +273,19 @@ an extension in Restricted Mode despite its manifest declaration; the runtime
 command gate still refuses discovery. Packaged-install activation behavior,
 launch preflight races, transport, process cleanup, webview and stress gates
 remain unverified until their owning milestones. No full S01–S18 row is closed.
+
+## D02 planning and audit status
+
+The [refreshed contract audit](d02-contract-audit.md) reproduces a core helper
+instance-binding defect at the pinned framework revision. D02 live acceptance
+requires its framework fix plus repeated adversarial tests. New addon contracts
+do not close that core gate. The [D02 plan](../plans/d02-connection.md) adds a
+packaged Linux supervisor boundary: bounded private control IPC, credentials in
+environment only, signals sent by the live supervisor to its own group, and
+read-only parent cleanup confirmation. No parent signal uses a remembered PID.
+
+Supervisor loss, membership uncertainty and failed escalation must fail closed
+as Cleanup required. Validate ordinary Stop, root exit, resistant descendants,
+IPC loss and crash limitations in the actual host. This expands S05/S10/S11
+acceptance requirements; no security-matrix row is closed by the plan. A final
+independent committed-tree security review remains mandatory before D02 merge.

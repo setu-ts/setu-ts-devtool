@@ -1,9 +1,9 @@
 # Framework compatibility and contract register
 
 Source baseline: Setu-TS commit
-[`6de620d6206e087c601c6067786f6b4d8a219ca6`](https://github.com/setu-ts/setu-ts/commit/6de620d6206e087c601c6067786f6b4d8a219ca6),
-inspected 2026-09-22. M98a, M98b and M98c are implemented and merged, but
-unpublished. Publication is planned after M99 in the next framework release
+[`f89fd615ad2d4b15d4dfc1e12ed74e51857db025`](https://github.com/setu-ts/setu-ts/commit/f89fd615ad2d4b15d4dfc1e12ed74e51857db025),
+inspected 2026-09-27. M98a–g are implemented and merged. The diagnostics
+release remains unpublished in the development workflow. Publication is planned after M99 in the next framework release
 cycle. This commit is an integration reference, not a minimum supported release;
 manifest versions and `@since` comments do not establish availability.
 
@@ -23,13 +23,13 @@ private framework modules into the extension.
 
 | Source                                                                                                                                                                                                                                                                                                                      | Implemented surface                                                   | Consumer                  |
 | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | ------------------------- |
-| [Common diagnostics types](https://github.com/setu-ts/setu-ts/blob/6de620d6206e087c601c6067786f6b4d8a219ca6/packages/common/src/services/diagnostics.ts) and [application interface](https://github.com/setu-ts/setu-ts/blob/6de620d6206e087c601c6067786f6b4d8a219ca6/packages/common/src/plugin.ts)                        | Optional `IApplication.diagnostics`, snapshot and cursor-based reader | D02 adapter, D03 views    |
-| [Kernel collector](https://github.com/setu-ts/setu-ts/blob/6de620d6206e087c601c6067786f6b4d8a219ca6/packages/kernel/src/diagnostics/collector.ts) and [projection rules](https://github.com/setu-ts/setu-ts/blob/6de620d6206e087c601c6067786f6b4d8a219ca6/packages/kernel/src/diagnostics/projection.ts)                    | Opt-in collection, exact label approvals, bounded topology/events     | D03 interpretation        |
-| [Connector exports](https://github.com/setu-ts/setu-ts/blob/6de620d6206e087c601c6067786f6b4d8a219ca6/packages/diagnostics-plugin/src/index.ts) and [interfaces](https://github.com/setu-ts/setu-ts/blob/6de620d6206e087c601c6067786f6b4d8a219ca6/packages/diagnostics-plugin/src/interfaces/index.ts)                       | Plugin and injected native client                                     | D02 launch/client adapter |
-| [Client implementation](https://github.com/setu-ts/setu-ts/blob/6de620d6206e087c601c6067786f6b4d8a219ca6/packages/diagnostics-plugin/src/client/client.ts) and [protocol validation](https://github.com/setu-ts/setu-ts/blob/6de620d6206e087c601c6067786f6b4d8a219ca6/packages/diagnostics-plugin/src/protocol/protocol.ts) | Authenticated, serialized reads; limitations below                    | D02 connection policy     |
-| [Protocol v1](https://github.com/setu-ts/setu-ts/blob/6de620d6206e087c601c6067786f6b4d8a219ca6/docs/diagnostics-protocol.md) and [plugin lifecycle](https://github.com/setu-ts/setu-ts/blob/6de620d6206e087c601c6067786f6b4d8a219ca6/packages/diagnostics-plugin/src/plugin/diagnostics-plugin.ts)                          | Signed loopback HTTP, finite sessions, teardown                       | D02 trust boundary        |
-| [Development entry](https://github.com/setu-ts/setu-ts/blob/6de620d6206e087c601c6067786f6b4d8a219ca6/packages/cli/src/devtool/dev-entry.ts) and [enable planner](https://github.com/setu-ts/setu-ts/blob/6de620d6206e087c601c6067786f6b4d8a219ca6/packages/cli/src/devtool/planner.ts)                                      | M98c `main.dev.ts`, `dev` task and credential reads                   | D02 preflight/launch      |
-| [Workspace manifest](https://github.com/setu-ts/setu-ts/blob/6de620d6206e087c601c6067786f6b4d8a219ca6/packages/cli/src/workspace/manifest.ts) and [development runner](https://github.com/setu-ts/setu-ts/blob/6de620d6206e087c601c6067786f6b4d8a219ca6/packages/cli/src/workspace/dev-runner.ts)                           | Member `devtoolPort`, selection and credential isolation              | D01 discovery, D02 launch |
+| [Common diagnostics types](https://github.com/setu-ts/setu-ts/blob/f89fd615ad2d4b15d4dfc1e12ed74e51857db025/packages/common/src/services/diagnostics.ts) and [application interface](https://github.com/setu-ts/setu-ts/blob/f89fd615ad2d4b15d4dfc1e12ed74e51857db025/packages/common/src/plugin.ts)                        | Optional `IApplication.diagnostics`, snapshot and cursor-based reader | D02 adapter, D03 views    |
+| [Kernel collector](https://github.com/setu-ts/setu-ts/blob/f89fd615ad2d4b15d4dfc1e12ed74e51857db025/packages/kernel/src/diagnostics/collector.ts) and [projection rules](https://github.com/setu-ts/setu-ts/blob/f89fd615ad2d4b15d4dfc1e12ed74e51857db025/packages/kernel/src/diagnostics/projection.ts)                    | Opt-in collection, exact label approvals, bounded topology/events     | D03 interpretation        |
+| [Connector exports](https://github.com/setu-ts/setu-ts/blob/f89fd615ad2d4b15d4dfc1e12ed74e51857db025/packages/diagnostics-plugin/src/index.ts) and [interfaces](https://github.com/setu-ts/setu-ts/blob/f89fd615ad2d4b15d4dfc1e12ed74e51857db025/packages/diagnostics-plugin/src/interfaces/index.ts)                       | Plugin and injected native client                                     | D02 launch/client adapter |
+| [Client implementation](https://github.com/setu-ts/setu-ts/blob/f89fd615ad2d4b15d4dfc1e12ed74e51857db025/packages/diagnostics-plugin/src/client/client.ts) and [protocol validation](https://github.com/setu-ts/setu-ts/blob/f89fd615ad2d4b15d4dfc1e12ed74e51857db025/packages/diagnostics-plugin/src/protocol/protocol.ts) | Authenticated, serialized reads; limitations below                    | D02 connection policy     |
+| [Protocol v1](https://github.com/setu-ts/setu-ts/blob/f89fd615ad2d4b15d4dfc1e12ed74e51857db025/docs/diagnostics-protocol.md) and [plugin lifecycle](https://github.com/setu-ts/setu-ts/blob/f89fd615ad2d4b15d4dfc1e12ed74e51857db025/packages/diagnostics-plugin/src/plugin/diagnostics-plugin.ts)                          | Signed loopback HTTP, finite sessions, teardown                       | D02 trust boundary        |
+| [Development entry](https://github.com/setu-ts/setu-ts/blob/f89fd615ad2d4b15d4dfc1e12ed74e51857db025/packages/cli/src/devtool/dev-entry.ts) and [enable planner](https://github.com/setu-ts/setu-ts/blob/f89fd615ad2d4b15d4dfc1e12ed74e51857db025/packages/cli/src/devtool/planner.ts)                                      | M98c `main.dev.ts`, `dev` task and credential reads                   | D02 preflight/launch      |
+| [Workspace manifest](https://github.com/setu-ts/setu-ts/blob/f89fd615ad2d4b15d4dfc1e12ed74e51857db025/packages/cli/src/workspace/manifest.ts) and [development runner](https://github.com/setu-ts/setu-ts/blob/f89fd615ad2d4b15d4dfc1e12ed74e51857db025/packages/cli/src/workspace/dev-runner.ts)                           | Member `devtoolPort`, selection and credential isolation              | D01 discovery, D02 launch |
 
 ## M98a: data and interpretation
 
@@ -83,7 +83,7 @@ are nullable `startup-failed` or `shutdown-failed`. Event kinds are `lifecycle`,
 - HTTP pipeline observations do not describe WebSocket frames, gRPC handler
   internals, queue workers or arbitrary service calls. Optional trace
   identifiers do not constitute a general span feed.
-- Kernel reader results are deeply frozen. Network client results at this
+- Kernel reader results are deeply frozen. Core network snapshot/read results at this
   revision are parsed mutable objects; do not transfer the kernel's immutability
   guarantee to the client.
 
@@ -104,7 +104,7 @@ revokes it.
 
 The native client takes `endpoint`, `sessionId`, `sessionKey`, injected Web
 Crypto `subtle`, `fetch`, and `timing` with `setTimeout`/`clearTimeout`. It
-returns only:
+has the following core subset (D02 consumes only these methods):
 
 ```typescript
 interface IDiagnosticsClient {
@@ -115,7 +115,7 @@ interface IDiagnosticsClient {
 ```
 
 The endpoint must be exactly `http://127.0.0.1:<port>` without credentials,
-trailing slash, query or fragment. Protocol v1 has three signed GET operations:
+trailing slash, query or fragment. D02 uses three core signed GET operations:
 `/v1/status`, `/v1/snapshot`, and `/v1/events?after=N&limit=N`. Requests with an
 `Origin` header are rejected. Use the native extension host, never
 browser/webview fetch. HMAC authenticates traffic; HTTP does not encrypt it or
@@ -127,6 +127,22 @@ a request sequence, refuses redirects, bounds response bodies to 256 KiB, and
 applies a five-second abort deadline across response headers and body.
 Successful responses are authenticated before JSON parsing. Request sequences
 are independent of diagnostic event cursors.
+
+### M98d–g additions at this revision
+
+The helper also exposes `health()`, `configuration()`, `queues(after, limit?)`
+and `traces(after, limit?)`. Its authenticated status parser accepts both the
+legacy three-field form and the current form with eleven fixed boolean inspector
+keys. Health, configuration, queues and traces are currently advertised true;
+authorization, cache, events, scheduler, realtime, storage and outboundHttp are
+reserved false. Legacy status resolves all addon support to false. The helper
+returns typed unsupported addon DTOs without probing unsupported routes.
+D02 does not call these methods or expose their data. They do not repair the
+core snapshot/read identity, validation and immutability gaps below.
+
+The [D02 audit](d02-contract-audit.md) records focused source tests and signed
+adversarial probes at this exact revision. The header/body identity gap was
+reproduced; this remains an acceptance blocker rather than a historical concern.
 
 ### Integration constraints observed in the client
 
@@ -140,7 +156,7 @@ completed security audit.
 | Non-200 responses become a generic connection failure before their signed error body is parsed                                                                       | Do not claim the helper distinguishes expiry, revocation, rate limiting, authorization or network failures                                                                                            |
 | Serialization uses an uncapped promise queue                                                                                                                         | Keep at most one outstanding extension read and schedule the next after completion; bound retention and avoid timer-created backlogs                                                                  |
 | Snapshot/batch guards validate only part of the DTO shape                                                                                                            | Validate enums, required fields, finite numeric bounds, graph/event limits and cursor invariants; build an allowlisted UI projection instead of forwarding arbitrary fields                           |
-| Returned JSON is not frozen, despite interface documentation describing frozen projections                                                                           | Own and freeze the extension model where needed; do not rely on helper runtime immutability                                                                                                           |
+| Core snapshot/read JSON is not frozen, despite interface documentation describing frozen projections                                                                 | Own and freeze the extension model where needed; do not rely on helper runtime immutability                                                                                                           |
 | Initial status ties body instance to its signed header; later responses are not explicitly compared with the paired instance, nor their DTO instance with the header | Require adversarial instance-binding tests and resolve the helper contract before D02 acceptance. Tracking one DTO instance cannot prove agreement with the hidden paired identity                    |
 | Key import is lazy and clears an internal copy, not the caller's original bytes                                                                                      | Preserve supplied bytes until import has occurred; define launcher-owned buffer cleanup and release references on teardown. Do not promise erasure of environment strings or garbage-collected memory |
 | `close()` aborts client reads but does not revoke the application connector                                                                                          | Stop the owned launch on disconnect/expiry and exercise complete child cleanup; client close alone is not server revocation                                                                           |
@@ -252,10 +268,12 @@ emits version-based JSR imports; running it from source does not automatically
 make generated projects use local packages. Do not silently mix a local helper
 with older registry packages or commit machine-specific paths.
 
-The extension needs a measured npm-compatible delivery route for the helper and
-dependencies. Host API injection makes this plausible; it does not prove an
-artifact bundles and runs in the editor's Node host. Publication is unnecessary
-to start that experiment. D04's distributable preview needs pinned published
+The extension needs a reproducible npm-compatible delivery route for the helper and
+dependencies. Public-source bundling and real Code OSS import/construction were
+measured in the [D02 audit](d02-contract-audit.md); published-package installation
+and a real server round trip remain unverified. Import/construction is narrower
+than live connection qualification. Publication is unnecessary for those local
+experiments. D04's distributable preview needs pinned published
 dependencies and repeatable installation evidence.
 
 ## Integration gates and evidence
@@ -272,18 +290,20 @@ dependencies and repeatable installation evidence.
 | Capture quality      | Truncation, ring loss, collector drops, late parents, null timing and closed reader represented honestly                                                                      | D03                          |
 | Compatibility matrix | Exact source/artifact versions, protocol, editor/host versions, OS and app runtime; local evidence distinct from released support                                             | D04                          |
 
-Source-review validation on 2026-09-22: `deno test --allow-read --allow-env`
+Historical source-review validation on 2026-09-22 (previous reference): `deno test --allow-read --allow-env`
 against `packages/diagnostics-plugin/test/unit/client.test.ts` and the CLI's
 `devtool-planner.test.ts`, `devtool-refusals.test.ts`,
 `devtool-manifest-merge.test.ts` passed: **12 tests, 83 steps, zero failures**.
 These focused tests do not satisfy future editor integration, process-cleanup or
 adversarial instance-binding gates.
 
-## Framework capabilities still deferred
+## Framework capabilities outside D02
 
-Existing service APIs are not safe diagnostic feeds merely because they exist:
+Raw service APIs remain inappropriate diagnostic feeds. M98d–g now provide
+separate minimized contracts for several areas below; their existence does not
+add inspectors to D02 or qualify a devtool integration:
 
-| Existing surface                       | Why another reviewed projection is needed                             |
+| Raw service surface                    | Limitation of that raw surface                                        |
 | -------------------------------------- | --------------------------------------------------------------------- |
 | Router `listRoutes()`                  | Contains live handlers and schemas; use M98 route projections instead |
 | Queue `add`/`process`/`addRecurring`   | No general job enumeration contract                                   |
@@ -292,11 +312,11 @@ Existing service APIs are not safe diagnostic feeds merely because they exist:
 | Authorization methods                  | Decisions without a diagnostic explanation contract                   |
 | Telemetry span creation/active IDs     | Not a general span read feed                                          |
 
-Source navigation, health summaries and P02/P03 addons remain separate framework
-design and security reviews. M98a–c implementation does not authorize these
-additional data surfaces.
+Source navigation, health UI and P02/P03 addons remain separate devtool designs
+and security reviews. Use the current minimized framework contracts when their
+feature plans start; M98a–g implementation does not authorize raw service access.
 
-The [addon assessment](framework-addons.md) expands these five areas with
-source-verified reuse opportunities and missing contracts. In particular,
+The [addon assessment](framework-addons.md) is the historical pre-M98d–g
+assessment; its missing-contract findings must be refreshed before addon planning. In particular,
 existing queue counters/depths and health deadlines are useful foundations; they
 do not make job enumeration or raw health reports safe devtool feeds.
