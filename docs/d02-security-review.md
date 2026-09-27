@@ -145,3 +145,19 @@ setup-node v4.4.0, and setup-deno v2.0.5. The full D02 type check, format check,
 49-test per-file coverage gate and production build also passed after the delta.
 Other security-sensitive runtime and build code is unchanged. D03 and D04
 exclusions remain as stated above.
+
+## Follow-up review after PR #3 comments and rebase
+
+The same separate reviewer approved the rebased D02 implementation at
+`f7bd5a2debac2e2804cd72cab953c2b28429fd32` for the same local Linux scope,
+with no blocking findings. The reviewed source tree is
+`0bb41465f15abb55fd53e97aa14378580f2bc8dd`; the full tree is
+`8b49568e6cba5412aacd72ab314469014d121e0d`.
+
+The Cleanup required status now invokes the existing read-only cleanup recheck
+command. The supervisor production build now rejects external imports other
+than Node built-ins. The reviewer independently confirmed that the resulting
+bundle imports only Node built-ins, that current sources match the test bundles,
+and that all eight editor/refresh tests pass. The rebase retained the approved
+D01 CI and refresh fixes without other unexpected runtime changes. D03 and D04
+qualification remains excluded.
