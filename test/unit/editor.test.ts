@@ -5,6 +5,7 @@ import { resolve, join } from "node:path";
 import { readFile, writeFile, rm } from "node:fs/promises";
 import { setTimeout as delay } from "node:timers/promises";
 import { activate, deactivate } from "../../src/extension";
+import { statusCommand } from "../../src/editor/connection";
 import * as editor from "../fixtures/vscode";
 import { preparedProject } from "../fixtures/projects";
 function context() {
@@ -22,6 +23,12 @@ async function select(api: ReturnType<typeof activate>) {
     api.projectIds()[0],
   );
 }
+
+test("cleanup status runs its recovery command", () => {
+  assert.equal(statusCommand("Cleanup required"), "setuDevtool.recheckCleanup");
+  assert.equal(statusCommand("Live"), "setuDevtool.stop");
+});
+
 test("native launch confirms full workspace scope, ignores workspace executable overrides and stops on removal", async () => {
   const fixture = await preparedProject(true),
     ctx = context();
