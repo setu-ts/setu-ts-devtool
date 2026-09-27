@@ -5,23 +5,36 @@ before inspecting, planning, or changing the project.
 
 ## Work only in an ignored worktree
 
-The canonical clone is `/home/dkpaul91/Projects/setu-ts-devtool`. Its `main`
-checkout stays clean and synchronized with `origin/main`; never edit or commit
-there.
+Discover the canonical clone as the parent of Git's absolute common directory:
+
+```sh
+common_dir=$(git rev-parse --path-format=absolute --git-common-dir)
+repo_root=$(dirname "$common_dir")
+```
+
+This works from the canonical checkout and every linked worktree. The canonical
+clone's `main` checkout stays clean and synchronized with `origin/main`; never
+edit or commit there.
 
 Before starting work:
 
 1. Run `git branch --show-current` and `git status --short --branch`.
-2. Fetch and prune from the canonical clone.
-3. Create or reuse exactly one task branch in an ignored worktree under
+2. Verify that the maintainer-provisioned local guards are installed:
+   `git config --local --get alias.pr-merge` must succeed, and `pre-commit`,
+   `pre-push`, `reference-transaction`, and `merge-pr` must be executable under
+   `$common_dir/hooks/`. If any guard is absent, stop and ask the maintainer to
+   provision this clone; do not recreate or bypass it ad hoc.
+3. Fetch and prune from the canonical clone.
+4. Create or reuse exactly one task branch in an ignored worktree under
    `.claude/worktrees/<task>`.
-4. Base a new task branch on `origin/main`.
+5. Base a new task branch on `origin/main`.
 
 Example:
 
 ```sh
-git fetch origin --prune
-git worktree add .claude/worktrees/d03-ui -b feat/d03-ui origin/main
+git -C "$repo_root" fetch origin --prune
+git -C "$repo_root" worktree add \
+  .claude/worktrees/d03-ui -b feat/d03-ui origin/main
 ```
 
 Do not create sibling clones or worktrees beside the repository. Put scratch
@@ -75,7 +88,9 @@ ownership, cleanup, trust gates, or diagnostic data boundaries.
 - Do not merge with `gh pr merge` or the GitHub web UI. Use the guarded local
   command `git pr-merge <number>` after the user authorizes merge. It requires an
   open PR targeting `main`, the maintainer label, a clean merge state, successful
-  `linux` checks, and zero unresolved review threads.
+  `linux` checks, and zero unresolved review threads. The alias and executable
+  live in Git's shared common directory, so the command is available from every
+  properly provisioned linked worktree.
 
 GitHub cannot enforce the framework's server-side ruleset on this private
 repository under the current plan. The shared local hooks and guarded merge
