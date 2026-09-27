@@ -2,8 +2,9 @@
 
 Local development companion for Setu-TS applications and monorepos.
 
-**Status: D02 local launch and connection implemented; independent security
-review pending before merge.** See [D02 validation](docs/d02-validation.md).
+**Status: D02 local launch and connection implemented and independently reviewed
+for the local Linux scope.** See [security review](docs/d02-security-review.md)
+and [validation evidence](docs/d02-validation.md).
 The extension discovers prepared projects, explicitly launches a local Deno
 application, pairs, captures bounded diagnostics and stops its owned processes.
 Graph and request-timeline UI are D03 work. No release has been published.

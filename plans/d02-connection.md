@@ -1,8 +1,9 @@
 # D02 — Local launch and authenticated connection
 
 Status: implemented on `feat/d02-connection`; local verification is recorded in
-[D02 validation](../docs/d02-validation.md). Independent security review of the
-committed implementation remains required before merge. The framework binding,
+[D02 validation](../docs/d02-validation.md). A separate AI reviewer approved the
+committed implementation for the local Linux scope; see the
+[security review](../docs/d02-security-review.md). The framework binding,
 DTO validation and immutability fixes are requalified at the pin below. D01 is
 base commit `2615d26`; merge its branch first or keep D02 explicitly stacked on it.
 
@@ -55,9 +56,11 @@ registry version.
    packaged supervisor in Node mode. Real descendant tests cover Stop, early
    root exit, IPC loss and forced cleanup; uncertain ownership blocks launches.
    No direct-PID signal fallback exists.
-4. **Independent security review: pending.** Review the final committed tree
-   independently of implementation work and close blocking findings before
-   merge. The source audit and implementation tests do not replace that review.
+4. **Independent security review: complete for local D02.** The separate
+   reviewer assessed the committed implementation and cleanup fix; no blocking
+   findings remain in the reviewed scope. The report identifies the exact
+   implementation commit and remaining D03/D04 gates. Later runtime changes
+   need renewed review; this is not release or whole-framework certification.
 
 ## Design decisions
 

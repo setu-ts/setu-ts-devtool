@@ -1,7 +1,8 @@
 # D02 local validation — 2026-09-27
 
 Implementation on `feat/d02-connection`, stacked on D01 `2615d26` and the D02
-plan/audit `457a93a`. Independent committed-tree security review remains pending.
+plan/audit `457a93a`. Separate-reviewer assessment of the committed D02
+implementation is recorded in [D02 security review](d02-security-review.md).
 No push, PR, publication, framework modification or installed VSIX is implied.
 
 ## Qualified inputs and commands
@@ -126,12 +127,13 @@ and confirms a later recheck can succeed. The full unit/integration suite now
 passes 49 tests and the per-file coverage gate above. Type checking, formatting
 and production build checks pass. Earlier Code OSS evidence remains from the
 initial implementation; those editor runs were not repeated for this controller
-fix. Separate-reviewer security signoff remains pending.
+fix. A subsequent independent review covers this fix; see the review report.
 
 ## Remaining acceptance work
 
-Independent security review of the final implementation commit is required
-before D02 merge. The tests above support that review; they are not its signoff.
+A separate AI reviewer has approved the current implementation for the local
+Linux scope. The [report](d02-security-review.md) identifies the reviewed commit,
+additional checks and limits; future runtime changes require renewed review.
 D03 owns graph/timeline presentation, CSP, renderer/bridge and DOM races. D04
 owns published dependencies, installed VSIX, VS Code qualification and additional
 OS/editor combinations. CI runs non-GUI Linux validation; the Code OSS results

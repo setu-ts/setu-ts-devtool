@@ -242,8 +242,8 @@ pass cannot substitute for rows that require an actual editor or process tree.
 
 ## Completion and changes to this model
 
-D02 has local instance-binding, real launch and cleanup evidence. Acceptance
-still requires independent security review of the exact implementation commit. D03 must validate the actual
+D02 has local instance-binding, real launch and cleanup evidence plus a separate
+AI review of the exact implementation commit; see [the report](d02-security-review.md). D03 must validate the actual
 packaged webview, and D04 must attach exact editor, OS, runtime and framework
 versions to the acceptance matrix. No row is marked passed by this documentation
 update.
@@ -275,7 +275,7 @@ command gate still refuses discovery. Packaged-install activation behavior,
 launch preflight races, transport, process cleanup, webview and stress gates
 remain unverified until their owning milestones. No full S01–S18 row is closed.
 
-## D02 implementation evidence and remaining review
+## D02 implementation and review evidence
 
 [D02 validation](d02-validation.md) records the qualified framework pin, local
 unit/integration coverage and real Code OSS runs. It covers D02 portions of
@@ -302,3 +302,8 @@ Before merge, an independent security review must name the implementation commit
 and inspect these boundaries and their evidence. Renderer/DOM/bridge cases wait
 for D03; published dependencies, installed VSIX and the full editor/platform
 matrix wait for D04. No full S01–S18 row is closed by this implementation report.
+
+The separate-reviewer gate for the current D02 implementation is now satisfied
+within the local Linux scope, as recorded in [D02 security review](d02-security-review.md).
+This does not close the entire acceptance matrix or qualify D03/D04 features.
+Runtime/security-boundary changes require renewed review.
