@@ -4,7 +4,14 @@ import { join } from "node:path";
 import type { Project } from "../discovery/discover";
 import { prepareLaunch } from "../launch/preflight";
 import { resolveDeno, verifyDeno } from "../launch/executable";
-import { SessionController } from "../session/controller";
+import { SessionController, type SessionState } from "../session/controller";
+
+export function statusCommand(state: SessionState): string {
+  return state === "Cleanup required"
+    ? "setuDevtool.recheckCleanup"
+    : "setuDevtool.stop";
+}
+
 export function connectCommands(
   context: vscode.ExtensionContext,
   guard: () => string | undefined,
@@ -27,7 +34,7 @@ export function connectCommands(
           : value.state === "Cleanup required"
             ? "Cleanup could not be confirmed. Stop the application manually if needed, then run Setu-TS: Recheck Cleanup. New launches are blocked."
             : "Setu-TS local diagnostics";
-      status.command = "setuDevtool.stop";
+      status.command = statusCommand(value.state);
       status.show();
       changed();
     },

@@ -29,7 +29,7 @@ npm run test:host -- --restricted
 ```
 
 The coverage command builds and runs both the unit and integration suites:
-**49 tests passed, zero failed/skipped**, with the per-file gate below. Type
+**50 tests passed, zero failed/skipped**, with the per-file gate below. Type
 checking and formatting are separate gates. Framework client/protocol
 qualification passed 19 tests and 122 steps, as recorded in the
 [contract audit](d02-contract-audit.md). This is not the full framework milestone
@@ -97,7 +97,7 @@ No ignore directives or uncovered-file exclusions are used.
 | `src/discovery/discover.ts`    |     92.3 |        100 |  99.44 |
 | `src/discovery/files.ts`       |       92 |        100 |    100 |
 | `src/discovery/json.ts`        |    94.73 |        100 |    100 |
-| `src/editor/connection.ts`     |    90.24 |        100 |  99.04 |
+| `src/editor/connection.ts`     |     90.9 |        100 |   99.1 |
 | `src/editor/context.ts`        |      100 |        100 |    100 |
 | `src/editor/refresh.ts`        |      100 |        100 |    100 |
 | `src/launch/credentials.ts`    |      100 |        100 |    100 |
@@ -124,7 +124,7 @@ The controller now coalesces pending rechecks and applies a result only while
 its captured owned handle and session generation still match Cleanup required.
 A second regression rejects the shared scan, verifies launches remain blocked,
 and confirms a later recheck can succeed. The full unit/integration suite now
-passes 49 tests and the per-file coverage gate above. Type checking, formatting
+passes 50 tests and the per-file coverage gate above. Type checking, formatting
 and production build checks pass. Earlier Code OSS evidence remains from the
 initial implementation; those editor runs were not repeated for this controller
 fix. A subsequent independent review covers this fix; see the review report.

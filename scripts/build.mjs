@@ -95,7 +95,8 @@ if (!dev) {
     throw new Error("Development fixture leaked into production bundle");
 }
 
-await build({
+const supervisor = await build({
+  metafile: true,
   entryPoints: ["src/launch/supervisor.ts"],
   outfile: "dist/supervisor.mjs",
   bundle: true,
@@ -104,6 +105,9 @@ await build({
   target: "node24",
   sourcemap: true,
 });
+for (const output of Object.values(supervisor.metafile.outputs))
+  if (output.imports.some(({ path }) => !path.startsWith("node:")))
+    throw new Error("Unexpected runtime dependency in supervisor bundle");
 
 if (process.argv.includes("--integration"))
   await build({
