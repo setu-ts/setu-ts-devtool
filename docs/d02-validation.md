@@ -28,7 +28,7 @@ npm run test:host -- --restricted
 ```
 
 The coverage command builds and runs both the unit and integration suites:
-**47 tests passed, zero failed/skipped**, with the per-file gate below. Type
+**49 tests passed, zero failed/skipped**, with the per-file gate below. Type
 checking and formatting are separate gates. Framework client/protocol
 qualification passed 19 tests and 122 steps, as recorded in the
 [contract audit](d02-contract-audit.md). This is not the full framework milestone
@@ -108,8 +108,25 @@ No ignore directives or uncovered-file exclusions are used.
 | `src/launch/recipes.ts`        |      100 |        100 |    100 |
 | `src/launch/supervisor.ts`     |    98.59 |        100 |  95.77 |
 | `src/model/capture.ts`         |      100 |        100 |    100 |
-| `src/session/controller.ts`    |     97.1 |        100 |    100 |
+| `src/session/controller.ts`    |     96.2 |        100 |    100 |
 | `src/session/scheduler.ts`     |      100 |        100 |    100 |
+
+## Security-review follow-up: cleanup recheck race
+
+The security-focused self-review of `94220ab` found that two overlapping cleanup
+rechecks could let a late result clear a replacement session's ownership. The
+new regression in `test/unit/controller.test.ts` failed before the fix with
+`Idle` instead of `Live`, and passes afterward. It also verifies that Stop
+invokes the replacement launch's cleanup exactly once.
+
+The controller now coalesces pending rechecks and applies a result only while
+its captured owned handle and session generation still match Cleanup required.
+A second regression rejects the shared scan, verifies launches remain blocked,
+and confirms a later recheck can succeed. The full unit/integration suite now
+passes 49 tests and the per-file coverage gate above. Type checking, formatting
+and production build checks pass. Earlier Code OSS evidence remains from the
+initial implementation; those editor runs were not repeated for this controller
+fix. Separate-reviewer security signoff remains pending.
 
 ## Remaining acceptance work
 

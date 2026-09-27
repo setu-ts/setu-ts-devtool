@@ -213,3 +213,74 @@ test("local deadline stops the owned application without renewal", async (t) => 
   assert.equal(h.controller.status().state, "Failed");
   assert.equal(h.counts().stops, 1);
 });
+
+test("overlapping cleanup rechecks cannot erase a replacement session's ownership", async () => {
+  const h = harness();
+  const results: ((clean: boolean) => void)[] = [];
+  let launches = 0,
+    replacementStops = 0;
+  h.ports.launch = async () => {
+    const initial = ++launches === 1;
+    return {
+      exited: new Promise(() => {}),
+      stop: async () => {
+        if (!initial) replacementStops++;
+        return !initial;
+      },
+      recheck: () => new Promise((resolve) => results.push(resolve)),
+    };
+  };
+  try {
+    await h.controller.start(async () => prepared);
+    await h.controller.stop();
+    assert.equal(h.controller.status().state, "Cleanup required");
+    const first = h.controller.recheck(),
+      second = h.controller.recheck();
+    results[0]!(true);
+    await first;
+    await h.controller.start(async () => prepared);
+    assert.equal(h.controller.status().state, "Live");
+    // The old implementation starts a second scan: resolve it after replacement.
+    // A coalesced implementation has only the first result to commit.
+    results[1]?.(true);
+    await second;
+    assert.equal(h.controller.status().state, "Live");
+    assert.equal(h.controller.activeRoot, prepared.descriptor.root);
+    assert.equal(results.length, 1);
+    await h.controller.stop();
+    assert.equal(replacementStops, 1);
+    assert.equal(h.controller.status().state, "Idle");
+  } finally {
+    await h.controller.stop();
+  }
+});
+
+test("failed cleanup rechecks coalesce, keep launch blocked, and allow a later retry", async () => {
+  const h = harness();
+  let rejectScan: (error: Error) => void = () => {};
+  let checks = 0;
+  h.ports.launch = async () => ({
+    exited: new Promise(() => {}),
+    stop: async () => false,
+    recheck: () => {
+      checks++;
+      return checks === 1
+        ? new Promise<boolean>((_resolve, reject) => {
+            rejectScan = reject;
+          })
+        : Promise.resolve(true);
+    },
+  });
+  await h.controller.start(async () => prepared);
+  await h.controller.stop();
+  const first = h.controller.recheck(),
+    second = h.controller.recheck();
+  await h.controller.start(async () => assert.fail("cleanup still pending"));
+  rejectScan(new Error("synthetic scan failure"));
+  await Promise.all([first, second]);
+  assert.equal(checks, 1);
+  assert.equal(h.controller.status().state, "Cleanup required");
+  await h.controller.recheck();
+  assert.equal(checks, 2);
+  assert.equal(h.controller.status().state, "Idle");
+});
