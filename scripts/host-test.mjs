@@ -64,7 +64,9 @@ const child = spawn(executable, args, {
     SETU_HOST_RESTRICTED: restricted ? "1" : "0",
   },
 });
+let timedOut = false;
 const timer = setTimeout(() => {
+  timedOut = true;
   child.kill();
   process.exitCode = 1;
 }, 90000);
@@ -74,7 +76,7 @@ child.on("error", () => {
 });
 child.on("exit", async (code) => {
   clearTimeout(timer);
-  process.exitCode = code ?? 1;
+  process.exitCode = timedOut ? 1 : (code ?? 1);
   if (code === 0) {
     try {
       const result = JSON.parse(await readFile(evidence, "utf8"));

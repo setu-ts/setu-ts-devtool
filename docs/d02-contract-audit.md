@@ -9,7 +9,7 @@ inspected). Devtool base: `2615d26`. M98a–g are marked complete in the framewo
 roadmap; M98h is in a separate active worktree and was not included. No framework
 files were changed. Publication was not attempted or inferred from versions.
 
-## Findings and disposition
+## Historical findings and disposition (before framework PR #370)
 
 | ID                          | Evidence                                                                                                                                                                               | D02 treatment                                                                                                                                            |
 | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -96,3 +96,40 @@ The helper binding fix belongs in the framework repository on its own branch.
 Repin all local artifacts together after that fix. Do not publish or claim D02
 complete using only these probes. M98h or later work does not implicitly resolve
 F01; inspect and retest the actual core exchange before changing its disposition.
+
+## Requalification after the framework fix — 2026-09-27
+
+Current qualified source: `26aebd0e3fd16074d7b578623577fe87a1930e83`, including
+framework PR #370. The historical findings above remain evidence of the earlier
+revision, not the state of the current pin. F01–F03 are resolved at this pin:
+the public helper binds subsequent signed headers and core DTO identities to the
+paired status, enforces exact core schemas/cursors, and freezes results deeply.
+No private framework validator or signing implementation was added to the
+extension.
+
+Read-only focused qualification:
+
+```sh
+deno test --no-lock --allow-read --allow-env \
+  packages/diagnostics-plugin/test/unit/client.test.ts \
+  packages/diagnostics-plugin/test/unit/protocol.test.ts
+```
+
+**19 tests, 122 steps passed; zero failures.** The signed probe was repeated:
+honest A/A/running accepted and frozen; header-only change, body-only change,
+both identities changed and invalid state all rejected. Committed devtool
+`test/integration/transport.test.ts` reproduces these with an independently
+constructed signed HTTP test peer and also rejects invalid MACs.
+
+F04 still constrains D02 to core methods. F05 is addressed by the implemented
+owned Linux supervisor and real process-tree tests. F06 now has real
+standalone/workspace round trips in Node and Code OSS; package publication and
+VSIX installation remain D04 gates. See [D02 validation](d02-validation.md).
+`lost` also includes discarded sequence gaps after failed startup; it is not
+exclusively an eviction count.
+
+All artifacts are prepared from one clean pinned checkout with input hashes.
+The separate active framework checkout moved to another fix branch during D02;
+it was left untouched and the qualified source was read from an isolated clean
+checkout. This requalification is not the independent committed-tree security
+review required before D02 merge.

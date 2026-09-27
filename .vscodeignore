@@ -2,3 +2,5 @@
 !package.json
 !README.md
 !dist/extension.cjs
+!dist/supervisor.mjs
+!dist/THIRD_PARTY_NOTICES.txt

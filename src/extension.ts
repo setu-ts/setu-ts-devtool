@@ -1,7 +1,15 @@
-import * as vscode from "vscode";
 import { discover, type Discovery, type Project } from "./discovery/discover";
 import { refusal } from "./editor/context";
 import { RefreshQueue } from "./editor/refresh";
+import * as vscode from "vscode";
+import { realpath } from "node:fs/promises";
+import { connectCommands } from "./editor/connection";
+import type { SessionController } from "./session/controller";
+let activeSession: SessionController | undefined;
+export async function deactivate(): Promise<void> {
+  await activeSession?.stop();
+  activeSession = undefined;
+}
 declare const __DEV__: boolean;
 interface Row {
   readonly label: string;
@@ -64,6 +72,14 @@ export function activate(context: vscode.ExtensionContext): {
       },
     },
   });
+  const session = connectCommands(
+    context,
+    guard,
+    () => projects.find((p) => p.id === selected),
+    () => (vscode.workspace.workspaceFolders ?? []).map((f) => f.uri.fsPath),
+    () => changed.fire(),
+  );
+  activeSession = session;
   const queue = new RefreshQueue<Discovery>(
     async () => {
       const reason = guard();
@@ -76,6 +92,7 @@ export function activate(context: vscode.ExtensionContext): {
     (result) => {
       const reason = guard();
       if (reason) {
+        void session.stop();
         clearWatchers();
         clear(reason);
         return;
@@ -144,6 +161,7 @@ export function activate(context: vscode.ExtensionContext): {
     vscode.commands.registerCommand(
       "setuDevtool.select",
       async (id: unknown) => {
+        if (session.busy) return;
         const reason = guard();
         if (reason) {
           queue.invalidate();
@@ -164,13 +182,29 @@ export function activate(context: vscode.ExtensionContext): {
         if (!project) return;
         selected = project.id;
         tree.message =
-          "Project selected. Application launch will be available in D02.";
+          "Project selected. Use Setu-TS: Launch to review and start it.";
       },
     ),
     tree.onDidChangeVisibility((event) => {
       if (event.visible && !sample) void refresh();
     }),
     vscode.workspace.onDidChangeWorkspaceFolders(() => {
+      const activeRoot = session.activeRoot;
+      void Promise.allSettled(
+        (vscode.workspace.workspaceFolders ?? []).map((f) =>
+          realpath(f.uri.fsPath),
+        ),
+      ).then((results) => {
+        if (
+          activeRoot &&
+          session.activeRoot === activeRoot &&
+          !results.some(
+            (result) =>
+              result.status === "fulfilled" && result.value === activeRoot,
+          )
+        )
+          void session.stop();
+      });
       uiGeneration++;
       if (debounce) clearTimeout(debounce);
       debounce = undefined;
@@ -182,6 +216,7 @@ export function activate(context: vscode.ExtensionContext): {
     {
       dispose: () => {
         disposed = true;
+        void session.stop();
         queue.dispose();
         if (debounce) clearTimeout(debounce);
         clearWatchers();
@@ -194,6 +229,7 @@ export function activate(context: vscode.ExtensionContext): {
   if (__DEV__ && context.extensionMode !== vscode.ExtensionMode.Production) {
     context.subscriptions.push(
       vscode.commands.registerCommand("setuDevtool.sample", async () => {
+        if (session.busy) return;
         const reason = guard();
         if (reason) {
           queue.invalidate();

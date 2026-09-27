@@ -1,9 +1,10 @@
 # D02 — Local launch and authenticated connection
 
-Status: planned on `feat/d02-connection`; implementation not started. The core
-helper instance-binding defect blocks live-connection acceptance. Independent
-preflight, process ownership and model work can proceed. D01 is the base commit
-`2615d26`; merge its branch first or keep D02 explicitly stacked on it.
+Status: implemented on `feat/d02-connection`; local verification is recorded in
+[D02 validation](../docs/d02-validation.md). Independent security review of the
+committed implementation remains required before merge. The framework binding,
+DTO validation and immutability fixes are requalified at the pin below. D01 is
+base commit `2615d26`; merge its branch first or keep D02 explicitly stacked on it.
 
 ## Outcome and exclusions
 
@@ -19,7 +20,7 @@ M98d–g methods exist but D02 calls only `snapshot`, `read` and `close`.
 
 ## Contracts verified from source
 
-Framework reference: `f89fd615ad2d4b15d4dfc1e12ed74e51857db025`, inspected
+Framework reference: `26aebd0e3fd16074d7b578623577fe87a1930e83`, inspected
 2026-09-27. See the [contract register](../docs/framework-compatibility.md) and
 [audit evidence](../docs/d02-contract-audit.md). Source paths below are relative
 to the framework repository; implementation paths later are relative to devtool.
@@ -29,7 +30,7 @@ to the framework repository; implementation paths later are relative to devtool.
 | `packages/common/src/services/diagnostics.ts`                       | Public snapshot, batch, node, edge and event types                                        | Type-only public imports; separate runtime validation and minimized storage              |
 | `packages/diagnostics-plugin/src/index.ts`, `interfaces/index.ts`   | Public injected client; core plus four addon methods                                      | Adapter exposes only the three core methods internally; no private protocol imports      |
 | `packages/diagnostics-plugin/src/client/client.ts`                  | Lazy key import, serialized calls, terminal initial pairing, five-second exchange timeout | One extension caller; hold raw bytes until first call settles; never retry a failed pair |
-| `packages/diagnostics-plugin/src/protocol/protocol.ts`              | Legacy/current status forms; shallow core DTO guards                                      | Fixed manifest negotiation belongs to helper; extension validates core DTOs fully        |
+| `packages/diagnostics-plugin/src/protocol/protocol.ts`              | Legacy/current status forms; exact core DTO guards and freezing                           | Public helper validates wire DTOs; extension owns bounded allowlisted copies             |
 | `packages/cli/src/devtool/dev-entry.ts`                             | Direct Deno environment reads; literal port; default TTL; second factory argument         | Prepared entry fingerprint and explicit port must agree                                  |
 | `packages/cli/src/workspace/dev-runner.ts`, `runtime-profile.ts`    | Root starts all members; selected dev task; blank sibling credentials                     | Full-scope confirmation and descendant cleanup; pin Deno on child PATH                   |
 | `packages/cli/src/devtool/planner.ts`, `templates/project-files.ts` | Derived tasks, generated entry and templates                                              | Support only qualified generated recipes; do not execute workspace code during preflight |
@@ -41,24 +42,22 @@ registry version.
 
 ## Prerequisites and acceptance blockers
 
-1. **Framework binding:** the helper must reject a verified response whose
-   instance header differs from the paired status identity, and reject a core
-   snapshot/batch whose body identity differs from that header/paired identity.
-   Add signed adversarial tests in the framework, including independent header
-   and body changes and the first snapshot after status. Keep null identity
-   support for in-process pre-runtime DTOs separate from paired network DTOs.
-   D02 must not patch a private module, implement another HMAC protocol, or claim
-   tracking the first snapshot identity recovers the hidden status identity.
-2. **Artifact qualification:** source bundling and editor import have been
-   measured; a complete real Deno server/host round trip has not. Build all local
-   fixture mappings from one clean, exact framework revision after the binding
-   fix, rerun the audit, and update the register before accepting the connection.
-3. **Linux supervisor:** qualify the owned-group design below in the actual
-   editor host before enabling Launch. If Electron cannot run the packaged
-   supervisor or cleanup cannot be proved, refuse Launch; no direct-PID fallback.
-4. Run security review on the final committed implementation independently of
-   implementation work. Close blocking findings before merging. This plan and
-   its source audit are not that security review.
+1. **Framework binding, validation and freezing: requalified.** Framework PR
+   #370 is included in the pin. Signed header/body mutations and invalid state
+   are rejected; honest DTOs are frozen. Focused framework client/protocol tests
+   passed (19 tests, 122 steps). See the audit's requalification section.
+2. **Local artifact qualification: implemented.** `prepare:framework` requires a
+   clean exact checkout and qualified Deno 2.9.6, archives inputs, builds only
+   public client exports and CLI recipes, and records hashes/license. Real Deno
+   standalone/workspace round trips run in Node and the Code OSS test host.
+   Released packages and VSIX installation remain D04 work.
+3. **Linux supervisor: locally qualified.** The editor executable runs the
+   packaged supervisor in Node mode. Real descendant tests cover Stop, early
+   root exit, IPC loss and forced cleanup; uncertain ownership blocks launches.
+   No direct-PID signal fallback exists.
+4. **Independent security review: pending.** Review the final committed tree
+   independently of implementation work and close blocking findings before
+   merge. The source audit and implementation tests do not replace that review.
 
 ## Design decisions
 
@@ -69,7 +68,8 @@ current opaque selection ID again; stale IDs, sample rows, removed roots and
 unsupported contexts refuse before executable invocation. Limit each file to
 256 KiB, depth to 32, roots to 16 and members to 64. Read only root/member Deno
 configs, the authoritative workspace manifest, `main.dev.ts`, the known
-workspace runner, and necessary generated discovery-port metadata. Never read
+workspace runner, and generated discovery-port files for change detection. Those files are
+hashed, not evaluated; actual application port behavior remains application code. Never read
 `.env`, import `setu.config.ts`, or recursively traverse project files.
 
 For standalone projects ask for an in-memory integer port, 1024–65535, with 4919
@@ -94,7 +94,8 @@ Record hashes of the exact preflight files, executable identity and member list.
 Native modal confirmation identifies the selected project, all started members,
 instrumented target, executable, diagnostics port, 15-minute local limit, and
 that Stop terminates the whole owned launch. On cancellation do nothing.
-After confirmation recheck trust, selection generation, roots and every hash.
+After confirmation qualify the executable, then recheck trust, selection, roots
+and every recipe hash immediately before returning the launch descriptor.
 Changed input requires a new preflight/confirmation; never silently approve
 new contents. Active same-user filesystem races remain outside isolation claims.
 No credentials are generated until the final launch is authorized.
@@ -131,8 +132,8 @@ settings, logs, diagnostic models or webview messages.
 
 Generate a 16-byte ID and 32-byte key with host crypto, encode to 32/64 lowercase
 hex. Keep a dedicated helper byte buffer until the first helper call settles,
-zero it then or on early cancellation, and release launch environment/string
-references after spawn. Erasure of strings, child environments, crypto keys or
+zero it then or on early cancellation, and release launch handoff references after use. The controller drops its ID/key
+strings when its first call settles or setup fails. Erasure of strings, child environments, crypto keys or
 garbage-collected memory is not promised.
 
 ### Linux process ownership and cleanup
@@ -201,7 +202,8 @@ stream failure. Enforce 256 KiB including streamed/chunked bodies and bounded
 headers. Do not use ambient fetch/global dispatcher or proxy agents. Tests must
 show configured proxy variables cannot receive diagnostics traffic.
 
-One monotonic 900,000 ms local deadline starts when Deno is spawned. Display
+One 900,000 ms host timer starts before supervisor launch, conservatively
+including supervisor startup in the local limit. Display
 "Local session limit", never an authenticated expiry countdown. No custom TTL,
 renewal or retry loop. Application state (`starting`, `running`, etc.) is
 separate from connection state. An open socket is not application readiness.
@@ -223,24 +225,23 @@ cancels timers/probes and discards all late generation results. `closed:true`
 ends the session. Any helper/validation error uses one fixed connection failure,
 not private message matching or an inferred server expiry/revocation cause.
 
-Validators receive `unknown` and return fresh allowlisted records typed from
-public common exports. Validate the exact required fields, enum vocabularies,
-nullable timing, finite nonnegative timing/counters and safe-integer sequences.
-Bound snapshots to 256 KiB, 1,024 nodes and 4,096 edges; events to 1,024 bytes
-each and at most the requested 128. Node/operation IDs must match the source's
-bounded opaque grammar; labels are at most 160 UTF-8 bytes without control
-characters, versions at most 64 with the producer's semver grammar. Validate
-kind-specific optional fields, HTTP methods/status ranges and nonzero lowercase
-trace/span identifiers. Never validate by calling peer object methods.
+The pinned public helper validates unknown wire values against the exact core
+contract before returning frozen typed results. This includes enum/field/number
+validation, identity binding, topology references, event shape and cursor
+invariants. Unknown fields are rejected by that helper. Do not duplicate the
+framework's private validators or impose different priority/status semantics.
+The extension's projection boundary accepts only that adapter's typed results,
+rechecks its session identity and budgets, and builds fresh allowlisted frozen
+records. It is not a general-purpose validator for arbitrary objects.
 
-Reject duplicate node IDs, malformed IDs and duplicate event sequences. Missing
-nodes/parents can reflect truncation/eviction/completion order and stay unresolved.
-All network DTO identities must be non-null and match the session; this check is
-additional to, not a replacement for, the repaired helper's authenticated binding.
-For nonempty pages require increasing contiguous sequences above `after`, exact
-`lost = first.sequence - after - 1`, and `next = last.sequence`. Empty pages must
-preserve `after` with zero loss; closed batches retain no events. Unknown fields
-are discarded, never copied to the model. Freeze constructed records.
+Bound snapshots to 256 KiB, 1,024 nodes and 4,096 edges, events to 1,024 bytes and
+pages to 128. Nonempty pages have increasing contiguous sequences above `after`,
+`lost = first.sequence - after - 1`, and `next = last.sequence`; empty/closed
+pages preserve `after` with no records or loss. `lost` includes records discarded
+after failed startup as well as ring eviction. Event references to absent nodes
+or parents can be unresolved because topology/history is partial; this does not
+relax the helper's validation of topology edges. Label, method, version, numeric
+and trace/span rules come from the pinned public contract and its tests.
 
 Keep one snapshot and at most 4,096 events or 4 MiB serialized event data, evicting
 oldest first. Saturate counters at MAX_SAFE_INTEGER. Keep ring loss, collector
@@ -259,22 +260,22 @@ bounded synthetic/status data needed by the host harness.
 
 | File                           | Main surface and consumer                                               | Required tests                                                              |
 | ------------------------------ | ----------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| `src/launch/preflight.ts`      | `prepareLaunch`, immutable descriptor → controller                      | `test/unit/preflight.test.ts`; real generated recipes                       |
-| `src/launch/recipes.ts`        | Qualified recipe matching → preflight                                   | `test/unit/recipes.test.ts`; unsupported and changed fixtures               |
-| `src/launch/executable.ts`     | `resolveDeno`, version/identity checks → preflight/controller           | `test/unit/executable.test.ts`; path shadowing and version timeout          |
-| `src/launch/credentials.ts`    | Fresh pair, environment construction and disposal → controller/launcher | `test/unit/credentials.test.ts`; real sibling handoff                       |
+| `src/launch/preflight.ts`      | `prepareLaunch`, immutable descriptor → controller                      | `test/unit/launch.test.ts`; real generated recipes                          |
+| `src/launch/recipes.ts`        | Qualified recipe matching → preflight                                   | `test/unit/launch.test.ts`; unsupported and changed fixtures                |
+| `src/launch/executable.ts`     | `resolveDeno`, version/identity checks → preflight/controller           | `test/unit/launch.test.ts`; path shadowing and version timeout              |
+| `src/launch/credentials.ts`    | Fresh pair, environment construction and disposal → controller/launcher | `test/unit/launch.test.ts`; real sibling handoff                            |
 | `src/launch/launcher.ts`       | Owned handle, readiness, root exit and async stop → controller          | `test/unit/launcher.test.ts`; `test/integration/processes.test.ts`          |
-| `src/launch/supervisor.ts`     | Packaged child entry, private start/stop protocol → launcher            | `test/integration/processes.test.ts`; `test/host/connection.ts`             |
-| `src/launch/process-group.ts`  | Bounded membership projection → supervisor/cleanup verifier             | `test/unit/process-group.test.ts`; malformed proc data and real descendants |
-| `src/launch/readiness.ts`      | Cancellable single-port probe → launcher                                | `test/unit/readiness.test.ts`; `test/integration/readiness.test.ts`         |
-| `src/diagnostics/transport.ts` | Fixed loopback fetch implementation → adapter                           | `test/unit/transport.test.ts`; `test/integration/transport.test.ts`         |
-| `src/diagnostics/client.ts`    | Core client adapter with injected dependencies → controller             | `test/unit/client.test.ts`; `test/integration/framework-client.test.ts`     |
-| `src/diagnostics/validate.ts`  | Snapshot/batch validators → adapter/store                               | `test/unit/validate.test.ts`; signed malicious fixtures                     |
+| `src/launch/supervisor.ts`     | Packaged child entry, private start/stop protocol → launcher            | `test/integration/supervisor.test.ts`; process/host exercises               |
+| `src/launch/process-group.ts`  | Bounded membership projection → supervisor/cleanup verifier             | `test/unit/launch.test.ts`; malformed proc data and real descendants        |
+| `src/launch/readiness.ts`      | Cancellable single-port probe → launcher                                | `test/unit/scheduler.test.ts`; `test/integration/transport.test.ts`         |
+| `src/diagnostics/transport.ts` | Fixed loopback fetch implementation → adapter                           | `test/integration/transport.test.ts`                                        |
+| `src/diagnostics/client.ts`    | Core client adapter with injected dependencies → controller             | `test/integration/connection.test.ts`; `test/integration/transport.test.ts` |
+| `src/diagnostics/validate.ts`  | Owned snapshot/batch projections → adapter/store                        | `test/unit/capture.test.ts`; signed malicious fixtures                      |
 | `src/model/capture.ts`         | Bounded snapshot/event store and revisions → controller, later D03      | `test/unit/capture.test.ts`; overflow/clear/loss cases                      |
 | `src/session/controller.ts`    | State, generations, launch/stop/clear → editor                          | `test/unit/controller.test.ts`; every state/async race                      |
 | `src/session/scheduler.ts`     | One outstanding operation → controller                                  | `test/unit/scheduler.test.ts`; slow reads/expiry/close                      |
-| `src/editor/connection.ts`     | Native confirmation and fixed status/commands → extension               | `test/host/connection.ts`; restricted and direct command paths              |
-| `src/extension.ts`             | Composition, stable selection ownership, async deactivate               | Existing host tests plus `test/host/connection.ts`                          |
+| `src/editor/connection.ts`     | Native confirmation and fixed status/commands → extension               | `test/unit/editor.test.ts`; real host restricted paths                      |
+| `src/extension.ts`             | Composition, stable selection ownership, async deactivate               | Existing host tests plus `test/host/index.ts`                               |
 
 Build scripts must bundle the supervisor separately, preserve public helper
 imports, and include its production artifact in `.vscodeignore` allowlists.
