@@ -1,0 +1,8 @@
+.tmp/
+node_modules/
+dist/
+out/
+coverage/
+.vscode-test/
+*.vsix
+*.local.code-workspace
