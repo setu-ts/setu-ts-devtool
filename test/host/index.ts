@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { exerciseConnection } from "../fixtures/exercise";
 import assert from "node:assert/strict";
 import { writeFile } from "node:fs/promises";
 interface ExtensionApi {
@@ -11,6 +12,7 @@ export async function run(): Promise<void> {
     "setu-ts.setu-ts-devtool",
   );
   assert.ok(extension);
+  process.chdir(extension.extensionPath);
   if (process.env.SETU_HOST_RESTRICTED === "1") {
     assert.equal(vscode.workspace.isTrusted, false);
     try {
@@ -21,6 +23,7 @@ export async function run(): Promise<void> {
     // Development hosts may activate an extension despite the manifest restriction.
     // Its command-level gate must still refuse discovery.
     if (extension.isActive) {
+      await vscode.commands.executeCommand("setuDevtool.launch");
       const api = extension.exports;
       assert.deepEqual(api.projectIds(), []);
       assert.equal(api.selected(), undefined);
@@ -55,7 +58,12 @@ export async function run(): Promise<void> {
       assert.ok(api.rows().includes("api"));
     }
   }
+  if (vscode.workspace.isTrusted) {
+    await exerciseConnection(false);
+    await exerciseConnection(true);
+  }
   const evidence = {
+    liveConnection: vscode.workspace.isTrusted,
     editor: vscode.version,
     appName: vscode.env.appName,
     node: process.versions.node,

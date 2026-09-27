@@ -104,17 +104,18 @@ TCP readiness probes carry no credentials and prove only that the selected port
 accepts a connection. The signed initial exchange establishes the diagnostic
 peer; pairing failure terminates that launch. Close all probes on every stop
 path. Client validation must reject bad signatures, replay and oversized
-responses before data reaches display. The extension additionally validates
-complete DTO shape and consistency. A valid MAC does not make a label safe to
+responses before data reaches display. The public helper validates complete DTO shape and consistency; the extension
+adds owned projections, session checks and retention limits. A valid MAC does not make a label safe to
 render.
 
-The existing helper does not fully enforce post-pairing instance consistency and
-has shallow DTO guards, mutable results and generic failures. These are recorded
-integration gaps, not assurances. Require framework-side adversarial instance
-tests and any necessary fix before D02 acceptance. Do not compensate by
-importing private helper state or writing a second HMAC implementation.
+The pinned helper now enforces post-pairing identity, exact core DTO validation
+and deep freezing. The [contract audit](d02-contract-audit.md) records the old
+failures and their requalification. The extension owns minimized copies and
+additional resource/session checks; it never imports private helper state or
+implements a second signing protocol. Generic failures and terminal initial
+pairing remain contract constraints.
 
-Use a conservative local 15-minute deadline starting at spawn. On any helper or
+Use a conservative local 15-minute deadline starting before supervisor launch. On any helper or
 validation failure, stop reads, clear the view/model and stop owned processes.
 Do not report the exact server expiry or infer a detailed failure class from an
 internal error string. Client `close()` alone does not revoke the server.
@@ -191,9 +192,9 @@ Own only the process group created by this window's launch. Shutdown must cover
 task wrappers, the workspace runner and ordinary descendants, including a root
 that exited before its children. Verify ownership and group disappearance; never
 treat sending a signal or observing only the root exit as successful cleanup.
-Guard against PID reuse when the root exits before its group. The D02 plan must
-define and test that identity check; never escalate a signal against an
-unverified replacement process. After bounded graceful/forced attempts, report
+Guard against PID reuse when the root exits before its group. The live
+supervisor signals its own group, and the parent performs read-only membership
+checks. It never escalates against a remembered PID or replacement process. After bounded graceful/forced attempts, report
 incomplete cleanup and prevent a replacement launch while ownership is
 unresolved. Do not persist identifiers for future automatic killing or search
 for processes by port/name.
@@ -213,7 +214,8 @@ runner.
 
 ## Acceptance matrix
 
-All rows are **required evidence, not yet executed**. Canonical milestone plans
+All rows are **required evidence, not blanket signoffs**. The D01/D02 sections
+below identify the exercised portions; remaining cases retain their milestone gates. Canonical milestone plans
 must map each ID to named tests or a repeatable manual exercise. A mocked unit
 pass cannot substitute for rows that require an actual editor or process tree.
 
@@ -240,9 +242,8 @@ pass cannot substitute for rows that require an actual editor or process tree.
 
 ## Completion and changes to this model
 
-D01 can proceed while the framework helper gap remains open. D02 acceptance
-needs instance-binding conformance evidence and real launch/cleanup tests; a
-promise to fix it after shipping is not evidence. D03 must validate the actual
+D02 has local instance-binding, real launch and cleanup evidence. Acceptance
+still requires independent security review of the exact implementation commit. D03 must validate the actual
 packaged webview, and D04 must attach exact editor, OS, runtime and framework
 versions to the acceptance matrix. No row is marked passed by this documentation
 update.
@@ -274,18 +275,30 @@ command gate still refuses discovery. Packaged-install activation behavior,
 launch preflight races, transport, process cleanup, webview and stress gates
 remain unverified until their owning milestones. No full S01–S18 row is closed.
 
-## D02 planning and audit status
+## D02 implementation evidence and remaining review
 
-The [refreshed contract audit](d02-contract-audit.md) reproduces a core helper
-instance-binding defect at the pinned framework revision. D02 live acceptance
-requires its framework fix plus repeated adversarial tests. New addon contracts
-do not close that core gate. The [D02 plan](../plans/d02-connection.md) adds a
-packaged Linux supervisor boundary: bounded private control IPC, credentials in
-environment only, signals sent by the live supervisor to its own group, and
-read-only parent cleanup confirmation. No parent signal uses a remembered PID.
+[D02 validation](d02-validation.md) records the qualified framework pin, local
+unit/integration coverage and real Code OSS runs. It covers D02 portions of
+S01–S11/S14–S15: explicit full-scope launch, prepared recipes, fresh handoff and
+sibling isolation, hostile signed identity/state/MAC responses, body/proxy/abort
+controls, memory limits, cursor-preserving Clear and process cleanup. These are
+implementation test results, not closure of the whole matrix.
 
-Supervisor loss, membership uncertainty and failed escalation must fail closed
-as Cleanup required. Validate ordinary Stop, root exit, resistant descendants,
-IPC loss and crash limitations in the actual host. This expands S05/S10/S11
-acceptance requirements; no security-matrix row is closed by the plan. A final
-independent committed-tree security review remains mandatory before D02 merge.
+The packaged Linux supervisor receives credentials only in its startup
+environment. Its bounded private start IPC carries ordinary app environment and
+launch metadata, but no pairing ID/key. Node bootstrap/injection variables are
+removed. The optional `NODE_V8_COVERAGE` host variable is forwarded for test
+instrumentation; coverage records code execution, not environment values or
+captured diagnostics. Production does not enable instrumentation itself.
+
+Signals originate from the still-live group leader. The parent never signals a
+remembered PID; uncertain identity/membership or surviving processes yield
+Cleanup required and block launches until read-only disappearance is confirmed.
+Tests include IPC loss, early root exit, a SIGTERM-resistant descendant and
+simulated ownership failures. They do not guarantee recovery from a SIGKILL of
+the supervisor or deliberately detached descendants.
+
+Before merge, an independent security review must name the implementation commit
+and inspect these boundaries and their evidence. Renderer/DOM/bridge cases wait
+for D03; published dependencies, installed VSIX and the full editor/platform
+matrix wait for D04. No full S01–S18 row is closed by this implementation report.

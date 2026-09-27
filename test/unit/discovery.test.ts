@@ -129,3 +129,14 @@ test("unrelated Deno files are ignored, two configuration files are rejected", a
     await rm(root, { recursive: true });
   }
 });
+
+test("empty local root has no candidate and no error", async () => {
+  const root = await fixture();
+  try {
+    const found = await discover([root]);
+    assert.equal(found.projects.length, 0);
+    assert.equal(found.issues.length, 0);
+  } finally {
+    await rm(root, { recursive: true });
+  }
+});
