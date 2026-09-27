@@ -40,6 +40,7 @@ export class SessionController {
   private client: CoreClient | undefined;
   private setup: Promise<void> | undefined;
   private stopping: Promise<void> | undefined;
+  private rechecking: Promise<void> | undefined;
   private timer: ReturnType<typeof setTimeout> | undefined;
   private capture = new Capture();
   private root: string | undefined;
@@ -212,14 +213,30 @@ export class SessionController {
     })());
   }
   async recheck(): Promise<void> {
-    if (
-      this.state === "Cleanup required" &&
-      (await this.owned?.recheck().catch(() => false))
-    ) {
+    const owned = this.owned;
+    const generation = this.abort;
+    if (this.state !== "Cleanup required" || !owned) return;
+    if (this.rechecking) return this.rechecking;
+    const pending = (async () => {
+      const clean = await owned.recheck().catch(() => false);
+      // A disappearance result belongs only to the session that requested it.
+      if (
+        !clean ||
+        this.state !== "Cleanup required" ||
+        this.owned !== owned ||
+        this.abort !== generation
+      )
+        return;
       this.owned = undefined;
       this.root = undefined;
       this.stopping = undefined;
       this.transition("Idle");
+    })();
+    this.rechecking = pending;
+    try {
+      await pending;
+    } finally {
+      if (this.rechecking === pending) this.rechecking = undefined;
     }
   }
 }
