@@ -32,9 +32,13 @@ configuration, environment or request data to reconstruct them.
 This milestone excludes application logs, arbitrary source navigation, health,
 configuration, queues, authorization, tracing inspectors, persistence/export,
 multi-application views, browser/remote support, URL/port/process control from
-the webview, frontend frameworks and graph engines. Fixture preview remains a
-development/test-only command, visibly marked as sample data, and is excluded
-from the production VSIX.
+the webview, frontend frameworks and graph engines. Fixture preview is a
+development/test-only `setuDevtool.sample` command that opens this same panel
+from a frozen synthetic snapshot/event fixture, visibly marked `Sample data —
+no live connection`. It never constructs a client, endpoint or session. The
+fixture factory is dynamically imported only behind the existing development
+build guard; the production-artifact test must prove neither the command nor
+fixture module is present in `dist`.
 
 ## Verified contracts and prerequisite position
 
@@ -151,9 +155,15 @@ form-action 'none';
 ```
 
 `localResourceRoots` contains only the extension's packaged webview assets.
-Disable command URIs. Documentation opening maps a small fixed topic union in
-the host to exact HTTPS URLs and uses VS Code's external opener; renderer input
-can never provide a URL or query data. The rendered graph has an accessible
+Disable command URIs. Documentation opening accepts exactly these topic IDs and
+destinations, with no query parameters: `architecture` →
+`https://github.com/setu-ts/setu-ts-devtool/blob/main/docs/architecture.md`,
+`security` →
+`https://github.com/setu-ts/setu-ts-devtool/blob/main/docs/security.md`, and
+`framework-contract` →
+`https://github.com/setu-ts/setu-ts/blob/26aebd0e3fd16074d7b578623577fe87a1930e83/docs/diagnostics-protocol.md`.
+The host, not the renderer, owns this frozen mapping and uses VS Code's external
+opener; renderer input can never provide a URL or query data. The rendered graph has an accessible
 list/table equivalent, keyboard-reachable controls, semantic labels and an
 announced capture-quality summary; accessibility must not require unbounded
 hidden DOM copies.
@@ -172,8 +182,8 @@ fixture captures in production bundles.
 | `src/presentation/panel.ts` | Webview construction, CSP/shell, local assets, frame acknowledgement/coalescing and fixed documentation map | New `test/unit/panel.test.ts`: CSP/resource roots, nonce, no command URLs, stale/duplicate ack, stall/reset/disposal and no persistence |
 | `src/editor/connection.ts` | Existing session commands plus panel opening/wiring; native authority remains here | Extend `test/unit/editor.test.ts` for panel command context and Clear/Stop synchronization |
 | `src/extension.ts` | Compose panel lifetime with session change/disposal and context guards | Extend host test and unit fixture for hidden/reopened/disposed panel behavior |
-| `webview/main.ts`, `webview/style.css` | Browser-only accessible DOM/SVG renderer and local interactions | Browser-build/static tests; malicious labels/links remain text and no fetch/storage/VS Code API leakage |
-| `scripts/build.mjs`, `package.json` | Separate webview bundle copied to `dist/webview`; production bundle checks exclude fixtures and forbidden browser imports | Build-artifact inspection including asset-only resource use and CSP shell exercise |
+| `webview/main.ts`, `webview/style.css`, `webview/renderer.ts` | Browser-only accessible DOM/SVG renderer and local interactions; renderer helpers are DOM-port injected for Node tests | `test/webview/renderer.test.ts`: text-node-only hostile labels, accessible list and controls, literal filtering, no fetch/storage/bridge leakage |
+| `scripts/build.mjs`, `package.json`, `tsconfig.json` | Separate webview build copied to `dist/webview`; browser sources are strict-typechecked and production artifacts exclude fixtures/forbidden imports | `npm run test:webview` builds `test/webview/*.test.ts` and runs `node --test out/webview/*.test.cjs`; `npm run check` includes `webview/**/*.ts`; `npm run test:coverage` includes the webview test output and enforces 90% per source file |
 | `test/fixtures/` | Synthetic bounded graph/timeline and hostile label/IPC data | Unit and actual development-host exercises; never include live/recorded traffic |
 
 ## Implementation order and verification
@@ -200,11 +210,12 @@ fixture captures in production bundles.
    renderer/DOM/IPC boundary.
 
 Required normal gates are `npm run check`, `npm run format:check`,
-`npm run test:coverage` and `npm run build`; inspect the per-file coverage table
-and maintain at least 90% line, branch and function coverage for every `src`
-file. Add a browser/webview test mechanism to these gates or an explicitly
-named companion command; it must not silently skip the browser bundle. Run the
-existing real local D02 standalone and workspace exercises after D03 wiring to
+`npm run test:webview`, `npm run test:coverage` and `npm run build`; inspect the
+per-file coverage table and maintain at least 90% line, branch and function
+coverage for every `src` and `webview` TypeScript source file. `test:webview`
+is the required Node test command above, while the real Code OSS development
+host exercise verifies the emitted browser asset and actual CSP. Run the existing
+real local D02 standalone and workspace exercises after D03 wiring to
 prove the UI did not alter pairing, polling, cursor, Clear or Stop behavior.
 
 Security acceptance evidence must cover D03 portions of S11–S15 and S18:
