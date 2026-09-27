@@ -128,3 +128,20 @@ These are documented qualification boundaries, not newly confirmed defects:
 A later runtime/source change needs review of its delta before carrying this
 approval forward. A documentation-only commit can preserve this approval after
 confirming that its runtime source, build inputs and tests are unchanged.
+
+## Follow-up review after PR #2 fixes
+
+The same separate reviewer assessed `21d6105..92d7317` after the D01 review
+fixes were carried into this stacked branch. Approval carries forward to
+`92d7317715d0a29d34ae46bc95bee10a771e3a91` for the same local Linux scope,
+with no blocking findings. Concurrent refresh callers now await their shared
+coalesced cycle; invalidation and disposal behavior remains intact. The reviewer
+ran both refresh tests and verified their bundle against current source.
+
+The CI delta grants only `contents: read`, disables checkout credential
+persistence, and uses immutable action commits. The implementation author
+verified those commits against the upstream GitHub tags: checkout and
+setup-node v4.4.0, and setup-deno v2.0.5. The full D02 type check, format check,
+49-test per-file coverage gate and production build also passed after the delta.
+Other security-sensitive runtime and build code is unchanged. D03 and D04
+exclusions remain as stated above.
