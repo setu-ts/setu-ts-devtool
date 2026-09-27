@@ -2,8 +2,9 @@
 
 Design baseline, 2026-09-22. This document specifies the D01–D04 free preview;
 D01 foundation and D02 connection are implemented with
-[local evidence](d02-validation.md). Independent D02 security review remains
-pending; D03 presentation and D04 release behavior are planned. The
+[local evidence](d02-validation.md). D02 has an
+[independent local-scope security review](d02-security-review.md); D03 presentation
+and D04 release behavior are planned. The
 [roadmap](../ROADMAP.md) owns feature allocation, the
 [contract register](framework-compatibility.md) owns framework facts, and the
 [security model](security.md) owns threat cases and acceptance evidence.
