@@ -1,15 +1,16 @@
 # Framework compatibility and contract register
 
 Source baseline: Setu-TS commit
-[`6de620d6206e087c601c6067786f6b4d8a219ca6`](https://github.com/setu-ts/setu-ts/commit/6de620d6206e087c601c6067786f6b4d8a219ca6),
-inspected 2026-09-22. M98a, M98b and M98c are implemented and merged, but
-unpublished. Publication is planned after M99 in the next framework release
+[`26aebd0e3fd16074d7b578623577fe87a1930e83`](https://github.com/setu-ts/setu-ts/commit/26aebd0e3fd16074d7b578623577fe87a1930e83),
+inspected 2026-09-27. M98a–g are implemented and merged. The diagnostics
+release remains unpublished in the development workflow. Publication is planned after M99 in the next framework release
 cycle. This commit is an integration reference, not a minimum supported release;
 manifest versions and `@since` comments do not establish availability.
 
 This register replaces the earlier M98 proposal baseline. It records observed
-implementation behavior and requirements for the future extension, not
-end-to-end compatibility certification.
+implementation behavior and extension requirements. D02 now has
+[local end-to-end evidence](d02-validation.md); released-package and VSIX
+compatibility are still unqualified.
 
 The [architecture](architecture.md) turns these contracts into extension design
 decisions; the [security model](security.md) tracks their required acceptance
@@ -23,13 +24,13 @@ private framework modules into the extension.
 
 | Source                                                                                                                                                                                                                                                                                                                      | Implemented surface                                                   | Consumer                  |
 | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | ------------------------- |
-| [Common diagnostics types](https://github.com/setu-ts/setu-ts/blob/6de620d6206e087c601c6067786f6b4d8a219ca6/packages/common/src/services/diagnostics.ts) and [application interface](https://github.com/setu-ts/setu-ts/blob/6de620d6206e087c601c6067786f6b4d8a219ca6/packages/common/src/plugin.ts)                        | Optional `IApplication.diagnostics`, snapshot and cursor-based reader | D02 adapter, D03 views    |
-| [Kernel collector](https://github.com/setu-ts/setu-ts/blob/6de620d6206e087c601c6067786f6b4d8a219ca6/packages/kernel/src/diagnostics/collector.ts) and [projection rules](https://github.com/setu-ts/setu-ts/blob/6de620d6206e087c601c6067786f6b4d8a219ca6/packages/kernel/src/diagnostics/projection.ts)                    | Opt-in collection, exact label approvals, bounded topology/events     | D03 interpretation        |
-| [Connector exports](https://github.com/setu-ts/setu-ts/blob/6de620d6206e087c601c6067786f6b4d8a219ca6/packages/diagnostics-plugin/src/index.ts) and [interfaces](https://github.com/setu-ts/setu-ts/blob/6de620d6206e087c601c6067786f6b4d8a219ca6/packages/diagnostics-plugin/src/interfaces/index.ts)                       | Plugin and injected native client                                     | D02 launch/client adapter |
-| [Client implementation](https://github.com/setu-ts/setu-ts/blob/6de620d6206e087c601c6067786f6b4d8a219ca6/packages/diagnostics-plugin/src/client/client.ts) and [protocol validation](https://github.com/setu-ts/setu-ts/blob/6de620d6206e087c601c6067786f6b4d8a219ca6/packages/diagnostics-plugin/src/protocol/protocol.ts) | Authenticated, serialized reads; limitations below                    | D02 connection policy     |
-| [Protocol v1](https://github.com/setu-ts/setu-ts/blob/6de620d6206e087c601c6067786f6b4d8a219ca6/docs/diagnostics-protocol.md) and [plugin lifecycle](https://github.com/setu-ts/setu-ts/blob/6de620d6206e087c601c6067786f6b4d8a219ca6/packages/diagnostics-plugin/src/plugin/diagnostics-plugin.ts)                          | Signed loopback HTTP, finite sessions, teardown                       | D02 trust boundary        |
-| [Development entry](https://github.com/setu-ts/setu-ts/blob/6de620d6206e087c601c6067786f6b4d8a219ca6/packages/cli/src/devtool/dev-entry.ts) and [enable planner](https://github.com/setu-ts/setu-ts/blob/6de620d6206e087c601c6067786f6b4d8a219ca6/packages/cli/src/devtool/planner.ts)                                      | M98c `main.dev.ts`, `dev` task and credential reads                   | D02 preflight/launch      |
-| [Workspace manifest](https://github.com/setu-ts/setu-ts/blob/6de620d6206e087c601c6067786f6b4d8a219ca6/packages/cli/src/workspace/manifest.ts) and [development runner](https://github.com/setu-ts/setu-ts/blob/6de620d6206e087c601c6067786f6b4d8a219ca6/packages/cli/src/workspace/dev-runner.ts)                           | Member `devtoolPort`, selection and credential isolation              | D01 discovery, D02 launch |
+| [Common diagnostics types](https://github.com/setu-ts/setu-ts/blob/26aebd0e3fd16074d7b578623577fe87a1930e83/packages/common/src/services/diagnostics.ts) and [application interface](https://github.com/setu-ts/setu-ts/blob/26aebd0e3fd16074d7b578623577fe87a1930e83/packages/common/src/plugin.ts)                        | Optional `IApplication.diagnostics`, snapshot and cursor-based reader | D02 adapter, D03 views    |
+| [Kernel collector](https://github.com/setu-ts/setu-ts/blob/26aebd0e3fd16074d7b578623577fe87a1930e83/packages/kernel/src/diagnostics/collector.ts) and [projection rules](https://github.com/setu-ts/setu-ts/blob/26aebd0e3fd16074d7b578623577fe87a1930e83/packages/kernel/src/diagnostics/projection.ts)                    | Opt-in collection, exact label approvals, bounded topology/events     | D03 interpretation        |
+| [Connector exports](https://github.com/setu-ts/setu-ts/blob/26aebd0e3fd16074d7b578623577fe87a1930e83/packages/diagnostics-plugin/src/index.ts) and [interfaces](https://github.com/setu-ts/setu-ts/blob/26aebd0e3fd16074d7b578623577fe87a1930e83/packages/diagnostics-plugin/src/interfaces/index.ts)                       | Plugin and injected native client                                     | D02 launch/client adapter |
+| [Client implementation](https://github.com/setu-ts/setu-ts/blob/26aebd0e3fd16074d7b578623577fe87a1930e83/packages/diagnostics-plugin/src/client/client.ts) and [protocol validation](https://github.com/setu-ts/setu-ts/blob/26aebd0e3fd16074d7b578623577fe87a1930e83/packages/diagnostics-plugin/src/protocol/protocol.ts) | Authenticated, serialized reads; limitations below                    | D02 connection policy     |
+| [Protocol v1](https://github.com/setu-ts/setu-ts/blob/26aebd0e3fd16074d7b578623577fe87a1930e83/docs/diagnostics-protocol.md) and [plugin lifecycle](https://github.com/setu-ts/setu-ts/blob/26aebd0e3fd16074d7b578623577fe87a1930e83/packages/diagnostics-plugin/src/plugin/diagnostics-plugin.ts)                          | Signed loopback HTTP, finite sessions, teardown                       | D02 trust boundary        |
+| [Development entry](https://github.com/setu-ts/setu-ts/blob/26aebd0e3fd16074d7b578623577fe87a1930e83/packages/cli/src/devtool/dev-entry.ts) and [enable planner](https://github.com/setu-ts/setu-ts/blob/26aebd0e3fd16074d7b578623577fe87a1930e83/packages/cli/src/devtool/planner.ts)                                      | M98c `main.dev.ts`, `dev` task and credential reads                   | D02 preflight/launch      |
+| [Workspace manifest](https://github.com/setu-ts/setu-ts/blob/26aebd0e3fd16074d7b578623577fe87a1930e83/packages/cli/src/workspace/manifest.ts) and [development runner](https://github.com/setu-ts/setu-ts/blob/26aebd0e3fd16074d7b578623577fe87a1930e83/packages/cli/src/workspace/dev-runner.ts)                           | Member `devtoolPort`, selection and credential isolation              | D01 discovery, D02 launch |
 
 ## M98a: data and interpretation
 
@@ -44,7 +45,7 @@ asynchronous equivalents.
 | Node       | `id`, `kind`, optional `label`, `version`, `method`, `priority`, `position`, `registered`                                                              | Kinds: plugin, capability, route, middleware; positions are one-based                                   |
 | Edge       | `from`, `to`, `kind`                                                                                                                                   | `provides`, `requires`, `optional`, `consumes` describe declarations; `owns` records observed ownership |
 | Event      | `sequence`, `operationId`, `parentOperationId`, `kind`, `stage`, `nodeId`, `outcome`, `atMs`, `durationMs`, optional `statusCode`, `traceId`, `spanId` | Completion records; nullable fields follow common types                                                 |
-| Batch      | `version: 1`, `instanceId`, `events`, `next`, `lost`, `closed`                                                                                         | Cursor advancement, evicted-event gaps and reader closure                                               |
+| Batch      | `version: 1`, `instanceId`, `events`, `next`, `lost`, `closed`                                                                                         | Cursor advancement, discarded/evicted-event gaps and reader closure                                     |
 
 Use exported common unions for stages and outcomes. Snapshot states are
 `created`, `starting`, `running`, `failed`, `stopping`, `closed`; failure codes
@@ -69,7 +70,7 @@ are nullable `startup-failed` or `shutdown-failed`. Event kinds are `lifecycle`,
 - `read` accepts a non-negative safe-integer cursor and a limit of 1–128,
   default 128. A zero cursor starts from retained history. `next` is the last
   returned sequence, or the requested cursor when nothing is returned. `lost`
-  counts evicted sequence gaps; snapshot `droppedEvents` counts events rejected
+  counts sequence gaps from eviction or failed-start discards; snapshot `droppedEvents` counts events rejected
   before ring insertion. Display them separately. A cursor beyond an open
   collector's sequence is invalid. After teardown, a closed reader instead
   returns an empty batch preserving the requested cursor. Reset the extension
@@ -83,9 +84,9 @@ are nullable `startup-failed` or `shutdown-failed`. Event kinds are `lifecycle`,
 - HTTP pipeline observations do not describe WebSocket frames, gRPC handler
   internals, queue workers or arbitrary service calls. Optional trace
   identifiers do not constitute a general span feed.
-- Kernel reader results are deeply frozen. Network client results at this
-  revision are parsed mutable objects; do not transfer the kernel's immutability
-  guarantee to the client.
+- Kernel reader and public core client results are deeply frozen at this pin.
+  The client validates exact wire shapes and binds response headers and bodies
+  to the authenticated paired instance before returning them.
 
 ## M98b: connection and session contract
 
@@ -104,7 +105,7 @@ revokes it.
 
 The native client takes `endpoint`, `sessionId`, `sessionKey`, injected Web
 Crypto `subtle`, `fetch`, and `timing` with `setTimeout`/`clearTimeout`. It
-returns only:
+has the following core subset (D02 consumes only these methods):
 
 ```typescript
 interface IDiagnosticsClient {
@@ -115,7 +116,7 @@ interface IDiagnosticsClient {
 ```
 
 The endpoint must be exactly `http://127.0.0.1:<port>` without credentials,
-trailing slash, query or fragment. Protocol v1 has three signed GET operations:
+trailing slash, query or fragment. D02 uses three core signed GET operations:
 `/v1/status`, `/v1/snapshot`, and `/v1/events?after=N&limit=N`. Requests with an
 `Origin` header are rejected. Use the native extension host, never
 browser/webview fetch. HMAC authenticates traffic; HTTP does not encrypt it or
@@ -128,22 +129,38 @@ applies a five-second abort deadline across response headers and body.
 Successful responses are authenticated before JSON parsing. Request sequences
 are independent of diagnostic event cursors.
 
+### M98d–g additions at this revision
+
+The helper also exposes `health()`, `configuration()`, `queues(after, limit?)`
+and `traces(after, limit?)`. Its authenticated status parser accepts both the
+legacy three-field form and the current form with eleven fixed boolean inspector
+keys. Health, configuration, queues and traces are currently advertised true;
+authorization, cache, events, scheduler, realtime, storage and outboundHttp are
+reserved false. Legacy status resolves all addon support to false. The helper
+returns typed unsupported addon DTOs without probing unsupported routes.
+D02 does not call these methods or expose their data.
+
+The [D02 audit](d02-contract-audit.md) preserves the earlier failing probes and
+records requalification after framework PR #370. The identity, core validation
+and freezing defects are resolved at this pin; generic errors and the remaining
+lifecycle constraints below still apply.
+
 ### Integration constraints observed in the client
 
 These are source observations, not new public framework guarantees or a
 completed security audit.
 
-| Observation                                                                                                                                                          | Required D02 treatment                                                                                                                                                                                |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Any failed initial status exchange makes the client terminal                                                                                                         | Validate a bounded startup strategy; never retry initial pairing with the same credentials, even through a newly constructed client. Fresh launch means fresh credentials                             |
-| No public status/expiry accessor, renewal operation or typed error-code API                                                                                          | Display a conservative launcher deadline, not an exact authenticated countdown. Use fixed user messages; do not classify failures by private error strings                                            |
-| Non-200 responses become a generic connection failure before their signed error body is parsed                                                                       | Do not claim the helper distinguishes expiry, revocation, rate limiting, authorization or network failures                                                                                            |
-| Serialization uses an uncapped promise queue                                                                                                                         | Keep at most one outstanding extension read and schedule the next after completion; bound retention and avoid timer-created backlogs                                                                  |
-| Snapshot/batch guards validate only part of the DTO shape                                                                                                            | Validate enums, required fields, finite numeric bounds, graph/event limits and cursor invariants; build an allowlisted UI projection instead of forwarding arbitrary fields                           |
-| Returned JSON is not frozen, despite interface documentation describing frozen projections                                                                           | Own and freeze the extension model where needed; do not rely on helper runtime immutability                                                                                                           |
-| Initial status ties body instance to its signed header; later responses are not explicitly compared with the paired instance, nor their DTO instance with the header | Require adversarial instance-binding tests and resolve the helper contract before D02 acceptance. Tracking one DTO instance cannot prove agreement with the hidden paired identity                    |
-| Key import is lazy and clears an internal copy, not the caller's original bytes                                                                                      | Preserve supplied bytes until import has occurred; define launcher-owned buffer cleanup and release references on teardown. Do not promise erasure of environment strings or garbage-collected memory |
-| `close()` aborts client reads but does not revoke the application connector                                                                                          | Stop the owned launch on disconnect/expiry and exercise complete child cleanup; client close alone is not server revocation                                                                           |
+| Observation                                                                                    | Required D02 treatment                                                                                                                                                                                |
+| ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Any failed initial status exchange makes the client terminal                                   | Validate a bounded startup strategy; never retry initial pairing with the same credentials, even through a newly constructed client. Fresh launch means fresh credentials                             |
+| No public status/expiry accessor, renewal operation or typed error-code API                    | Display a conservative launcher deadline, not an exact authenticated countdown. Use fixed user messages; do not classify failures by private error strings                                            |
+| Non-200 responses become a generic connection failure before their signed error body is parsed | Do not claim the helper distinguishes expiry, revocation, rate limiting, authorization or network failures                                                                                            |
+| Serialization uses an uncapped promise queue                                                   | Keep at most one outstanding extension read and schedule the next after completion; bound retention and avoid timer-created backlogs                                                                  |
+| Core snapshot/batch validation enforces exact shapes and cursor invariants                     | Consume the public helper; own bounded allowlisted copies without private-validator imports                                                                                                           |
+| Core snapshot/read results are now deeply frozen                                               | Keep independently owned frozen models for extension retention                                                                                                                                        |
+| Initial status, subsequent response headers and core bodies are bound to the paired instance   | Retain signed adversarial regression cases and requalify when changing the pin                                                                                                                        |
+| Key import is lazy and clears an internal copy, not the caller's original bytes                | Preserve supplied bytes until import has occurred; define launcher-owned buffer cleanup and release references on teardown. Do not promise erasure of environment strings or garbage-collected memory |
+| `close()` aborts client reads but does not revoke the application connector                    | Stop the owned launch on disconnect/expiry and exercise complete child cleanup; client close alone is not server revocation                                                                           |
 
 The generated entry uses the default 15-minute TTL. A custom entry can choose a
 different permitted TTL, so custom launch recipes require an explicit matching
@@ -252,10 +269,12 @@ emits version-based JSR imports; running it from source does not automatically
 make generated projects use local packages. Do not silently mix a local helper
 with older registry packages or commit machine-specific paths.
 
-The extension needs a measured npm-compatible delivery route for the helper and
-dependencies. Host API injection makes this plausible; it does not prove an
-artifact bundles and runs in the editor's Node host. Publication is unnecessary
-to start that experiment. D04's distributable preview needs pinned published
+The extension needs a reproducible npm-compatible delivery route for the helper and
+dependencies. Public-source bundling and real Code OSS import/construction were
+measured in the [D02 audit](d02-contract-audit.md). Real standalone/workspace
+round trips now have [D02 evidence](d02-validation.md); published-package and
+VSIX installation remain unverified. Publication is unnecessary for those local
+experiments. D04's distributable preview needs pinned published
 dependencies and repeatable installation evidence.
 
 ## Integration gates and evidence
@@ -263,27 +282,29 @@ dependencies and repeatable installation evidence.
 | Gate                 | Required evidence                                                                                                                                                             | Owner                        |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
 | Discovery/preflight  | Bounded v1 manifest parsing; absent `devtoolPort`, unsupported runtime, stale scaffold and standalone port mismatch exercised without executing project code during discovery | D01/D02                      |
-| DTO mapping          | Compile against common exports; negative shape/version/bounds tests; distinguish kernel immutability from network DTOs                                                        | D02                          |
+| DTO mapping          | Compile against common exports; negative shape/version/bounds tests; verify public helper freezing and independently owned extension records                                  | D02                          |
 | Helper delivery      | Local artifact provenance and real packaged extension-host import without Deno globals; repeat with pinned published packages                                                 | D02 locally; D04 for release |
-| Instance binding     | Signed mismatched status/header/DTO instances rejected; gaps above resolved with framework tests and any required framework follow-up                                         | Framework + D02              |
+| Instance binding     | Signed mismatched status/header/DTO instances rejected; retain the fixed helper contract with framework and devtool regression tests                                          | Framework + D02              |
 | Credential handoff   | Real standalone/multi-member launches, fresh credentials, sibling isolation, no credential output/storage/webview transfer                                                    | D02 using M98c               |
 | Startup pairing      | Bounded readiness strategy, terminal initial failure and fresh-launch recovery exercised against the actual helper                                                            | D02                          |
 | Session lifecycle    | App exit, expiry, disconnect and activation disposal stop reads and owned processes; late responses cannot repopulate cleared state                                           | D02                          |
 | Capture quality      | Truncation, ring loss, collector drops, late parents, null timing and closed reader represented honestly                                                                      | D03                          |
 | Compatibility matrix | Exact source/artifact versions, protocol, editor/host versions, OS and app runtime; local evidence distinct from released support                                             | D04                          |
 
-Source-review validation on 2026-09-22: `deno test --allow-read --allow-env`
+Historical source-review validation on 2026-09-22 (previous reference): `deno test --allow-read --allow-env`
 against `packages/diagnostics-plugin/test/unit/client.test.ts` and the CLI's
 `devtool-planner.test.ts`, `devtool-refusals.test.ts`,
 `devtool-manifest-merge.test.ts` passed: **12 tests, 83 steps, zero failures**.
 These focused tests do not satisfy future editor integration, process-cleanup or
 adversarial instance-binding gates.
 
-## Framework capabilities still deferred
+## Framework capabilities outside D02
 
-Existing service APIs are not safe diagnostic feeds merely because they exist:
+Raw service APIs remain inappropriate diagnostic feeds. M98d–g now provide
+separate minimized contracts for several areas below; their existence does not
+add inspectors to D02 or qualify a devtool integration:
 
-| Existing surface                       | Why another reviewed projection is needed                             |
+| Raw service surface                    | Limitation of that raw surface                                        |
 | -------------------------------------- | --------------------------------------------------------------------- |
 | Router `listRoutes()`                  | Contains live handlers and schemas; use M98 route projections instead |
 | Queue `add`/`process`/`addRecurring`   | No general job enumeration contract                                   |
@@ -292,11 +313,11 @@ Existing service APIs are not safe diagnostic feeds merely because they exist:
 | Authorization methods                  | Decisions without a diagnostic explanation contract                   |
 | Telemetry span creation/active IDs     | Not a general span read feed                                          |
 
-Source navigation, health summaries and P02/P03 addons remain separate framework
-design and security reviews. M98a–c implementation does not authorize these
-additional data surfaces.
+Source navigation, health UI and P02/P03 addons remain separate devtool designs
+and security reviews. Use the current minimized framework contracts when their
+feature plans start; M98a–g implementation does not authorize raw service access.
 
-The [addon assessment](framework-addons.md) expands these five areas with
-source-verified reuse opportunities and missing contracts. In particular,
+The [addon assessment](framework-addons.md) is the historical pre-M98d–g
+assessment; its missing-contract findings must be refreshed before addon planning. In particular,
 existing queue counters/depths and health deadlines are useful foundations; they
 do not make job enumeration or raw health reports safe devtool feeds.

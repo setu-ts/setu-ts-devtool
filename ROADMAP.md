@@ -1,12 +1,14 @@
 # Devtool roadmap
 
-Status: proposed implementation scope, updated 2026-09-23. No milestone below is
-complete.
+Status: D01 and D02 implemented and locally verified, updated 2026-09-27.
+The framework core client fixes are requalified. D02's separate AI reviewer
+approved the local Linux implementation; see the [review report](docs/d02-security-review.md). D03–D04 remain
+pending. See [D02 evidence](docs/d02-validation.md).
 
 The [architecture](docs/architecture.md) defines the preview's components,
 launch lifecycle and resource budgets. The [security model](docs/security.md)
 defines its trust boundaries and acceptance cases. These are design baselines;
-the canonical implementation plans below remain to be written.
+D01 and D02 have canonical implementation plans; D03/D04 plans remain to be written.
 
 ## Product boundary
 
@@ -78,23 +80,24 @@ contexts must be refused explicitly.
 
 ## Milestones
 
-| ID  | State                                | Deliverable                                                    | Prerequisites                                                        | Canonical plan                     |
-| --- | ------------------------------------ | -------------------------------------------------------------- | -------------------------------------------------------------------- | ---------------------------------- |
-| D01 | Planned                              | Extension shell, trust gate, workspace discovery, fixtures, CI | None                                                                 | Pending: `plans/d01-foundation.md` |
-| D02 | Planned; framework integration gated | Explicit launch, pairing, bounded reader, teardown             | D01 + implemented M98a–c + local compatibility evidence              | Pending: `plans/d02-connection.md` |
-| D03 | Planned                              | Composition graph, route/middleware views, request timeline    | D01 fixtures for parallel UI work; D02 for integration               | Pending: `plans/d03-inspection.md` |
-| D04 | Planned                              | Security/compatibility exercises, VSIX, free preview docs      | D01–D03, pinned published framework packages and acceptance evidence | Pending: `plans/d04-release.md`    |
-| P01 | Direction only                       | Live Pro analysis, multi-app workflows, licensing              | Validated free workflow; separate plan                               |                                    |
-| P02 | Direction only                       | Retained investigations and comparisons                        | Persistence/export threat review; separate plan                      |                                    |
-| P03 | Direction only                       | Capability-specific inspectors                                 | Framework addons individually designed and audited                   |                                    |
+| ID  | State                               | Deliverable                                                    | Prerequisites                                                        | Canonical plan                      |
+| --- | ----------------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------------- | ----------------------------------- |
+| D01 | Implemented; locally verified       | Extension shell, trust gate, workspace discovery, fixtures, CI | None                                                                 | [D01 plan](plans/d01-foundation.md) |
+| D02 | Implemented; independently reviewed | Explicit launch, pairing, bounded reader, teardown             | D01 + implemented M98a–c + local compatibility evidence              | [D02 plan](plans/d02-connection.md) |
+| D03 | Planned                             | Composition graph, route/middleware views, request timeline    | D01 fixtures for parallel UI work; D02 for integration               | Pending: `plans/d03-inspection.md`  |
+| D04 | Planned                             | Security/compatibility exercises, VSIX, free preview docs      | D01–D03, pinned published framework packages and acceptance evidence | Pending: `plans/d04-release.md`     |
+| P01 | Direction only                      | Live Pro analysis, multi-app workflows, licensing              | Validated free workflow; separate plan                               |                                     |
+| P02 | Direction only                      | Retained investigations and comparisons                        | Persistence/export threat review; separate plan                      |                                     |
+| P03 | Direction only                      | Capability-specific inspectors                                 | Framework addons individually designed and audited                   |                                     |
 
 ## Framework work and reviews in priority order
 
 1. Use the [verified M98a–c contract register](docs/framework-compatibility.md)
    for detailed planning. The framework milestones are implemented but
    unpublished. D02 can start with consistently mapped local artifacts; verify
-   native host packaging and resolve the recorded client validation and
-   instance-binding gaps before accepting integration. D04 requires
+   native host packaging when dependencies change. D02 requalified the fixed
+   core client and records local launch/cleanup evidence and an independent
+   local-scope security review. D04 requires
    released-package evidence.
 2. Exercise M98c credential handoff and session lifecycle for D02. The preview
    honors the existing 15-minute default/60-minute maximum and requires relaunch

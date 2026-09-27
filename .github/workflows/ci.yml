@@ -1,0 +1,32 @@
+name: Devtool validation
+on: [push, pull_request]
+jobs:
+  linux:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "24"
+          cache: npm
+      - uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
+        with:
+          deno-version: "2.9.6"
+      - run: npm ci
+      - id: framework
+        run: node -e 'console.log("commit=" + require("./scripts/framework-pin.json").commit)' >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          repository: setu-ts/setu-ts
+          ref: ${{ steps.framework.outputs.commit }}
+          path: .tmp/framework-checkout
+          persist-credentials: false
+      - run: npm run prepare:framework -- .tmp/framework-checkout
+      - run: npm run check
+      - run: npm run format:check
+      - run: npm run test:coverage
+      - run: npm run build

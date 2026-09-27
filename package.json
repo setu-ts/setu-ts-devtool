@@ -1,0 +1,131 @@
+{
+  "name": "setu-ts-devtool",
+  "displayName": "Setu-TS Devtool",
+  "description": "Local Setu-TS discovery and authenticated development diagnostics.",
+  "publisher": "setu-ts",
+  "version": "0.0.1",
+  "private": true,
+  "license": "UNLICENSED",
+  "preview": true,
+  "engines": {
+    "vscode": "^1.138.0",
+    "node": ">=24"
+  },
+  "main": "./dist/extension.cjs",
+  "extensionKind": [
+    "ui"
+  ],
+  "categories": [
+    "Other"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false
+    },
+    "virtualWorkspaces": false
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "setuDevtool.refresh",
+        "title": "Setu-TS: Refresh Projects"
+      },
+      {
+        "command": "setuDevtool.select",
+        "title": "Setu-TS: Select Project"
+      },
+      {
+        "command": "setuDevtool.launch",
+        "title": "Setu-TS: Launch"
+      },
+      {
+        "command": "setuDevtool.stop",
+        "title": "Setu-TS: Stop Application"
+      },
+      {
+        "command": "setuDevtool.clear",
+        "title": "Setu-TS: Clear Capture"
+      },
+      {
+        "command": "setuDevtool.recheckCleanup",
+        "title": "Setu-TS: Recheck Cleanup"
+      }
+    ],
+    "views": {
+      "explorer": [
+        {
+          "id": "setuDevtool.projects",
+          "name": "Setu-TS Projects"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "setuDevtool.refresh",
+          "when": "view == setuDevtool.projects",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Setu-TS",
+      "properties": {
+        "setuDevtool.denoPath": {
+          "type": "string",
+          "scope": "application",
+          "description": "Absolute path to the qualified Deno executable. Workspace overrides are ignored."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "build:dev": "node scripts/build.mjs --dev",
+    "check": "tsc --noEmit",
+    "test": "node scripts/build.mjs --tests && node --test out/unit/*.test.cjs",
+    "test:host": "node scripts/host-test.mjs",
+    "format": "prettier --write src test scripts package.json tsconfig.json plans/d01-foundation.md plans/README.md README.md ROADMAP.md docs/d01-validation.md docs/security.md .github .vscode plans/d02-connection.md docs/architecture.md docs/framework-compatibility.md docs/d02-contract-audit.md docs/d02-validation.md docs/d02-security-review.md",
+    "format:check": "prettier --check src test scripts package.json tsconfig.json plans/d01-foundation.md plans/README.md README.md ROADMAP.md docs/d01-validation.md docs/security.md .github .vscode plans/d02-connection.md docs/architecture.md docs/framework-compatibility.md docs/d02-contract-audit.md docs/d02-validation.md docs/d02-security-review.md",
+    "prepare:framework": "node scripts/prepare-framework.mjs",
+    "test:integration": "node scripts/build.mjs --integration && node --test out/integration/*.test.cjs",
+    "test:coverage": "node scripts/build.mjs --tests --integration && c8 node --test out/unit/*.test.cjs out/integration/*.test.cjs"
+  },
+  "dependencies": {
+    "jsonc-parser": "3.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.0",
+    "@types/vscode": "1.138.0",
+    "c8": "10.1.3",
+    "esbuild": "0.28.2",
+    "prettier": "3.8.1",
+    "typescript": "7.0.2"
+  },
+  "c8": {
+    "all": true,
+    "src": [
+      "src"
+    ],
+    "include": [
+      "**"
+    ],
+    "excludeAfterRemap": true,
+    "exclude": [
+      "node_modules/**",
+      ".tmp/**",
+      "test/**",
+      "scripts/**",
+      "out/**"
+    ],
+    "reporter": [
+      "text",
+      "json-summary"
+    ],
+    "checkCoverage": true,
+    "perFile": true,
+    "lines": 90,
+    "branches": 90,
+    "functions": 90
+  }
+}

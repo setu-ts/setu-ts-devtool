@@ -1,7 +1,10 @@
 # Extension architecture
 
 Design baseline, 2026-09-22. This document specifies the D01–D04 free preview;
-it describes planned behavior, not an implemented extension. The
+D01 foundation and D02 connection are implemented with
+[local evidence](d02-validation.md). D02 has an
+[independent local-scope security review](d02-security-review.md); D03 presentation
+and D04 release behavior are planned. The
 [roadmap](../ROADMAP.md) owns feature allocation, the
 [contract register](framework-compatibility.md) owns framework facts, and the
 [security model](security.md) owns threat cases and acceptance evidence.
@@ -142,12 +145,17 @@ application still controls its own environment loading after launch.
 
 The host keeps a dedicated key buffer for the lazy-importing client until its
 first call settles, then zeroes that buffer; on earlier teardown zero it too.
-Drop launch environment objects and key-string references after spawn.
+Release launch handoff references after use; the controller clears its owned
+key bytes and drops its strings when the first client call settles or setup fails.
 JavaScript strings, child environments and framework copies cannot be promised
 erased.
 
-D02's initial Linux launcher starts an owned process group and retains its
-handle; it does not call `unref()`. Ignore stdin/stdout/stderr for the preview:
+D02's [connection plan](../plans/d02-connection.md) refines the Linux launcher:
+a packaged supervisor is the detached process-group leader and starts Deno in
+that group. It remains alive after the application root exits and signals only
+its own current group; the parent never escalates against a remembered PID.
+The launcher retains its handle and does not call `unref()`.
+Ignore stdin/stdout/stderr for the preview:
 arbitrary application output is neither captured nor persisted as extension
 logs. Native status reports fixed launch/connection errors and child exit codes.
 An application log viewer requires a later explicit design; do not hide
@@ -172,8 +180,8 @@ launch and discard credentials. Retry means a new explicit launch, never a new
 client using the failed pair. D02 must exercise delayed startup and
 wrong-process port races before this strategy is accepted.
 
-Start the extension's 15-minute session deadline at spawn using a monotonic
-clock; this can end before the server's TTL. Call it a local session limit, not
+Start the extension's 15-minute host timer before supervisor launch, including
+startup in the local limit; this can end before the server's TTL. Call it a local session limit, not
 server expiry. Support the default M98c TTL only in the preview. No
 auto-renewal, automatic restart, attach-to-existing-process, URL setting or port
 scanning.
@@ -201,17 +209,18 @@ occupied-port error rather than attaching to this window's session.
 Disconnect means **stop application and clear capture**, including all members
 started by a workspace runner. Apply it on deadline, connection/validation
 failure, owned root exit, selected folder removal, extension deactivation and
-editor shutdown when disposal runs. Linux cleanup sends SIGTERM to the owned
-group, waits up to five seconds, then SIGKILL if still owned/present and waits
-two more seconds. Root exit alone is not cleanup evidence. Never kill by port,
+editor shutdown when disposal runs. The supervisor sends SIGTERM to its own
+group, waits up to five seconds, then sends group SIGKILL if necessary; the
+parent has two more seconds for read-only disappearance confirmation.
+Root exit alone is not cleanup evidence. Never kill by port,
 process name, an arbitrary PID from a manifest, or persisted PID after restart.
 
-D02's plan must specify how group identity remains verifiable after its leader
-exits and how PID reuse is excluded before escalation. An unverified group is an
-incomplete cleanup, not permission to signal a replacement process. A normal
-Stop returns to Idle after confirmed cleanup; deadline/failure keeps a fixed
-reason in Failed. Cleanup required cannot transition to a new launch until the
-old ownership has been resolved.
+The supervisor retains group identity while it is alive; its group-relative
+signals avoid a parent check-then-kill PID reuse race. Unexpected supervisor
+loss, unverifiable membership or surviving processes cause Cleanup required,
+never a signal to a possibly replaced process. Linux `/proc` inspection is bounded. Real host, root-exit and
+escalation tests are recorded in the D02 validation evidence. Cleanup required blocks another launch until read-only checks confirm
+no live remainder. This is local Linux evidence, not a crash-proof or cross-platform guarantee.
 
 Applications that deliberately detach descendants are outside the supported
 recipe. A forced host/editor crash may leave application processes running;
@@ -240,19 +249,20 @@ Validate returned records against supported common types and protocol limits.
 Reject incompatible versions, invalid enums/fields, oversized collections,
 duplicate graph IDs, invalid numbers and impossible cursor advancement. Require
 strictly ordered event sequences above the requested cursor and a consistent
-`next`/`lost` result. A parent or node missing from retained topology/history is
-an unresolved reference, not necessarily malformed data. Terminal closed batches
+`next`/`lost` result. An event parent or node missing from retained history/topology is
+an unresolved reference; topology edge validation remains the helper
+contract and is not relaxed. Terminal closed batches
 must retain the requested cursor as the framework specifies.
 
 A validated `closed: true` batch ends polling and triggers the same stop path;
 do not keep requesting an empty closed reader.
 
-The current helper's post-pairing instance-binding gap blocks D02 acceptance.
-Extension validation cannot recover its hidden authenticated identity; require
-framework conformance evidence/follow-up rather than claiming a DTO-only check
-fixes it. Strip unknown fields when constructing display objects, and
-deep-freeze owned model records. Never forward a raw helper result to UI or a
-logger.
+The pinned public helper now binds response headers and DTO identities to the
+paired instance, validates exact core schemas and returns deeply frozen values.
+D02 requalified those fixes with signed adversarial tests. The extension owns a
+fresh allowlisted frozen projection with its own session and retention budgets;
+it does not duplicate private framework validators. Unknown wire fields are
+rejected by the helper. Never forward raw results to UI or a logger.
 
 The following are extension policy limits, separate from framework bounds.
 D01–D03 must implement boundary/overflow tests before claiming them. Byte counts
@@ -324,8 +334,8 @@ The official
 [extension testing guide](https://code.visualstudio.com/api/working-with-extensions/testing-extension)
 documents a VS Code-hosted test harness; a passing VS Code run alone does not
 qualify Code OSS. Write per-file test mapping and exact commands in each
-canonical milestone plan. This documentation change does not run or certify
-those future tests.
+canonical milestone plan. The [D02 evidence](d02-validation.md) identifies the exercised subset;
+future UI and release tests remain unqualified.
 
 Local D02 artifacts may use the pinned unpublished framework revision as
 recorded in the contract register. D04 needs released-package reproducibility.
