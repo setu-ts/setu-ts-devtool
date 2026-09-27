@@ -17,13 +17,18 @@ test("refresh floods coalesce to one follow-up and stale scans cannot commit", a
   for (let i = 0; i < 100; i++) void queue.request();
   assert.equal(count, 1);
   queue.invalidate();
-  void queue.request(); // Only a newly requested scan survives invalidation.
+  let requested = false;
+  const followUp = queue.request().then(() => {
+    requested = true;
+  }); // Only a newly requested scan survives invalidation.
   releases[0]?.(1);
   await new Promise<void>((resolve) => setImmediate(resolve));
   assert.equal(count, 2);
   assert.deepEqual(values, []);
+  assert.equal(requested, false);
   releases[1]?.(2);
-  await running;
+  await Promise.all([running, followUp]);
+  assert.equal(requested, true);
   assert.deepEqual(values, [2]);
   queue.dispose();
   await queue.request();

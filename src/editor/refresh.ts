@@ -2,6 +2,7 @@
 export class RefreshQueue<T> {
   private running = false;
   private pending = false;
+  private current: Promise<void> | undefined;
   private disposed = false;
   private generation = 0;
   constructor(
@@ -13,28 +14,33 @@ export class RefreshQueue<T> {
     this.generation++;
     this.pending = false;
   }
-  async request(): Promise<void> {
-    if (this.disposed) return;
+  request(): Promise<void> {
+    if (this.disposed) return Promise.resolve();
     if (this.running) {
       this.pending = true;
-      return;
+      return this.current!;
     }
     this.running = true;
-    try {
-      do {
-        this.pending = false;
-        const generation = this.generation;
-        try {
-          const value = await this.scan();
-          if (!this.disposed && generation === this.generation)
-            this.accept(value);
-        } catch {
-          if (!this.disposed && generation === this.generation) this.failed();
-        }
-      } while (this.pending && !this.disposed);
-    } finally {
-      this.running = false;
-    }
+    const current = (async () => {
+      try {
+        do {
+          this.pending = false;
+          const generation = this.generation;
+          try {
+            const value = await this.scan();
+            if (!this.disposed && generation === this.generation)
+              this.accept(value);
+          } catch {
+            if (!this.disposed && generation === this.generation) this.failed();
+          }
+        } while (this.pending && !this.disposed);
+      } finally {
+        this.running = false;
+        this.current = undefined;
+      }
+    })();
+    this.current = current;
+    return current;
   }
   dispose(): void {
     this.disposed = true;
