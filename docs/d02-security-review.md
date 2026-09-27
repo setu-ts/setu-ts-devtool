@@ -161,3 +161,25 @@ bundle imports only Node built-ins, that current sources match the test bundles,
 and that all eight editor/refresh tests pass. The rebase retained the approved
 D01 CI and refresh fixes without other unexpected runtime changes. D03 and D04
 qualification remains excluded.
+
+## Follow-up review after PR #4 comments
+
+The same separate reviewer approved the security-sensitive PR #4 fixes at
+`3293ad6b5a54256616e4b7d6cc086236b27d55d4` for the documented local Linux
+scope, with no blocking or advisory security findings. The reviewed source tree
+is `5a894c81cc95d365f2c7ee9edc2adc430e8681e6`; the full tree is
+`a370053c61e3428a1ea5cc0047c806a1dc3f37da`.
+
+The reviewer confirmed that the prepared-framework digest covers every extracted
+regular file, including common sources and LICENSE; additions, removals, content
+changes and unsupported entries fail validation. The build also checks the Deno
+pin and existing generated-artifact hashes. Independent probes rejected mutated
+framework inputs, an added file, a symlink and stale Deno provenance. Builds
+passed from paths containing spaces, `%` and `ü`.
+
+The reviewer also exercised an actual supervisor membership-scan failure with a
+SIGTERM-resistant application. Group-relative SIGKILL removed the owned process
+group, while the parent retained uncertainty until its read-only recheck
+confirmed disappearance. Because PID 0 addresses the live supervisor's current
+group, the fallback introduces no remembered-PID reuse window. Sixteen targeted
+tests passed. D03 and D04 qualification remain excluded.
