@@ -36,6 +36,24 @@ export function parseStat(text: string): ProcessIdentity {
 export async function processIdentity(pid: number): Promise<ProcessIdentity> {
   return parseStat(await readFile(`/proc/${pid}/stat`, "utf8"));
 }
+export function processVanished(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error.code === "ENOENT" || error.code === "ESRCH")
+  );
+}
+export function terminateUnknownGroup(
+  signal: (pid: number, name: NodeJS.Signals) => unknown,
+  exit: (code: number) => never,
+): never {
+  try {
+    signal(0, "SIGKILL");
+  } finally {
+    exit(1);
+  }
+}
 export async function liveMembers(
   group: number,
   session: number,
@@ -56,15 +74,7 @@ export async function liveMembers(
       )
         found.push(record.pid);
     } catch (error) {
-      if (
-        !(
-          typeof error === "object" &&
-          error !== null &&
-          "code" in error &&
-          error.code === "ENOENT"
-        )
-      )
-        throw new Error("GROUP_UNKNOWN");
+      if (!processVanished(error)) throw new Error("GROUP_UNKNOWN");
     }
   }
   return found;

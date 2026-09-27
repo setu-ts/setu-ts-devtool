@@ -1,12 +1,19 @@
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { build } from "esbuild";
 import { createHash } from "node:crypto";
+import { fileURLToPath } from "node:url";
+import { preparedFrameworkSha256 } from "./framework-integrity.mjs";
 const provenance = JSON.parse(
   await readFile(".tmp/artifacts/provenance.json", "utf8"),
 );
 const pin = JSON.parse(await readFile("scripts/framework-pin.json", "utf8"));
-if (provenance.commit !== pin.commit)
+if (provenance.commit !== pin.commit || provenance.deno !== pin.deno)
   throw new Error("Prepare the pinned framework artifacts before building");
+if (
+  (await preparedFrameworkSha256(".tmp/framework")) !==
+  provenance.frameworkSha256
+)
+  throw new Error("Prepared framework integrity mismatch");
 for (const [file, key] of [
   ["client.cjs", "clientSha256"],
   ["recipes.json", "recipesSha256"],
@@ -19,14 +26,12 @@ for (const [file, key] of [
     throw new Error("Framework artifact integrity mismatch");
 }
 const alias = {
-  "@setu-ts/common": new URL(
-    "../.tmp/framework/packages/common/src/index.ts",
-    import.meta.url,
-  ).pathname,
-  "@setu-ts/diagnostics-plugin": new URL(
-    "../.tmp/artifacts/client.cjs",
-    import.meta.url,
-  ).pathname,
+  "@setu-ts/common": fileURLToPath(
+    new URL("../.tmp/framework/packages/common/src/index.ts", import.meta.url),
+  ),
+  "@setu-ts/diagnostics-plugin": fileURLToPath(
+    new URL("../.tmp/artifacts/client.cjs", import.meta.url),
+  ),
 };
 const tests = process.argv.includes("--tests");
 const dev = process.argv.includes("--dev");
@@ -68,7 +73,9 @@ if (tests) {
     bundle: true,
     alias: {
       ...alias,
-      vscode: new URL("../test/fixtures/vscode.ts", import.meta.url).pathname,
+      vscode: fileURLToPath(
+        new URL("../test/fixtures/vscode.ts", import.meta.url),
+      ),
     },
     define: { __DEV__: "true" },
     platform: "node",

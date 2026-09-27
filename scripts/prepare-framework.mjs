@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { createHash } from "node:crypto";
 import { build } from "esbuild";
+import { preparedFrameworkSha256 } from "./framework-integrity.mjs";
 const source = process.argv[2];
 if (!source)
   throw new Error(
@@ -104,6 +105,7 @@ await writeFile(
     {
       commit: pin.commit,
       archiveSha256: sha256(archive),
+      frameworkSha256: await preparedFrameworkSha256(root),
       clientSha256: sha256(await readFile(".tmp/artifacts/client.cjs")),
       recipesSha256: sha256(await readFile(".tmp/artifacts/recipes.json")),
       license: "MIT",

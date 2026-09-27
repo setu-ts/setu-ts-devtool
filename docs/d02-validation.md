@@ -29,13 +29,14 @@ npm run test:host -- --restricted
 ```
 
 The coverage command builds and runs both the unit and integration suites:
-**50 tests passed, zero failed/skipped**, with the per-file gate below. Type
+**51 tests passed, zero failed/skipped**, with the per-file gate below. Type
 checking and formatting are separate gates. Framework client/protocol
 qualification passed 19 tests and 122 steps, as recorded in the
 [contract audit](d02-contract-audit.md). This is not the full framework milestone
 verification or publish gate; no framework code is changed here.
 
 Source archive SHA-256: `357e524044925b6be7a7b94fbf34023dce99a7016ba484bca7ccf28a37a3722f`.
+Prepared framework SHA-256: `2a475e6d5fbb0fae66d45d672d91ffb89f68cbce87618edd307364736e7ff1ac`.
 Public client SHA-256: `3713e4bc653d85c40a0c5a6a4db6ea8749be7950deb500477a7145bd055d472a`.
 Recipe catalog SHA-256: `3da04c4e336cfdab31f022e1b6b31bb4cbbead2ed8620004fbf3e7ed346eccd6`.
 
@@ -54,7 +55,7 @@ Recipe catalog SHA-256: `3da04c4e336cfdab31f022e1b6b31bb4cbbead2ed8620004fbf3e7e
 | Cleanup             | Real group/session supervisor; standalone/workspace Stop; early root exit with code 7; SIGTERM-resistant descendants require escalation and disappear; IPC loss and malformed startup fail closed                         |
 | Uncertainty         | Injected identity/group/startup failures and surviving-member/inspection failure cannot report clean; Cleanup required blocks another launch; recheck is read-only                                                        |
 | Retention           | One topology, 4,096 events/4 MiB cap, loss and eviction accounting, frozen allowlisted copies; Clear advances revision but preserves cursor; Stop resets records                                                          |
-| Build               | Production contains no development sample marker/command; separately bundled supervisor and third-party notices; no runtime imports from framework checkout                                                               |
+| Build               | Production contains no development sample marker/command; separately bundled supervisor and third-party notices; prepared framework, helper and recipe hashes verified; no runtime imports from framework checkout        |
 
 Both trusted Code OSS runs (development and production bundle) exercised real
 standalone/workspace connection and cleanup inside the editor's Node runtime.
@@ -104,10 +105,10 @@ No ignore directives or uncovered-file exclusions are used.
 | `src/launch/executable.ts`     |     92.1 |        100 |    100 |
 | `src/launch/launcher.ts`       |       95 |       90.9 |  97.89 |
 | `src/launch/preflight.ts`      |    91.42 |        100 |    100 |
-| `src/launch/process-group.ts`  |     92.3 |        100 |    100 |
+| `src/launch/process-group.ts`  |    93.54 |        100 |    100 |
 | `src/launch/readiness.ts`      |      100 |        100 |    100 |
 | `src/launch/recipes.ts`        |      100 |        100 |    100 |
-| `src/launch/supervisor.ts`     |    98.59 |        100 |  95.77 |
+| `src/launch/supervisor.ts`     |    98.59 |        100 |   92.1 |
 | `src/model/capture.ts`         |      100 |        100 |    100 |
 | `src/session/controller.ts`    |     96.2 |        100 |    100 |
 | `src/session/scheduler.ts`     |      100 |        100 |    100 |
@@ -124,7 +125,7 @@ The controller now coalesces pending rechecks and applies a result only while
 its captured owned handle and session generation still match Cleanup required.
 A second regression rejects the shared scan, verifies launches remain blocked,
 and confirms a later recheck can succeed. The full unit/integration suite now
-passes 50 tests and the per-file coverage gate above. Type checking, formatting
+passes 51 tests and the per-file coverage gate above. Type checking, formatting
 and production build checks pass. Earlier Code OSS evidence remains from the
 initial implementation; those editor runs were not repeated for this controller
 fix. A subsequent independent review covers this fix; see the review report.

@@ -24,6 +24,8 @@ import {
 import {
   parseStat,
   processIdentity,
+  processVanished,
+  terminateUnknownGroup,
   liveMembers,
 } from "../../src/launch/process-group";
 import { preparedProject } from "../fixtures/projects";
@@ -168,4 +170,37 @@ test("Linux identity handles parentheses and zero system groups without losing i
     true,
   );
   assert.equal(resolve("dist/supervisor.mjs").endsWith("supervisor.mjs"), true);
+});
+test("Linux cleanup classifies vanished processes and escalates unknown groups", () => {
+  assert.equal(processVanished({ code: "ENOENT" }), true);
+  assert.equal(processVanished({ code: "ESRCH" }), true);
+  assert.equal(processVanished({ code: "EACCES" }), false);
+  assert.equal(processVanished(null), false);
+  const calls: string[] = [];
+  assert.throws(
+    () =>
+      terminateUnknownGroup(
+        (pid, signal) => calls.push(`${pid}:${signal}`),
+        (code) => {
+          calls.push(`exit:${code}`);
+          throw new Error("EXIT");
+        },
+      ),
+    /EXIT/,
+  );
+  assert.deepEqual(calls, ["0:SIGKILL", "exit:1"]);
+  assert.throws(
+    () =>
+      terminateUnknownGroup(
+        () => {
+          throw new Error("SIGNAL");
+        },
+        (code) => {
+          calls.push(`failed-signal-exit:${code}`);
+          throw new Error("EXIT");
+        },
+      ),
+    /EXIT/,
+  );
+  assert.equal(calls.at(-1), "failed-signal-exit:1");
 });

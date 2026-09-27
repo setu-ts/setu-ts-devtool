@@ -2,7 +2,11 @@
 import { spawn } from "node:child_process";
 import { isAbsolute } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
-import { liveMembers, processIdentity } from "./process-group";
+import {
+  liveMembers,
+  processIdentity,
+  terminateUnknownGroup,
+} from "./process-group";
 function send(value: object): void {
   if (process.connected) process.send?.(value, () => {});
 }
@@ -34,8 +38,14 @@ async function stop(): Promise<void> {
       );
     process.kill(0, "SIGKILL");
   } catch {
-    send({ kind: "unknown" });
-    process.exit(1);
+    try {
+      send({ kind: "unknown" });
+    } finally {
+      terminateUnknownGroup(
+        (pid, signal) => process.kill(pid, signal),
+        (code) => process.exit(code),
+      );
+    }
   }
 }
 const own = await processIdentity(process.pid);
