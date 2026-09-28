@@ -50,15 +50,15 @@ already compiles through the prepared, provenance-checked public artifacts; it
 is not released-package or VSIX qualification. D04 owns pinned published
 package, installed-VSIX and cross-editor/platform evidence.
 
-| Existing contract/surface | D03 treatment |
-| --- | --- |
-| M98a snapshot | Project only version 1 application state/failure code, 1,024 nodes, 4,096 edges, `truncated` and `droppedEvents`; use node/edge kinds literally and keep labels optional. |
-| M98a event batch | Present only retained validated events; event kinds are lifecycle/request/middleware/handler, completion order may put parents after children, and `atMs`/`durationMs` may be null. |
-| M98a loss semantics | Preserve separate counters for `lost` (framework ring/failed-start gaps), `droppedEvents` (pre-ring collector rejection), host eviction, and UI clipping. Never turn discontinuity into negative loss or claim completeness. |
-| D02 adapter/validation | Continue consuming only independently owned, frozen `Capture` records after the public helper's authenticated validation. The renderer never imports framework types/client or receives raw responses. |
-| D02 capture revision | Clear retains topology and cursor but advances the revision. D03 must invalidate pending frames/selections before async UI work so pre-Clear records cannot return. Stop/reset removes topology, records, counters, panel model and selection. |
-| D02 scheduler/session | Reuse its single serialized read/snapshot scheduler and `changed` callback. D03 introduces no reader, timer-driven polling, endpoint, credential or retry path. |
-| VS Code webview contract | Desktop UI creates a panel with packaged-only `localResourceRoots`; a webview is a hostile renderer and its messages are untrusted. `acquireVsCodeApi()` remains private to the bundled browser script. |
+| Existing contract/surface | D03 treatment                                                                                                                                                                                                                                  |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| M98a snapshot             | Project only version 1 application state/failure code, 1,024 nodes, 4,096 edges, `truncated` and `droppedEvents`; use node/edge kinds literally and keep labels optional.                                                                      |
+| M98a event batch          | Present only retained validated events; event kinds are lifecycle/request/middleware/handler, completion order may put parents after children, and `atMs`/`durationMs` may be null.                                                            |
+| M98a loss semantics       | Preserve separate counters for `lost` (framework ring/failed-start gaps), `droppedEvents` (pre-ring collector rejection), host eviction, and UI clipping. Never turn discontinuity into negative loss or claim completeness.                   |
+| D02 adapter/validation    | Continue consuming only independently owned, frozen `Capture` records after the public helper's authenticated validation. The renderer never imports framework types/client or receives raw responses.                                         |
+| D02 capture revision      | Clear retains topology and cursor but advances the revision. D03 must invalidate pending frames/selections before async UI work so pre-Clear records cannot return. Stop/reset removes topology, records, counters, panel model and selection. |
+| D02 scheduler/session     | Reuse its single serialized read/snapshot scheduler and `changed` callback. D03 introduces no reader, timer-driven polling, endpoint, credential or retry path.                                                                                |
+| VS Code webview contract  | Desktop UI creates a panel with packaged-only `localResourceRoots`; a webview is a hostile renderer and its messages are untrusted. `acquireVsCodeApi()` remains private to the bundled browser script.                                        |
 
 There is no unfinished framework milestone that blocks D03's stated local UI.
 Do not consume M98d–g merely because their helper methods exist: their
@@ -103,7 +103,10 @@ native status/Stop command when the panel is hidden or disposed.
 
 Each panel gets a fresh opaque panel generation, separate from session and
 framework identity. Every host frame carries protocol version, panel generation
-and capture revision. The panel must send `ready` before frames and acknowledge
+and capture revision. The panel may send its one bootstrap `ready` with an empty
+generation because it has not received a frame yet; that request has no action
+authority. Every subsequent request must carry the frame generation. The panel
+must send `ready` before frames and acknowledge
 the exact frame sequence. Allow at most two host updates per second, one
 unacknowledged frame and one replacement frame, each at most 256 KiB. After
 five seconds without acknowledgement, stop updates, dispose the stale panel and
@@ -174,17 +177,17 @@ No D03 module is a public package API. Exported internal symbols require a
 named production consumer. Update existing test fixtures rather than placing
 fixture captures in production bundles.
 
-| File | Main surface and consumer | Required tests |
-| --- | --- | --- |
-| `src/model/capture.ts` | Existing bounded records plus safe snapshot/view accessor for presentation | Extend `test/unit/capture.test.ts` for eviction/index pruning, revision and counter separation |
-| `src/model/presentation.ts` | Pure frozen graph/timeline projection, pagination, literal filtering and capture-quality model | New `test/unit/presentation.test.ts`: labels, missing/late parents, null/inclusive timings, cycles, clipping, all limits and no raw-field leakage |
-| `src/presentation/protocol.ts` | Exact browser-safe request/frame discriminated unions and hostile request decoder | New `test/unit/protocol.test.ts`: version/field/size/depth/generation/ID/rate rejection |
-| `src/presentation/panel.ts` | Webview construction, CSP/shell, local assets, frame acknowledgement/coalescing and fixed documentation map | New `test/unit/panel.test.ts`: CSP/resource roots, nonce, no command URLs, stale/duplicate ack, stall/reset/disposal and no persistence |
-| `src/editor/connection.ts` | Existing session commands plus panel opening/wiring; native authority remains here | Extend `test/unit/editor.test.ts` for panel command context and Clear/Stop synchronization |
-| `src/extension.ts` | Compose panel lifetime with session change/disposal and context guards | Extend host test and unit fixture for hidden/reopened/disposed panel behavior |
-| `webview/main.ts`, `webview/style.css`, `webview/renderer.ts` | Browser-only accessible DOM/SVG renderer and local interactions; renderer helpers are DOM-port injected for Node tests | `test/webview/renderer.test.ts`: text-node-only hostile labels, accessible list and controls, literal filtering, no fetch/storage/bridge leakage |
-| `scripts/build.mjs`, `package.json`, `tsconfig.json` | Separate webview build copied to `dist/webview`; browser sources are strict-typechecked and production artifacts exclude fixtures/forbidden imports | `npm run test:webview` builds `test/webview/*.test.ts` and runs `node --test out/webview/*.test.cjs`; `npm run check` includes `webview/**/*.ts`; `npm run test:coverage` includes the webview test output and enforces 90% per source file |
-| `test/fixtures/` | Synthetic bounded graph/timeline and hostile label/IPC data | Unit and actual development-host exercises; never include live/recorded traffic |
+| File                                                          | Main surface and consumer                                                                                                                           | Required tests                                                                                                                                                                                                                              |
+| ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/model/capture.ts`                                        | Existing bounded records plus safe snapshot/view accessor for presentation                                                                          | Extend `test/unit/capture.test.ts` for eviction/index pruning, revision and counter separation                                                                                                                                              |
+| `src/model/presentation.ts`                                   | Pure frozen graph/timeline projection, pagination, literal filtering and capture-quality model                                                      | New `test/unit/presentation.test.ts`: labels, missing/late parents, null/inclusive timings, cycles, clipping, all limits and no raw-field leakage                                                                                           |
+| `src/presentation/protocol.ts`                                | Exact browser-safe request/frame discriminated unions and hostile request decoder                                                                   | New `test/unit/protocol.test.ts`: version/field/size/depth/generation/ID/rate rejection                                                                                                                                                     |
+| `src/presentation/panel.ts`                                   | Webview construction, CSP/shell, local assets, frame acknowledgement/coalescing and fixed documentation map                                         | New `test/unit/panel.test.ts`: CSP/resource roots, nonce, no command URLs, stale/duplicate ack, stall/reset/disposal and no persistence                                                                                                     |
+| `src/editor/connection.ts`                                    | Existing session commands plus panel opening/wiring; native authority remains here                                                                  | Extend `test/unit/editor.test.ts` for panel command context and Clear/Stop synchronization                                                                                                                                                  |
+| `src/extension.ts`                                            | Compose panel lifetime with session change/disposal and context guards                                                                              | Extend host test and unit fixture for hidden/reopened/disposed panel behavior                                                                                                                                                               |
+| `webview/main.ts`, `webview/style.css`, `webview/renderer.ts` | Browser-only accessible DOM/SVG renderer and local interactions; renderer helpers are DOM-port injected for Node tests                              | `test/webview/renderer.test.ts`: text-node-only hostile labels, accessible list and controls, literal filtering, no fetch/storage/bridge leakage                                                                                            |
+| `scripts/build.mjs`, `package.json`, `tsconfig.json`          | Separate webview build copied to `dist/webview`; browser sources are strict-typechecked and production artifacts exclude fixtures/forbidden imports | `npm run test:webview` builds `test/webview/*.test.ts` and runs `node --test out/webview/*.test.cjs`; `npm run check` includes `webview/**/*.ts`; `npm run test:coverage` includes the webview test output and enforces 90% per source file |
+| `test/fixtures/`                                              | Synthetic bounded graph/timeline and hostile label/IPC data                                                                                         | Unit and actual development-host exercises; never include live/recorded traffic                                                                                                                                                             |
 
 ## Implementation order and verification
 
@@ -220,15 +223,15 @@ prove the UI did not alter pairing, polling, cursor, Clear or Stop behavior.
 
 Security acceptance evidence must cover D03 portions of S11–S15 and S18:
 
-* S11/S15: Stop, Clear, session replacement, panel reload/hide/reopen and
+- S11/S15: Stop, Clear, session replacement, panel reload/hide/reopen and
   stalled acknowledgement cannot restore old records; no diagnostic state is
   found in host/editor/webview persistence or pending frames.
-* S12: hostile HTML/SVG/script/control labels and command/file/data/http URL
+- S12: hostile HTML/SVG/script/control labels and command/file/data/http URL
   attempts render inert; actual panel CSP disallows connection/remote resource
   loading; only the fixed documentation-topic destinations open.
-* S13: arbitrary/unknown/oversized/deep/flooded/stale renderer IPC has no
+- S13: arbitrary/unknown/oversized/deep/flooded/stale renderer IPC has no
   launch, file, URL, command, endpoint or network effect.
-* S14/S18: event/snapshot/filter/frame floods keep arrays, indexes, traversal,
+- S14/S18: event/snapshot/filter/frame floods keep arrays, indexes, traversal,
   timers and queues bounded and responsive; graph/timeline visibly distinguish
   framework loss, collector drops, host evictions, clipping, truncation and
   partial relationships.
