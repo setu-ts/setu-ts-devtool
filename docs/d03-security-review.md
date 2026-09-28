@@ -48,3 +48,14 @@ gates, production artifact search excluding source maps, and actual Code OSS
 development-host/CSP exercise. Those checks are recorded in
 [D03 validation](d03-validation.md). D04 must still qualify installed VSIX
 contents, published dependencies and additional editor/OS configurations.
+
+## Follow-up review of code-review corrections
+
+The separate reviewer re-assessed the post-review D03 fixes on 2026-09-28. The
+initial follow-up found that the 256-KiB host-to-webview frame cap was not
+enforced. The corrected `boundedModel` removes events, then edges, then nodes
+while increasing the corresponding clipping counters; the panel separately
+measures the complete envelope and disposes it before `postMessage` if metadata
+still exceeds the cap. Focused tests cover oversized events, nodes/edges and
+non-page metadata. The reviewer approved this correction and found no remaining
+bridge, CSP, renderer-authority or lifecycle blocker.

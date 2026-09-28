@@ -54,6 +54,13 @@ export interface DisplayModel {
   readonly edges: readonly DisplayEdge[];
   readonly events: readonly DisplayEvent[];
   readonly quality: CaptureQuality;
+  readonly page: Readonly<{
+    filter: string;
+    node: number;
+    nodes: number;
+    event: number;
+    events: number;
+  }>;
 }
 
 export interface PageRequest {
@@ -87,11 +94,21 @@ function filterText(value: string | undefined): string {
 
 function page<T>(
   values: readonly T[],
-  index: number | undefined,
+  index: number,
   limit: number,
 ): readonly T[] {
-  const start = Math.max(0, index ?? 0) * limit;
+  const start = index * limit;
   return values.slice(start, start + limit);
+}
+function pageIndex(
+  value: number | undefined,
+  total: number,
+  limit: number,
+): number {
+  return Math.min(
+    Math.max(0, value ?? 0),
+    Math.max(0, Math.ceil(total / limit) - 1),
+  );
 }
 
 function displayEvent(
@@ -157,23 +174,32 @@ export function presentation(
           filter,
         ),
     );
-  const visibleNodes = page(nodes, request.nodePage, MAX_NODES);
+  const nodePage = pageIndex(request.nodePage, nodes.length, MAX_NODES);
+  const eventPage = pageIndex(request.eventPage, events.length, MAX_EVENTS);
+  const visibleNodes = page(nodes, nodePage, MAX_NODES);
   const visibleNodeIds = new Set(visibleNodes.map((node) => node.id));
   const edges = (snapshot?.edges ?? [])
     .filter(
-      (edge) => visibleNodeIds.has(edge.from) || visibleNodeIds.has(edge.to),
+      (edge) => visibleNodeIds.has(edge.from) && visibleNodeIds.has(edge.to),
     )
     .slice(0, MAX_EDGES)
     .map((edge) =>
       Object.freeze({ from: edge.from, to: edge.to, kind: edge.kind }),
     );
-  const visibleEvents = page(events, request.eventPage, MAX_EVENTS);
+  const visibleEvents = page(events, eventPage, MAX_EVENTS);
   return Object.freeze({
     state: snapshot?.state ?? null,
     failureCode: snapshot?.failureCode ?? null,
     nodes: Object.freeze(visibleNodes),
     edges: Object.freeze(edges),
     events: Object.freeze(visibleEvents),
+    page: Object.freeze({
+      filter,
+      node: nodePage,
+      nodes: Math.max(1, Math.ceil(nodes.length / MAX_NODES)),
+      event: eventPage,
+      events: Math.max(1, Math.ceil(events.length / MAX_EVENTS)),
+    }),
     quality: Object.freeze({
       frameworkLost: capture.lost,
       collectorDropped: snapshot?.droppedEvents ?? 0,

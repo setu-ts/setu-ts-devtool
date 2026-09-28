@@ -81,7 +81,7 @@ export function activate(context: vscode.ExtensionContext): {
     () => (vscode.workspace.workspaceFolders ?? []).map((f) => f.uri.fsPath),
     () => {
       changed.fire();
-      inspection?.refresh();
+      inspection?.update();
     },
   );
   activeSession = session;
@@ -263,9 +263,13 @@ export function activate(context: vscode.ExtensionContext): {
         rows = sampleLabels.map((label) => ({ label }));
         tree.message = "Sample data — no live connection";
         inspection?.dispose();
-        inspection = new InspectionPanel(context, sampleSession());
+        inspection = new InspectionPanel(context, sampleSession(), true);
         changed.fire();
       }),
+      vscode.commands.registerCommand(
+        "setuDevtool.verifyInspection",
+        () => inspection?.waitForRenderer() ?? Promise.resolve(false),
+      ),
     );
   }
   return {

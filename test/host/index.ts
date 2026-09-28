@@ -51,10 +51,16 @@ export async function run(): Promise<void> {
     assert.equal(commands.includes("setuDevtool.openInspection"), true);
     if (process.env.SETU_HOST_PRODUCTION === "1") {
       assert.equal(commands.includes("setuDevtool.sample"), false);
+      assert.equal(commands.includes("setuDevtool.verifyInspection"), false);
     } else {
       assert.equal(commands.includes("setuDevtool.sample"), true);
+      assert.equal(commands.includes("setuDevtool.verifyInspection"), true);
       await vscode.commands.executeCommand("setuDevtool.sample");
       assert.ok(api.rows()[0]?.startsWith("SAMPLE DATA"));
+      assert.equal(
+        await vscode.commands.executeCommand("setuDevtool.verifyInspection"),
+        true,
+      );
       await vscode.commands.executeCommand("setuDevtool.openInspection");
       await vscode.commands.executeCommand(
         "workbench.action.closeActiveEditor",

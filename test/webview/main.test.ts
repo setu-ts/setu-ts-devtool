@@ -8,6 +8,7 @@ class Element {
   type = "";
   placeholder = "";
   value = "";
+  disabled = false;
   readonly children: Element[] = [];
   readonly listeners = new Map<string, () => void>();
   append(...values: Element[]): void {
@@ -20,10 +21,66 @@ class Element {
   addEventListener(kind: string, listener: () => void): void {
     this.listeners.set(kind, listener);
   }
-  setAttribute(_name: string, _value: string): void {}
+  setAttribute(name: string, value: string): void {
+    if (name === "class") this.className = value;
+  }
 }
 
-test("webview renders host frames through text nodes and acknowledges them", async () => {
+function frame(overrides: Record<string, unknown> = {}) {
+  return {
+    kind: "frame",
+    version: 1,
+    generation: "panel",
+    frame: 3,
+    revision: 0,
+    selected: null,
+    sample: false,
+    model: {
+      state: null,
+      failureCode: null,
+      nodes: [
+        {
+          id: "p1",
+          kind: "plugin",
+          label: null,
+          detail: "detail",
+          registered: null,
+        },
+      ],
+      edges: [],
+      events: [
+        {
+          id: "e1",
+          sequence: 1,
+          operationId: "op1",
+          parentOperationId: null,
+          kind: "request",
+          stage: "handler",
+          nodeId: "p1",
+          outcome: "ok",
+          atMs: null,
+          durationMs: null,
+          statusCode: null,
+          unresolvedParent: true,
+          unresolvedNode: false,
+        },
+      ],
+      quality: {
+        frameworkLost: 0,
+        collectorDropped: 0,
+        hostEvicted: 0,
+        snapshotTruncated: false,
+        clippedNodes: 0,
+        clippedEdges: 0,
+        clippedEvents: 0,
+      },
+      page: { filter: "", node: 0, nodes: 1, event: 0, events: 1 },
+    },
+    ...overrides,
+  };
+}
+
+test("webview renders bounded graph/timeline controls through text nodes", async () => {
   const root = new Element(),
     messages: unknown[] = [];
   let receive: ((event: { data: unknown }) => void) | undefined;
@@ -31,6 +88,7 @@ test("webview renders host frames through text nodes and acknowledges them", asy
     document: {
       getElementById(id: string): Element | null;
       createElement(name: string): Element;
+      createElementNS(namespace: string, name: string): Element;
     };
     window: {
       addEventListener(
@@ -43,6 +101,7 @@ test("webview renders host frames through text nodes and acknowledges them", asy
   globals.document = {
     getElementById: (id) => (id === "app" ? root : null),
     createElement: () => new Element(),
+    createElementNS: () => new Element(),
   };
   globals.window = {
     addEventListener: (kind, listener) => {
@@ -54,46 +113,11 @@ test("webview renders host frames through text nodes and acknowledges them", asy
   });
   await import("../../webview/main.ts");
   assert.deepEqual(messages[0], { kind: "ready", version: 1, generation: "" });
-  receive?.({
-    data: {
-      kind: "frame",
-      version: 1,
-      generation: "panel",
-      frame: 3,
-      revision: 0,
-      selected: null,
-      model: {
-        state: null,
-        nodes: [{ id: "p1", kind: "plugin", label: null, detail: "detail" }],
-        edges: [],
-        events: [
-          {
-            id: "e1",
-            sequence: 1,
-            kind: "request",
-            stage: "handler",
-            operationId: "op1",
-            outcome: "ok",
-            durationMs: null,
-            unresolvedParent: true,
-            unresolvedNode: false,
-          },
-        ],
-        quality: {
-          frameworkLost: 0,
-          collectorDropped: 0,
-          hostEvicted: 0,
-          snapshotTruncated: false,
-          clippedNodes: 0,
-          clippedEdges: 0,
-          clippedEvents: 0,
-        },
-      },
-    },
-  });
+  receive?.({ data: frame() });
   assert.equal(root.children[0]?.textContent, "Setu-TS Inspection");
+  assert.equal(root.children[4]?.children[1]?.className, "topology");
   assert.equal(
-    root.children[4]?.children[1]?.children[0]?.children[0]?.textContent,
+    root.children[4]?.children[2]?.children[0]?.children[0]?.textContent,
     "plugin p1 — detail",
   );
   assert.deepEqual(messages.at(-1), {
@@ -102,87 +126,113 @@ test("webview renders host frames through text nodes and acknowledges them", asy
     generation: "panel",
     frame: 3,
   });
-  root.children[2]?.children[0]?.listeners.get("click")?.();
-  root.children[2]?.children[1]?.listeners.get("click")?.();
-  assert.equal((messages.at(-2) as { kind: string }).kind, "clear");
-  assert.equal((messages.at(-1) as { kind: string }).kind, "stop");
   const filter = root.children[2]?.children[2] as Element;
   filter.value = "plugin";
-  filter.listeners.get("change")?.();
+  filter.listeners.get("input")?.();
   assert.equal((messages.at(-1) as { kind: string }).kind, "filter");
-  root.children[4]?.children[1]?.children[0]?.children[0]?.listeners.get(
+  root.children[4]?.children[2]?.children[0]?.children[0]?.listeners.get(
     "click",
   )?.();
   assert.equal((messages.at(-1) as { kind: string }).kind, "select");
-  root.children[6]?.children[1]?.listeners.get("click")?.();
+  root.children[5]?.children[1]?.children[0]?.children[0]?.listeners.get(
+    "click",
+  )?.();
+  assert.equal((messages.at(-1) as { kind: string }).kind, "select");
+  root.children[7]?.children[1]?.listeners.get("click")?.();
   assert.equal((messages.at(-1) as { kind: string }).kind, "documentation");
-  receive?.({ data: { kind: "not-a-frame" } });
   receive?.({
-    data: {
-      kind: "frame",
-      version: 1,
-      generation: "panel",
-      frame: 4,
-      revision: 1,
-      selected: "e2",
+    data: frame({
+      sample: true,
+      selected: "p1",
       model: {
+        ...frame().model,
         state: "running",
-        nodes: [{ id: "p2", kind: "route", label: "label", detail: null }],
-        edges: [],
+        failureCode: "startup-failed",
+        edges: [{ from: "p1", to: "p1", kind: "depends-on" }],
+        page: { filter: "plugin", node: 1, nodes: 2, event: 0, events: 2 },
+      },
+    }),
+  });
+  assert.equal(
+    root.children[1]?.textContent,
+    "Sample data — no live connection",
+  );
+  assert.match(root.children[2]?.textContent ?? "", /startup-failed/);
+  assert.match(root.children[5]?.children[3]?.textContent ?? "", /depends-on/);
+  assert.match(
+    root.children[7]?.children[1]?.textContent ?? "",
+    /registered unknown/,
+  );
+  root.children[5]?.children[4]?.children[0]?.listeners.get("click")?.();
+  assert.equal((messages.at(-1) as { kind: string }).kind, "filter");
+  receive?.({
+    data: frame({
+      frame: 5,
+      selected: "e1",
+      model: {
+        ...frame().model,
+        nodes: [],
+        edges: [{ from: "missing", to: "p1", kind: "provides" }],
         events: [
           {
-            id: "e2",
-            sequence: 2,
-            kind: "request",
-            stage: "request",
-            operationId: "op2",
-            outcome: "ok",
+            ...frame().model.events[0],
+            parentOperationId: "op0",
+            nodeId: "p1",
+            atMs: 10,
             durationMs: 4,
+            statusCode: 200,
             unresolvedParent: false,
             unresolvedNode: false,
           },
         ],
-        quality: {
-          frameworkLost: 1,
-          collectorDropped: 2,
-          hostEvicted: 3,
-          snapshotTruncated: true,
-          clippedNodes: 1,
-          clippedEdges: 2,
-          clippedEvents: 3,
-        },
+        page: { filter: "plugin", node: 0, nodes: 1, event: 0, events: 2 },
       },
-    },
+    }),
   });
-  assert.match(root.children[3]?.textContent ?? "", /snapshot truncated yes/);
+  assert.match(
+    root.children[6]?.children[1]?.textContent ?? "",
+    /operation op1/,
+  );
+  root.children[5]?.children[2]?.children[2]?.listeners.get("click")?.();
+  assert.equal((messages.at(-1) as { kind: string }).kind, "filter");
   receive?.({
-    data: {
-      kind: "frame",
-      version: 1,
-      generation: "panel",
-      frame: 5,
-      revision: 2,
+    data: frame({
+      frame: 6,
+      model: {
+        ...frame().model,
+        nodes: [],
+        events: [],
+        page: { filter: "", node: 0, nodes: 1, event: 0, events: 1 },
+      },
+    }),
+  });
+  assert.match(
+    root.children[6]?.children[1]?.textContent ?? "",
+    /Select a graph node/,
+  );
+  receive?.({
+    data: frame({
+      frame: 7,
       selected: "p2",
       model: {
-        state: "running",
-        nodes: [{ id: "p2", kind: "route", label: "label", detail: null }],
-        edges: [{ from: "p2", to: "p2", kind: "depends-on" }],
+        ...frame().model,
+        nodes: [
+          {
+            id: "p2",
+            kind: "route",
+            label: "label",
+            detail: null,
+            registered: false,
+          },
+        ],
         events: [],
-        quality: {
-          frameworkLost: 0,
-          collectorDropped: 0,
-          hostEvicted: 0,
-          snapshotTruncated: false,
-          clippedNodes: 0,
-          clippedEdges: 0,
-          clippedEvents: 0,
-        },
       },
-    },
+    }),
   });
-  assert.equal(
-    root.children[4]?.children[1]?.children[0]?.children[0]?.className,
-    "selected",
+  assert.match(
+    root.children[6]?.children[1]?.textContent ?? "",
+    /registered false/,
   );
-  assert.match(root.children[4]?.children[2]?.textContent ?? "", /depends-on/);
+  receive?.({ data: frame({ frame: 8, selected: "e1" }) });
+  assert.match(root.children[6]?.children[1]?.textContent ?? "", /parent none/);
 });

@@ -88,6 +88,14 @@ test("presentation applies literal filters and pages without recursive graph tra
   const first = presentation(capture);
   assert.equal(first.nodes.length, 100);
   assert.equal(first.quality.clippedNodes, 2);
+  assert.deepEqual(first.page, {
+    filter: "",
+    node: 0,
+    nodes: 2,
+    event: 0,
+    events: 1,
+  });
+  assert.equal(presentation(capture, { nodePage: 1 }).nodes[0]?.id, "p100");
   assert.equal(first.edges.length, 200);
   const filtered = presentation(capture, { filter: "needle" });
   assert.equal(filtered.nodes.length, 1);
@@ -111,7 +119,7 @@ test("presentation clips labels, exposes node details and handles an empty captu
       },
     ],
   });
-  assert.equal(presentation(capture, { nodePage: 1 }).nodes.length, 0);
+  assert.equal(presentation(capture, { nodePage: 1 }).nodes.length, 2);
   const model = presentation(capture);
   assert.equal(model.nodes[0]?.registered, false);
   assert.equal(model.nodes[1]?.detail, "2 · 4");

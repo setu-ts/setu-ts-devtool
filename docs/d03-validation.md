@@ -27,7 +27,7 @@ bun run test:host -- --production
 bun run test:host -- --restricted
 ```
 
-All commands exited zero. The coverage command ran **62 tests**, with no
+All commands exited zero. The coverage command ran **66 tests**, with no
 failures, skips or cancellations, and its per-file gate accepted every source
 file (including `webview/main.ts`) at or above 90% for branches, functions and
 lines. The final build produced `dist/extension.cjs`, `dist/supervisor.mjs`,
@@ -35,22 +35,23 @@ lines. The final build produced `dist/extension.cjs`, `dist/supervisor.mjs`,
 
 ## Behavioral and artifact evidence
 
-| Exercise                        | Result                                                                                                                                                                                                  |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Development Code OSS host       | Registered and opened the inspection panel through the explicit sample command, then closed it; trusted discovery and real D02 standalone/workspace connection exercises passed.                        |
-| Production-bundle Code OSS host | The sample command was absent; opening and closing the real inspection panel and D02 connection exercises passed.                                                                                       |
-| Restricted Code OSS host        | Discovery/launch remained refused and no live connection was created.                                                                                                                                   |
-| Renderer behavior               | Text-node rendering showed bounded graph nodes, relationships, timeline records, quality/loss state, filters, selection and fixed documentation actions; it acknowledged only host frames.              |
-| Lifecycle                       | Clear/Stop and externally changed native capture replace an outstanding frame; closing a panel disposes timers and the native panel without retaining renderer state.                                   |
-| Artifact boundary               | The production extension/webview assets contain no development sample marker, fixture path or temporary framework path. The webview bundle contains no `node:`/`Deno`/`require` import.                 |
-| CSP/resources                   | The host bundle contains the fixed nonce-only script CSP with `connect-src 'none'`; `localResourceRoots` is only `dist/webview`; `.vscodeignore` explicitly includes those two packaged webview assets. |
+| Exercise                        | Result                                                                                                                                                                                                                                                  |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Development Code OSS host       | Registered the dev-only sample and renderer-readiness commands, opened the actual packaged webview, and waited for its ready bridge acknowledgement before closing it; trusted discovery and real D02 standalone/workspace connection exercises passed. |
+| Production-bundle Code OSS host | The sample command was absent; opening and closing the real inspection panel and D02 connection exercises passed.                                                                                                                                       |
+| Restricted Code OSS host        | Discovery/launch remained refused and no live connection was created.                                                                                                                                                                                   |
+| Renderer behavior               | Text-node/SVG rendering showed bounded graph nodes, relationships, timeline records, quality/loss state, persistent filters, paging, selection/details and fixed documentation actions; it acknowledged only host frames.                               |
+| Lifecycle                       | Clear/Stop and externally changed native capture replace an outstanding frame; closing a panel disposes timers and the native panel without retaining renderer state.                                                                                   |
+| Artifact boundary               | The production extension/webview assets contain no development sample marker, fixture path or temporary framework path. The webview bundle contains no `node:`/`Deno`/`require` import.                                                                 |
+| Frame budget                    | Host serializes every frame under 256 KiB. Hostile oversized events, nodes/edges and non-page metadata respectively trim visible records with quality counters or fail closed before `postMessage`.                                                     |
+| CSP/resources                   | The host bundle contains the fixed nonce-only script CSP with `connect-src 'none'`; `localResourceRoots` is only `dist/webview`; `.vscodeignore` explicitly includes those two packaged webview assets.                                                 |
 
 The real editor harness creates a fresh temporary Code OSS profile per mode. It
-exercises command registration, panel creation and disposal in the actual
-embedded extension host; browser-DOM interaction and hostile-message branches
-are covered by the separately bundled browser test rather than browser
-automation. This is local Linux development-host evidence, not installed-VSIX
-or multi-platform qualification.
+exercises command registration, actual packaged-webview startup, CSP-permitted
+renderer bridge acknowledgement and disposal in the embedded extension host.
+The separately bundled browser test exercises graph/timeline interaction,
+filtering, paging, selection and hostile-message branches. This is local Linux
+development-host evidence, not installed-VSIX or multi-platform qualification.
 
 ## Coverage
 
@@ -62,8 +63,8 @@ or multi-platform qualification.
 | `src/editor/*`                 |   90.90–100 |        100 | 99.10–100 |
 | `src/launch/*`                 |   91.42–100 |  90.90–100 | 92.10–100 |
 | `src/model/capture.ts`         |         100 |        100 |       100 |
-| `src/model/presentation.ts`    |       92.00 |        100 |     97.86 |
-| `src/presentation/panel.ts`    |       92.98 |        100 |       100 |
+| `src/model/presentation.ts`    |       90.56 |        100 |     98.12 |
+| `src/presentation/panel.ts`    |       92.20 |        100 |       100 |
 | `src/presentation/protocol.ts` |       96.66 |        100 |     99.31 |
 | `src/session/*`                |   96.20–100 |  92.85–100 | 99.25–100 |
 | `webview/main.ts`              |       96.96 |        100 |       100 |

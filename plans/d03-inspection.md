@@ -1,6 +1,6 @@
 # D03 — Inspection UI
 
-Status: planned. D01 and D02 are merged to `main`; D02 supplies the sole live
+Status: implemented and locally qualified pending merge. D01 and D02 are merged to `main`; D02 supplies the sole live
 session, authenticated DTO boundary, bounded capture, lifecycle cleanup and
 native Launch/Stop/Clear commands consumed here. This plan deliberately adds
 presentation only. It does not change how projects are discovered, applications

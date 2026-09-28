@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { setTimeout as delay } from "node:timers/promises";
-import type { DiagnosticsSnapshot } from "@setu-ts/common";
+import type { DiagnosticsEvent, DiagnosticsSnapshot } from "@setu-ts/common";
 import type * as VSCode from "vscode";
 import { Capture } from "../../src/model/capture";
 import { InspectionPanel } from "../../src/presentation/panel";
@@ -163,6 +163,31 @@ test("panel replaces an outstanding frame when native capture state changes", as
   panel.dispose();
 });
 
+test("panel sends only dirty frames and exposes renderer readiness", async () => {
+  const value = session();
+  const panel = new InspectionPanel(context(), value.value, true);
+  const index = editor.panels.length - 1;
+  const fake = editor.panels[index]!;
+  const ready = panel.waitForRenderer();
+  fake.receive({ kind: "ready", version: 1, generation: "" });
+  assert.equal(await ready, true);
+  const first = await frame(index);
+  assert.equal((fake.messages[0] as { sample: boolean }).sample, true);
+  fake.receive({
+    kind: "acknowledge",
+    version: 1,
+    generation: first.generation,
+    frame: first.frame,
+  });
+  await delay(550);
+  assert.equal(fake.messages.length, 1);
+  panel.update();
+  const replacement = await frame(index, 550);
+  assert.ok(replacement.frame > first.frame);
+  panel.dispose();
+  assert.equal(await panel.waitForRenderer(), false);
+});
+
 test("panel coalesces input floods within its bounded display frame", async () => {
   const value = session();
   value.value.displayCapture.snapshot = {
@@ -188,4 +213,85 @@ test("panel coalesces input floods within its bounded display frame", async () =
   await delay(10);
   assert.equal(fake.messages.length, 1);
   panel.dispose();
+});
+
+test("panel byte-trims a hostile but type-valid capture before posting a frame", async () => {
+  const value = session();
+  const capture = value.value.displayCapture;
+  for (let index = 0; index < 100; index++)
+    capture.events.push({
+      sequence: index + 1,
+      operationId: "x".repeat(5000),
+      parentOperationId: null,
+      kind: "request",
+      stage: "request",
+      nodeId: null,
+      outcome: "ok",
+      atMs: null,
+      durationMs: null,
+    } satisfies DiagnosticsEvent);
+  const panel = new InspectionPanel(context(), value.value);
+  const index = editor.panels.length - 1;
+  const fake = editor.panels[index]!;
+  fake.receive({ kind: "ready", version: 1, generation: "" });
+  await delay(10);
+  const message = fake.messages[0] as {
+    model: { quality: { clippedEvents: number } };
+  };
+  assert.ok(Buffer.byteLength(JSON.stringify(message)) <= 256 * 1024);
+  assert.ok(message.model.quality.clippedEvents > 0);
+  panel.dispose();
+});
+
+test("panel clips oversized display nodes and edges before posting a frame", async () => {
+  const value = session();
+  value.value.displayCapture.snapshot = {
+    version: 1,
+    instanceId: "instance",
+    state: "running",
+    failureCode: null,
+    nodes: Array.from({ length: 100 }, (_, index) => ({
+      id: `p${index}${"x".repeat(3000)}`,
+      kind: "plugin",
+      label: "plugin",
+    })),
+    edges: Array.from({ length: 200 }, (_, index) => ({
+      from: `p${index % 100}${"x".repeat(3000)}`,
+      to: `p${(index + 1) % 100}${"x".repeat(3000)}`,
+      kind: "x".repeat(3000),
+    })),
+    truncated: false,
+    droppedEvents: 0,
+  } as unknown as DiagnosticsSnapshot;
+  const panel = new InspectionPanel(context(), value.value);
+  const index = editor.panels.length - 1;
+  const fake = editor.panels[index]!;
+  fake.receive({ kind: "ready", version: 1, generation: "" });
+  await delay(10);
+  const message = fake.messages[0] as {
+    model: { quality: { clippedNodes: number; clippedEdges: number } };
+  };
+  assert.ok(Buffer.byteLength(JSON.stringify(message)) <= 256 * 1024);
+  assert.ok(message.model.quality.clippedNodes > 0);
+  assert.ok(message.model.quality.clippedEdges > 0);
+  panel.dispose();
+});
+
+test("panel fails closed when non-page frame metadata exceeds its byte budget", async () => {
+  const value = session();
+  value.value.displayCapture.snapshot = {
+    version: 1,
+    instanceId: "instance",
+    state: "x".repeat(300000),
+    failureCode: null,
+    nodes: [],
+    edges: [],
+    truncated: false,
+    droppedEvents: 0,
+  } as unknown as DiagnosticsSnapshot;
+  const panel = new InspectionPanel(context(), value.value);
+  const index = editor.panels.length - 1;
+  editor.panels[index]!.receive({ kind: "ready", version: 1, generation: "" });
+  await delay(10);
+  assert.equal(panel.closed, true);
 });

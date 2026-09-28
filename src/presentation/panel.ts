@@ -1,11 +1,17 @@
 import { randomUUID } from "node:crypto";
 import * as vscode from "vscode";
 import type { Capture } from "../model/capture";
-import { presentation, type PageRequest } from "../model/presentation";
+import {
+  presentation,
+  type DisplayModel,
+  type PageRequest,
+} from "../model/presentation";
 import { PROTOCOL_VERSION, request } from "./protocol";
 
 const FRAME_INTERVAL_MS = 500;
 const ACK_TIMEOUT_MS = 5000;
+const MAX_FRAME_BYTES = 256 * 1024;
+const MAX_MODEL_BYTES = MAX_FRAME_BYTES - 1024;
 const TOPICS = Object.freeze({
   architecture:
     "https://github.com/setu-ts/setu-ts-devtool/blob/main/docs/architecture.md",
@@ -24,7 +30,9 @@ export interface InspectionSession {
 export class InspectionPanel implements vscode.Disposable {
   private readonly generation = randomUUID();
   private readonly panel: vscode.WebviewPanel;
+  private readonly readyWaiters: ((ready: boolean) => void)[] = [];
   private ready = false;
+  private dirty = true;
   private frame = 0;
   private awaiting: number | undefined;
   private scheduled: ReturnType<typeof setTimeout> | undefined;
@@ -40,6 +48,7 @@ export class InspectionPanel implements vscode.Disposable {
   constructor(
     context: vscode.ExtensionContext,
     private readonly session: InspectionSession,
+    private readonly sample = false,
   ) {
     const assets = vscode.Uri.joinPath(context.extensionUri, "dist", "webview");
     this.panel = vscode.window.createWebviewPanel(
@@ -68,14 +77,24 @@ export class InspectionPanel implements vscode.Disposable {
     return this.isClosed;
   }
 
+  update(): void {
+    this.dirty = true;
+    this.refresh();
+  }
+
+  waitForRenderer(): Promise<boolean> {
+    if (this.ready) return Promise.resolve(true);
+    if (this.isClosed) return Promise.resolve(false);
+    return new Promise((resolve) => this.readyWaiters.push(resolve));
+  }
+
   refresh(): void {
     if (!this.ready || !this.panel.visible) return;
-    if (
-      this.awaiting !== undefined &&
-      this.lastRevision !== this.session.displayCapture.revision
-    )
-      this.resetFrame();
-    if (this.awaiting !== undefined) return;
+    if (this.lastRevision !== this.session.displayCapture.revision) {
+      this.dirty = true;
+      if (this.awaiting !== undefined) this.resetFrame();
+    }
+    if (this.awaiting !== undefined || !this.dirty) return;
     const delay = Math.max(
       0,
       FRAME_INTERVAL_MS - (Date.now() - this.lastFrameAt),
@@ -88,9 +107,16 @@ export class InspectionPanel implements vscode.Disposable {
   }
 
   private send(): void {
-    if (!this.ready || this.awaiting !== undefined || !this.panel.visible)
+    if (
+      !this.ready ||
+      !this.dirty ||
+      this.awaiting !== undefined ||
+      !this.panel.visible
+    )
       return;
-    const model = presentation(this.session.displayCapture, this.page);
+    const model = boundedModel(
+      presentation(this.session.displayCapture, this.page),
+    );
     const ids = new Set([
       ...model.nodes.map((node) => node.id),
       ...model.events.map((event) => event.id),
@@ -104,8 +130,14 @@ export class InspectionPanel implements vscode.Disposable {
       frame,
       revision: this.session.displayCapture.revision,
       selected: this.selected,
+      sample: this.sample,
       model,
     });
+    if (Buffer.byteLength(JSON.stringify(value)) > MAX_FRAME_BYTES) {
+      this.panel.dispose();
+      return;
+    }
+    this.dirty = false;
     this.awaiting = frame;
     this.lastRevision = value.revision;
     this.lastFrameAt = Date.now();
@@ -126,6 +158,7 @@ export class InspectionPanel implements vscode.Disposable {
     if (!value) return;
     if (value.kind === "ready") {
       this.ready = true;
+      for (const waiter of this.readyWaiters.splice(0)) waiter(true);
       this.refresh();
       return;
     }
@@ -144,20 +177,25 @@ export class InspectionPanel implements vscode.Disposable {
         ...model.events.map((event) => event.id),
       ]);
       if (value.id === null || ids.has(value.id)) this.selected = value.id;
-    } else if (value.kind === "filter")
+      this.dirty = true;
+    } else if (value.kind === "filter") {
       this.page = {
         filter: value.text,
         eventPage: value.eventPage,
         nodePage: value.nodePage,
       };
-    else if (value.kind === "clear") {
+      this.dirty = true;
+    } else if (value.kind === "clear") {
       this.selected = null;
       this.session.clear();
       this.resetFrame();
+      this.dirty = true;
     } else if (value.kind === "stop") {
       this.selected = null;
+      this.page = {};
       void this.session.stop();
       this.resetFrame();
+      this.dirty = true;
     } else if (value.kind === "documentation")
       void vscode.env.openExternal(vscode.Uri.parse(TOPICS[value.topic]));
     this.refresh();
@@ -177,10 +215,12 @@ export class InspectionPanel implements vscode.Disposable {
     this.scheduled = undefined;
     this.deadline = undefined;
     this.ready = false;
+    this.dirty = false;
     this.awaiting = undefined;
     this.selected = null;
     this.page = {};
     this.messageTimes.length = 0;
+    for (const waiter of this.readyWaiters.splice(0)) waiter(false);
     for (const subscription of this.subscriptions) subscription.dispose();
     this.subscriptions.length = 0;
     this.panel.dispose();
@@ -192,4 +232,47 @@ function shell(webview: vscode.Webview, assets: vscode.Uri): string {
   const script = webview.asWebviewUri(vscode.Uri.joinPath(assets, "main.js"));
   const style = webview.asWebviewUri(vscode.Uri.joinPath(assets, "style.css"));
   return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'nonce-${nonce}'; style-src ${webview.cspSource}; img-src ${webview.cspSource}; connect-src 'none'; font-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none';"><link rel="stylesheet" href="${style}"></head><body><main id="app" aria-live="polite"></main><script nonce="${nonce}" src="${script}"></script></body></html>`;
+}
+
+function boundedModel(model: DisplayModel): DisplayModel {
+  const nodes = [...model.nodes];
+  let edges = [...model.edges];
+  const events = [...model.events];
+  let clippedNodes = model.quality.clippedNodes;
+  let clippedEdges = model.quality.clippedEdges;
+  let clippedEvents = model.quality.clippedEvents;
+  const build = (): DisplayModel =>
+    Object.freeze({
+      ...model,
+      nodes: Object.freeze([...nodes]),
+      edges: Object.freeze([...edges]),
+      events: Object.freeze([...events]),
+      quality: Object.freeze({
+        ...model.quality,
+        clippedNodes,
+        clippedEdges,
+        clippedEvents,
+      }),
+    });
+  while (Buffer.byteLength(JSON.stringify(build())) > MAX_MODEL_BYTES) {
+    if (events.length > 0) {
+      events.pop();
+      clippedEvents++;
+      continue;
+    }
+    if (edges.length > 0) {
+      edges.pop();
+      clippedEdges++;
+      continue;
+    }
+    const removed = nodes.pop();
+    if (!removed) return build();
+    clippedNodes++;
+    const before = edges.length;
+    edges = edges.filter(
+      (edge) => edge.from !== removed.id && edge.to !== removed.id,
+    );
+    clippedEdges += before - edges.length;
+  }
+  return build();
 }

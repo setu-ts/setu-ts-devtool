@@ -24,14 +24,40 @@ section {
   margin-top: 1rem;
   padding-top: 0.5rem;
 }
-.graph {
+.topology {
+  display: block;
+  max-width: 100%;
+  margin: 0.75rem 0;
+}
+.edge {
+  stroke: var(--vscode-charts-blue);
+  stroke-width: 2;
+}
+.node {
+  fill: var(--vscode-editor-inactiveSelectionBackground);
+  stroke: var(--vscode-focusBorder);
+}
+.node-label {
+  fill: var(--vscode-editor-foreground);
+  font-size: 12px;
+}
+.graph-list {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
   list-style: none;
   padding: 0;
 }
-.graph button.selected,
-ol .selected {
+.graph-list button.selected,
+ol button.selected {
   outline: 2px solid var(--vscode-focusBorder);
+}
+.pager {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+}
+.sample {
+  color: var(--vscode-editorWarning-foreground);
+  font-weight: bold;
 }
