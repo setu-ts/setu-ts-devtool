@@ -4,6 +4,7 @@ import { RefreshQueue } from "./editor/refresh";
 import * as vscode from "vscode";
 import { realpath } from "node:fs/promises";
 import { connectCommands } from "./editor/connection";
+import { InspectionPanel } from "./presentation/panel";
 import type { SessionController } from "./session/controller";
 let activeSession: SessionController | undefined;
 export async function deactivate(): Promise<void> {
@@ -29,6 +30,7 @@ export function activate(context: vscode.ExtensionContext): {
   let uiGeneration = 0;
   let disposed = false,
     sample = false;
+  let inspection: InspectionPanel | undefined;
   const guard = () =>
     refusal({
       trusted: vscode.workspace.isTrusted,
@@ -77,7 +79,10 @@ export function activate(context: vscode.ExtensionContext): {
     guard,
     () => projects.find((p) => p.id === selected),
     () => (vscode.workspace.workspaceFolders ?? []).map((f) => f.uri.fsPath),
-    () => changed.fire(),
+    () => {
+      changed.fire();
+      inspection?.update();
+    },
   );
   activeSession = session;
   const queue = new RefreshQueue<Discovery>(
@@ -158,6 +163,12 @@ export function activate(context: vscode.ExtensionContext): {
     changed,
     tree,
     vscode.commands.registerCommand("setuDevtool.refresh", refresh),
+    vscode.commands.registerCommand("setuDevtool.openInspection", () => {
+      if (guard() || disposed) return;
+      if (inspection?.closed) inspection = undefined;
+      if (inspection) inspection.reveal();
+      else inspection = new InspectionPanel(context, session);
+    }),
     vscode.commands.registerCommand(
       "setuDevtool.select",
       async (id: unknown) => {
@@ -223,6 +234,8 @@ export function activate(context: vscode.ExtensionContext): {
         projects = [];
         rows = [];
         selected = undefined;
+        inspection?.dispose();
+        inspection = undefined;
       },
     },
   );
@@ -241,15 +254,22 @@ export function activate(context: vscode.ExtensionContext): {
         queue.invalidate();
         clearWatchers();
         if (debounce) clearTimeout(debounce);
-        const { sampleLabels } = await import("../test/fixtures/sample.js");
+        const { sampleLabels, sampleSession } =
+          await import("../test/fixtures/sample.js");
         if (disposed || guard() || generation !== uiGeneration) return;
         sample = true;
         projects = [];
         selected = undefined;
         rows = sampleLabels.map((label) => ({ label }));
         tree.message = "Sample data — no live connection";
+        inspection?.dispose();
+        inspection = new InspectionPanel(context, sampleSession(), true);
         changed.fire();
       }),
+      vscode.commands.registerCommand(
+        "setuDevtool.verifyInspection",
+        () => inspection?.waitForRenderer() ?? Promise.resolve(false),
+      ),
     );
   }
   return {

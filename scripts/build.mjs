@@ -1,4 +1,11 @@
-import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import {
+  copyFile,
+  mkdir,
+  readdir,
+  readFile,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import { build } from "esbuild";
 import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
@@ -37,6 +44,22 @@ const tests = process.argv.includes("--tests");
 const dev = process.argv.includes("--dev");
 await rm("dist", { recursive: true, force: true });
 await mkdir("dist", { recursive: true });
+await mkdir("dist/webview", { recursive: true });
+const webview = await build({
+  metafile: true,
+  entryPoints: ["webview/main.ts"],
+  outfile: "dist/webview/main.js",
+  bundle: true,
+  platform: "browser",
+  format: "iife",
+  target: "es2022",
+  minify: !dev,
+  sourcemap: dev,
+});
+for (const output of Object.values(webview.metafile.outputs))
+  if (output.imports.some(({ path }) => path.startsWith("node:")))
+    throw new Error("Node import in webview bundle");
+await copyFile("webview/style.css", "dist/webview/style.css");
 const extension = await build({
   metafile: true,
   entryPoints: ["src/extension.ts"],
@@ -80,6 +103,21 @@ if (tests) {
     define: { __DEV__: "true" },
     platform: "node",
     mainFields: ["module", "main"],
+    target: "node24",
+    format: "cjs",
+  });
+}
+if (process.argv.includes("--webview-tests")) {
+  const entries = (await readdir("test/webview"))
+    .filter((p) => p.endsWith(".test.ts"))
+    .map((p) => `test/webview/${p}`);
+  await build({
+    entryPoints: entries,
+    outdir: "out/webview",
+    outExtension: { ".js": ".cjs" },
+    sourcemap: true,
+    bundle: true,
+    platform: "node",
     target: "node24",
     format: "cjs",
   });

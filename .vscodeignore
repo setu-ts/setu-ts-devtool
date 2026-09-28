@@ -3,4 +3,5 @@
 !README.md
 !dist/extension.cjs
 !dist/supervisor.mjs
+!dist/webview/**
 !dist/THIRD_PARTY_NOTICES.txt

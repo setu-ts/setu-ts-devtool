@@ -1,10 +1,10 @@
 # Extension architecture
 
 Design baseline, 2026-09-22. This document specifies the D01–D04 free preview;
-D01 foundation and D02 connection are implemented with
-[local evidence](d02-validation.md). D02 has an
-[independent local-scope security review](d02-security-review.md); D03 presentation
-and D04 release behavior are planned. The
+D01 foundation, D02 connection and D03 presentation are implemented with
+[local evidence](d02-validation.md) and [D03 validation](d03-validation.md).
+D02 and D03 have independent local-scope security reviews; D04 release behavior
+is planned. The
 [roadmap](../ROADMAP.md) owns feature allocation, the
 [contract register](framework-compatibility.md) owns framework facts, and the
 [security model](security.md) owns threat cases and acceptance evidence.

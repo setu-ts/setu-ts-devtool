@@ -1,14 +1,15 @@
 # Devtool roadmap
 
-Status: D01 and D02 implemented and locally verified, updated 2026-09-27.
+Status: D01–D03 implemented and locally verified, updated 2026-09-28.
 The framework core client fixes are requalified. D02's separate AI reviewer
-approved the local Linux implementation; see the [review report](docs/d02-security-review.md). D03–D04 remain
-pending. See [D02 evidence](docs/d02-validation.md).
+approved the local Linux implementation; see the [review report](docs/d02-security-review.md).
+D03 has the same local evidence and an independent review; D04 remains pending.
+See [D02 evidence](docs/d02-validation.md) and [D03 evidence](docs/d03-validation.md).
 
 The [architecture](docs/architecture.md) defines the preview's components,
 launch lifecycle and resource budgets. The [security model](docs/security.md)
 defines its trust boundaries and acceptance cases. These are design baselines;
-D01 and D02 have canonical implementation plans; D03/D04 plans remain to be written.
+D01–D03 have canonical implementation plans; D04's plan remains to be written.
 
 ## Product boundary
 
@@ -84,7 +85,7 @@ contexts must be refused explicitly.
 | --- | ----------------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------------- | ----------------------------------- |
 | D01 | Implemented; locally verified       | Extension shell, trust gate, workspace discovery, fixtures, CI | None                                                                 | [D01 plan](plans/d01-foundation.md) |
 | D02 | Implemented; independently reviewed | Explicit launch, pairing, bounded reader, teardown             | D01 + implemented M98a–c + local compatibility evidence              | [D02 plan](plans/d02-connection.md) |
-| D03 | Planned                             | Composition graph, route/middleware views, request timeline    | D01 fixtures for parallel UI work; D02 for integration               | Pending: `plans/d03-inspection.md`  |
+| D03 | Implemented; independently reviewed | Composition graph, route/middleware views, request timeline    | D01 fixtures for parallel UI work; D02 for integration               | [D03 plan](plans/d03-inspection.md) |
 | D04 | Planned                             | Security/compatibility exercises, VSIX, free preview docs      | D01–D03, pinned published framework packages and acceptance evidence | Pending: `plans/d04-release.md`     |
 | P01 | Direction only                      | Live Pro analysis, multi-app workflows, licensing              | Validated free workflow; separate plan                               |                                     |
 | P02 | Direction only                      | Retained investigations and comparisons                        | Persistence/export threat review; separate plan                      |                                     |

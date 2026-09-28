@@ -48,14 +48,31 @@ export async function run(): Promise<void> {
     await vscode.commands.executeCommand("setuDevtool.select", id);
     assert.equal(api.selected(), undefined);
     const commands = await vscode.commands.getCommands(true);
+    assert.equal(commands.includes("setuDevtool.openInspection"), true);
     if (process.env.SETU_HOST_PRODUCTION === "1") {
       assert.equal(commands.includes("setuDevtool.sample"), false);
+      assert.equal(commands.includes("setuDevtool.verifyInspection"), false);
     } else {
       assert.equal(commands.includes("setuDevtool.sample"), true);
+      assert.equal(commands.includes("setuDevtool.verifyInspection"), true);
       await vscode.commands.executeCommand("setuDevtool.sample");
       assert.ok(api.rows()[0]?.startsWith("SAMPLE DATA"));
+      assert.equal(
+        await vscode.commands.executeCommand("setuDevtool.verifyInspection"),
+        true,
+      );
+      await vscode.commands.executeCommand("setuDevtool.openInspection");
+      await vscode.commands.executeCommand(
+        "workbench.action.closeActiveEditor",
+      );
       await vscode.commands.executeCommand("setuDevtool.refresh");
       assert.ok(api.rows().includes("api"));
+    }
+    if (process.env.SETU_HOST_PRODUCTION === "1") {
+      await vscode.commands.executeCommand("setuDevtool.openInspection");
+      await vscode.commands.executeCommand(
+        "workbench.action.closeActiveEditor",
+      );
     }
   }
   if (vscode.workspace.isTrusted) {

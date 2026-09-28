@@ -288,7 +288,7 @@ dependencies and repeatable installation evidence.
 | Credential handoff   | Real standalone/multi-member launches, fresh credentials, sibling isolation, no credential output/storage/webview transfer                                                    | D02 using M98c               |
 | Startup pairing      | Bounded readiness strategy, terminal initial failure and fresh-launch recovery exercised against the actual helper                                                            | D02                          |
 | Session lifecycle    | App exit, expiry, disconnect and activation disposal stop reads and owned processes; late responses cannot repopulate cleared state                                           | D02                          |
-| Capture quality      | Truncation, ring loss, collector drops, late parents, null timing and closed reader represented honestly                                                                      | D03                          |
+| Capture quality      | Truncation, ring loss, collector drops, late parents, null timing and closed reader represented honestly                                                                      | D03 implemented locally      |
 | Compatibility matrix | Exact source/artifact versions, protocol, editor/host versions, OS and app runtime; local evidence distinct from released support                                             | D04                          |
 
 Historical source-review validation on 2026-09-22 (previous reference): `deno test --allow-read --allow-env`

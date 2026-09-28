@@ -57,6 +57,9 @@ export class SessionController {
   get activeRoot(): string | undefined {
     return this.root;
   }
+  get displayCapture(): Capture {
+    return this.capture;
+  }
   status(): Readonly<{
     state: SessionState;
     application: string | null;
