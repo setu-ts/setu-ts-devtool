@@ -62,6 +62,7 @@ const app: HTMLElement = applicationRoot;
 let generation = "";
 let filterText = "";
 let pendingFilter = false;
+let filterInput: HTMLInputElement | undefined;
 
 function element(name: string, text?: string): HTMLElement {
   const value = document.createElement(name);
@@ -197,6 +198,8 @@ function details(frame: Frame): HTMLElement {
   return section;
 }
 function render(frame: Frame): void {
+  const restoreFilterFocus =
+    filterInput !== undefined && document.activeElement === filterInput;
   generation = frame.generation;
   if (!pendingFilter || frame.model.page.filter === filterText) {
     filterText = frame.model.page.filter;
@@ -227,6 +230,7 @@ function render(frame: Frame): void {
     controls.append(button);
   }
   const input = element("input") as HTMLInputElement;
+  filterInput = input;
   input.type = "search";
   input.value = filterText;
   input.placeholder = "Filter graph and timeline";
@@ -237,6 +241,7 @@ function render(frame: Frame): void {
   });
   controls.append(input);
   app.append(controls);
+  if (restoreFilterFocus) input.focus();
   app.append(
     element(
       "p",

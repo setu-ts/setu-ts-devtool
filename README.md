@@ -87,8 +87,8 @@ project, enter the diagnostics port embedded in its generated `main.dev.ts`.
 Review the native confirmation: a workspace launch starts every member and
 instruments only the selected one. **Setu-TS: Stop Application** stops that whole
 launch. **Setu-TS: Clear Capture** drops retained events without rewinding the
-cursor. Native status separates connection and application state; there is no
-inspection panel persists no state and is rebuilt from the bounded host capture.
+cursor. Native status separates connection and application state; the inspection
+panel persists no state and is rebuilt from the bounded host capture.
 
 Only qualified CLI-generated Deno recipes are accepted. The extension does not
 enable or migrate projects automatically, capture application output, or attach

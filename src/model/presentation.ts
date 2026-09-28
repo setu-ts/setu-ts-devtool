@@ -178,10 +178,10 @@ export function presentation(
   const eventPage = pageIndex(request.eventPage, events.length, MAX_EVENTS);
   const visibleNodes = page(nodes, nodePage, MAX_NODES);
   const visibleNodeIds = new Set(visibleNodes.map((node) => node.id));
-  const edges = (snapshot?.edges ?? [])
-    .filter(
-      (edge) => visibleNodeIds.has(edge.from) && visibleNodeIds.has(edge.to),
-    )
+  const pageEdges = (snapshot?.edges ?? []).filter(
+    (edge) => visibleNodeIds.has(edge.from) && visibleNodeIds.has(edge.to),
+  );
+  const edges = pageEdges
     .slice(0, MAX_EDGES)
     .map((edge) =>
       Object.freeze({ from: edge.from, to: edge.to, kind: edge.kind }),
@@ -206,7 +206,7 @@ export function presentation(
       hostEvicted: capture.evicted,
       snapshotTruncated: snapshot?.truncated ?? false,
       clippedNodes: Math.max(0, nodes.length - visibleNodes.length),
-      clippedEdges: Math.max(0, (snapshot?.edges.length ?? 0) - edges.length),
+      clippedEdges: Math.max(0, pageEdges.length - edges.length),
       clippedEvents: Math.max(0, events.length - visibleEvents.length),
     }),
   });

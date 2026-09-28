@@ -41,7 +41,8 @@ export class InspectionPanel implements vscode.Disposable {
   private lastRevision = -1;
   private selected: string | null = null;
   private page: PageRequest = {};
-  private readonly messageTimes: number[] = [];
+  private messageTokens = 20;
+  private lastMessageRefillAt = Date.now();
   private readonly subscriptions: vscode.Disposable[] = [];
   private isClosed = false;
 
@@ -141,19 +142,19 @@ export class InspectionPanel implements vscode.Disposable {
     this.awaiting = frame;
     this.lastRevision = value.revision;
     this.lastFrameAt = Date.now();
-    void this.panel.webview.postMessage(value);
+    void this.panel.webview.postMessage(value).then(undefined, () => {
+      if (this.awaiting === frame) this.panel.dispose();
+    });
     this.deadline = setTimeout(() => this.panel.dispose(), ACK_TIMEOUT_MS);
   }
 
   private receive(raw: unknown): void {
     const now = Date.now();
-    while (
-      this.messageTimes[0] !== undefined &&
-      now - this.messageTimes[0] > 1000
-    )
-      this.messageTimes.shift();
-    if (this.messageTimes.length >= 20) return;
-    this.messageTimes.push(now);
+    const elapsed = Math.max(0, now - this.lastMessageRefillAt);
+    this.messageTokens = Math.min(20, this.messageTokens + elapsed * 0.02);
+    this.lastMessageRefillAt = now;
+    if (this.messageTokens < 1) return;
+    this.messageTokens -= 1;
     const value = request(raw, this.generation);
     if (!value) return;
     if (value.kind === "ready") {
@@ -219,7 +220,8 @@ export class InspectionPanel implements vscode.Disposable {
     this.awaiting = undefined;
     this.selected = null;
     this.page = {};
-    this.messageTimes.length = 0;
+    this.messageTokens = 20;
+    this.lastMessageRefillAt = Date.now();
     for (const waiter of this.readyWaiters.splice(0)) waiter(false);
     for (const subscription of this.subscriptions) subscription.dispose();
     this.subscriptions.length = 0;
