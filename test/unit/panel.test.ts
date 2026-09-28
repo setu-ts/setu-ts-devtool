@@ -145,7 +145,22 @@ test("panel applies bounded actions, rejects stale acknowledgements and disposes
   assert.equal(value.stops(), 1);
   fake.dispose();
   assert.equal(panel.closed, true);
+  assert.deepEqual(fake.listenerCounts(), [0, 0, 0]);
   panel.reveal();
+});
+
+test("panel replaces an outstanding frame when native capture state changes", async () => {
+  const value = session();
+  const panel = new InspectionPanel(context(), value.value);
+  const index = editor.panels.length - 1;
+  const fake = editor.panels[index]!;
+  fake.receive({ kind: "ready", version: 1, generation: "" });
+  const first = await frame(index);
+  value.value.clear();
+  panel.refresh();
+  const replacement = await frame(index, 550);
+  assert.ok(replacement.frame > first.frame);
+  panel.dispose();
 });
 
 test("panel coalesces input floods within its bounded display frame", async () => {

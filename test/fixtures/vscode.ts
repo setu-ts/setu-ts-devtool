@@ -15,6 +15,9 @@ export class EventEmitter<T> {
   dispose(): void {
     this.listeners = [];
   }
+  get listenerCount(): number {
+    return this.listeners.length;
+  }
 }
 export class TreeItem {
   constructor(public label: string) {}
@@ -52,6 +55,7 @@ interface TestPanel {
   onDidDispose(listener: () => void): { dispose(): void };
   onDidChangeViewState(listener: () => void): { dispose(): void };
   receive(value: unknown): void;
+  listenerCounts(): readonly number[];
   readonly messages: unknown[];
 }
 export const panels: TestPanel[] = [];
@@ -179,6 +183,11 @@ export const window = {
       onDidDispose: disposed.event,
       onDidChangeViewState: viewState.event,
       receive: (value) => received.fire(value),
+      listenerCounts: () => [
+        disposed.listenerCount,
+        viewState.listenerCount,
+        received.listenerCount,
+      ],
       messages,
     };
     panels.push(panel);

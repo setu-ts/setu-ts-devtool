@@ -243,10 +243,11 @@ pass cannot substitute for rows that require an actual editor or process tree.
 ## Completion and changes to this model
 
 D02 has local instance-binding, real launch and cleanup evidence plus a separate
-AI review of the exact implementation commit; see [the report](d02-security-review.md). D03 must validate the actual
-packaged webview, and D04 must attach exact editor, OS, runtime and framework
-versions to the acceptance matrix. No row is marked passed by this documentation
-update.
+AI review of the exact implementation commit; see [the report](d02-security-review.md).
+D03 has local Code OSS, production-artifact and renderer/bridge evidence plus
+its own [review](d03-security-review.md). D04 must attach installed-VSIX and
+additional editor/OS compatibility evidence to the acceptance matrix. No row is
+marked passed by this documentation update.
 
 Recording, export/import, remote access, arbitrary attachment, custom TTLs,
 application log viewing, health/config/job introspection and Pro licensing each

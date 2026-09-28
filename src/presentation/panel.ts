@@ -30,9 +30,11 @@ export class InspectionPanel implements vscode.Disposable {
   private scheduled: ReturnType<typeof setTimeout> | undefined;
   private deadline: ReturnType<typeof setTimeout> | undefined;
   private lastFrameAt = 0;
+  private lastRevision = -1;
   private selected: string | null = null;
   private page: PageRequest = {};
   private readonly messageTimes: number[] = [];
+  private readonly subscriptions: vscode.Disposable[] = [];
   private isClosed = false;
 
   constructor(
@@ -47,20 +49,12 @@ export class InspectionPanel implements vscode.Disposable {
       { enableScripts: true, localResourceRoots: [assets] },
     );
     this.panel.webview.html = shell(this.panel.webview, assets);
-    this.panel.onDidDispose(
-      () => this.dispose(),
-      undefined,
-      context.subscriptions,
-    );
-    this.panel.onDidChangeViewState(
-      () => this.refresh(),
-      undefined,
-      context.subscriptions,
-    );
-    this.panel.webview.onDidReceiveMessage(
-      (raw: unknown) => this.receive(raw),
-      undefined,
-      context.subscriptions,
+    this.subscriptions.push(
+      this.panel.onDidDispose(() => this.dispose()),
+      this.panel.onDidChangeViewState(() => this.refresh()),
+      this.panel.webview.onDidReceiveMessage((raw: unknown) =>
+        this.receive(raw),
+      ),
     );
   }
 
@@ -75,8 +69,13 @@ export class InspectionPanel implements vscode.Disposable {
   }
 
   refresh(): void {
-    if (!this.ready || this.awaiting !== undefined || !this.panel.visible)
-      return;
+    if (!this.ready || !this.panel.visible) return;
+    if (
+      this.awaiting !== undefined &&
+      this.lastRevision !== this.session.displayCapture.revision
+    )
+      this.resetFrame();
+    if (this.awaiting !== undefined) return;
     const delay = Math.max(
       0,
       FRAME_INTERVAL_MS - (Date.now() - this.lastFrameAt),
@@ -108,6 +107,7 @@ export class InspectionPanel implements vscode.Disposable {
       model,
     });
     this.awaiting = frame;
+    this.lastRevision = value.revision;
     this.lastFrameAt = Date.now();
     void this.panel.webview.postMessage(value);
     this.deadline = setTimeout(() => this.panel.dispose(), ACK_TIMEOUT_MS);
@@ -178,6 +178,12 @@ export class InspectionPanel implements vscode.Disposable {
     this.deadline = undefined;
     this.ready = false;
     this.awaiting = undefined;
+    this.selected = null;
+    this.page = {};
+    this.messageTimes.length = 0;
+    for (const subscription of this.subscriptions) subscription.dispose();
+    this.subscriptions.length = 0;
+    this.panel.dispose();
   }
 }
 

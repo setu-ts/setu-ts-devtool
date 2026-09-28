@@ -4,10 +4,12 @@ Local development companion for Setu-TS applications and monorepos.
 
 **Status: D02 local launch and connection implemented and independently reviewed
 for the local Linux scope.** See [security review](docs/d02-security-review.md)
-and [validation evidence](docs/d02-validation.md).
+and [validation evidence](docs/d02-validation.md). D03's bounded inspection UI
+has local Code OSS evidence in [its validation record](docs/d03-validation.md).
 The extension discovers prepared projects, explicitly launches a local Deno
 application, pairs, captures bounded diagnostics and stops its owned processes.
-Graph and request-timeline UI are D03 work. No release has been published.
+The inspection panel presents a bounded composition graph and request timeline.
+No release has been published.
 
 The first release is a free desktop extension for VS Code and Code OSS. Its main
 workflow is: select a local project, explicitly launch an instrumented Deno
@@ -86,7 +88,7 @@ Review the native confirmation: a workspace launch starts every member and
 instruments only the selected one. **Setu-TS: Stop Application** stops that whole
 launch. **Setu-TS: Clear Capture** drops retained events without rewinding the
 cursor. Native status separates connection and application state; there is no
-inspection panel yet.
+inspection panel persists no state and is rebuilt from the bounded host capture.
 
 Only qualified CLI-generated Deno recipes are accepted. The extension does not
 enable or migrate projects automatically, capture application output, or attach

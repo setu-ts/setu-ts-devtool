@@ -8,8 +8,30 @@ body {
 button {
   margin-right: 0.5rem;
 }
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.controls button {
+  margin-right: 0;
+}
+input {
+  min-width: 16rem;
+}
 section {
   border-top: 1px solid var(--vscode-panel-border);
   margin-top: 1rem;
   padding-top: 0.5rem;
+}
+.graph {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  list-style: none;
+  padding: 0;
+}
+.graph button.selected,
+ol .selected {
+  outline: 2px solid var(--vscode-focusBorder);
 }
