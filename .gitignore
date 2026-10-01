@@ -6,3 +6,7 @@ coverage/
 .vscode-test/
 *.vsix
 *.local.code-workspace
+
+# Claude Code local state (worktree checkouts, personal settings, the
+# .claude/skills link to .agents/skills). Nothing under .claude/ is tracked.
+.claude/
