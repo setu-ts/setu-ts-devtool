@@ -50,9 +50,25 @@ compare them with the previous numbers: a drop is a finding even above 90%.
 ## 4. Demonstrate the behaviour
 
 A green gate does not prove the change does anything. For a fix, show the test
-failing without the fix and passing with it. For new behaviour, drive it through
-the real surface (a host test, or an integration test against a real Deno
-application) and show the observed output.
+failing without the fix and passing with it. For new behaviour, pick the lane
+that actually reaches it and show the observed output:
+
+- **Launch, pairing, transport, process cleanup** — `npm run test:integration`
+  drives the session against a real prepared Deno application with no editor.
+- **The same path inside the editor** — the trusted host runs
+  (`npm run test:host`, then `-- --production`) launch and pair a real
+  standalone and workspace project in the Code OSS extension host. They call
+  the session controller directly, not the **Setu-TS: Launch** command, so they
+  do not prove the command's prompts or confirmation.
+- **Trust refusal** — `npm run test:host -- --restricted` proves discovery and
+  launch stay refused in an untrusted window.
+- **Panel interaction** (graph, timeline, filters, paging, selection) — the
+  bundled webview tests, part of `npm run test:coverage`. The host runs only
+  prove the packaged panel starts and its bridge acknowledges.
+- **Anything only visible through the UI**, such as the Launch confirmation,
+  status text or a command's prompts — no automated lane covers it. Check it
+  by hand in the F5 development host and say in the report that it was a
+  manual check.
 
 ## 5. Report
 
