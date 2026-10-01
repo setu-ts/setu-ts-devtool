@@ -2,14 +2,14 @@
 
 Local development companion for Setu-TS applications and monorepos.
 
-**Status: D02 local launch and connection implemented and independently reviewed
-for the local Linux scope.** See [security review](docs/d02-security-review.md)
-and [validation evidence](docs/d02-validation.md). D03's bounded inspection UI
-has local Code OSS evidence in [its validation record](docs/d03-validation.md).
+**Status: pre-release.** D01–D03 are implemented and locally verified for the
+Linux scope; no release has been published. The
+[roadmap milestone table](ROADMAP.md#milestones) is the status record and links
+each milestone's evidence.
+
 The extension discovers prepared projects, explicitly launches a local Deno
 application, pairs, captures bounded diagnostics and stops its owned processes.
 The inspection panel presents a bounded composition graph and request timeline.
-No release has been published.
 
 The first release is a free desktop extension for VS Code and Code OSS. Its main
 workflow is: select a local project, explicitly launch an instrumented Deno
@@ -23,12 +23,14 @@ is required.
 - [Framework contracts and compatibility gates](docs/framework-compatibility.md)
 - [Extension architecture](docs/architecture.md)
 - [Security model and acceptance matrix](docs/security.md)
-- [Framework addons: dependencies and review boundaries](docs/framework-addons.md)
+- [Framework addons assessment](docs/framework-addons.md) (historical; predates
+  M98d–n — see the [roadmap's framework baseline](ROADMAP.md#framework-baseline))
 
 The architecture and security documents describe the full preview target. See the
-[implementation sequence](plans/README.md) and [D01 plan](plans/d01-foundation.md)
-and [D02 plan](plans/d02-connection.md) for the implemented subset; later
-security acceptance cases remain pending.
+[implementation sequence](plans/README.md) and the
+[D01](plans/d01-foundation.md), [D02](plans/d02-connection.md) and
+[D03](plans/d03-inspection.md) plans for the implemented subset; later security
+acceptance cases remain pending.
 
 ## Working alongside the framework
 
@@ -43,7 +45,10 @@ The contract register is pinned to merged framework commit
 and current M98d–g client additions,
 generated development entries, credential handoff and the repaired core client.
 Local builds use that exact revision before publication; released-package and
-VSIX compatibility still need separate evidence.
+VSIX compatibility still need separate evidence. Framework `main` has since
+merged the M98h–n observation families, which are not qualified against this
+pin, and no published framework release contains `@setu-ts/diagnostics-plugin`
+yet. See the [roadmap's framework baseline](ROADMAP.md#framework-baseline).
 
 ## Develop and verify
 
@@ -94,7 +99,9 @@ Only qualified CLI-generated Deno recipes are accepted. The extension does not
 enable or migrate projects automatically, capture application output, or attach
 to an existing process. Optional `setuDevtool.denoPath` is an absolute user-level
 setting; workspace overrides are ignored. A fresh local session lasts at most
-15 minutes and is never automatically renewed or restarted.
+15 minutes and is never automatically renewed or restarted. Renewal without
+relaunch is planned as [D03b](ROADMAP.md#d03b--session-renewal-before-d04) and
+depends on a framework renewal operation that does not exist yet.
 
 If status says **Cleanup required**, new launches stay blocked. Stop remaining
 application processes manually if necessary and run **Setu-TS: Recheck Cleanup**;
