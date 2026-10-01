@@ -1,14 +1,21 @@
 # Implementation sequence
 
-1. [D01 foundation](d01-foundation.md): native shell and safe discovery; implemented and qualified first.
-2. [D02 connection](d02-connection.md): implemented and locally verified against
-   the requalified framework pin; independent local-scope security review
-   complete. See [review](../docs/d02-security-review.md) and
-   [validation evidence](../docs/d02-validation.md).
-3. [D03 inspection](d03-inspection.md): implemented and locally qualified;
-   topology, request timeline and secure webview. See
-   [review](../docs/d03-security-review.md) and
-   [validation evidence](../docs/d03-validation.md).
-4. D04 release: canonical plan before packaging; published dependency and editor/OS evidence.
+Status and evidence for each milestone live in the
+[roadmap milestone table](../ROADMAP.md#milestones). This list gives the order
+and the canonical plan for each.
 
-D01–D03 have canonical implementation plans. Framework addon inspectors remain follow-on work.
+1. [D01 foundation](d01-foundation.md): native shell and safe discovery.
+2. [D02 connection](d02-connection.md): explicit launch, pairing, bounded reader
+   and teardown.
+3. [D03 inspection](d03-inspection.md): topology, request timeline and secure
+   webview.
+4. D03b session renewal: plan pending (`d03b-renewal.md`). Blocked on a framework
+   renewal operation; see the
+   [roadmap section](../ROADMAP.md#d03b--session-renewal-before-d04).
+5. D04 release: plan pending (`d04-release.md`). Requires D03b, a published
+   framework release containing `@setu-ts/diagnostics-plugin`, and editor/OS
+   evidence.
+6. D05 free follow-ons (health summary, generator/task UI): direction only; plan
+   after D04.
+
+Capability-specific inspectors (P03) remain follow-on work.
