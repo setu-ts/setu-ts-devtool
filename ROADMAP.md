@@ -189,10 +189,11 @@ contains M98o. The framework's status parser stays exact, so a client pinned
 before M98o refuses any status body that carries `renewal`. M98o's CLI emission
 ships in step with this re-pin.
 
-The framework blocks any release of `diagnostics-plugin` without renewal. A
-publication hold refuses every framework release until M98o merges, so D04 cannot
-reach a published framework release without renewal unless the framework
-removes that hold on purpose. Never let the 15-minute session ship by default.
+A framework publication hold is proposed in
+[setu-ts#390](https://github.com/setu-ts/setu-ts/pull/390), which is not yet
+merged. Once it merges, the hold refuses every framework release until M98o
+merges. D04 then cannot reach a published framework release without renewal
+unless the framework removes the hold on purpose. Never let the 15-minute session ship by default.
 
 ### D05 — scaffolding runs the matching CLI
 
@@ -207,8 +208,9 @@ agree with the client that will pair with them.
 1. **Session renewal (M98o)** for D03b (above). Its plan is approved and
    implementation has not started.
 2. **Release `diagnostics-plugin`.** D04 needs a published framework release
-   that contains it. A publication hold keeps the package unpublished until M98o
-   merges, so this release follows item 1. Until then, D04's
+   that contains it. Once the proposed publication hold
+   ([setu-ts#390](https://github.com/setu-ts/setu-ts/pull/390)) merges, it keeps
+   the package unpublished until M98o merges, so this release follows item 1. Until then, D04's
    published-provenance gates stay open. The D04 plan's version numbers must
    match whatever that release is.
 3. **Move the contract pin** past M98n and refresh the
@@ -241,8 +243,8 @@ authorization reviews. Resending a request is not deterministic replay.
   keeping cross-session analysis, history and multi-app correlation.
 - **What "validated free workflow" means for P01.** Define the users, signal
   and threshold before P01 is planned, so the gate can actually be met.
-- **Release without renewal.** Only if M98o slips. It now also requires the
-  framework to remove its publication hold on purpose; see
+- **Release without renewal.** Only if M98o slips. Once the proposed framework
+  publication hold merges, this also requires removing that hold on purpose; see
   [D03b](#d03b--session-renewal-before-d04).
 
 ## Subscription without a custom portal
