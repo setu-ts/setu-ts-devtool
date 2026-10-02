@@ -72,9 +72,9 @@ empty view.
 | Available lifecycle stages and connection state        | Free | D03       | M98a                                                    | No complete post-failure startup history                                                                      |
 | Search, filters, capture gaps, clear/disconnect        | Free | D03       | —                                                       | Bounded in-memory capture only                                                                                |
 | Contextual documentation links                         | Free | D03       | —                                                       | Built-in destination allowlist                                                                                |
-| Session renewal without relaunch                       | Free | D03b      | Framework renewal operation (not yet designed)          | Renewal stays bounded by a framework-defined maximum; never silently lengthened                               |
+| Session renewal without relaunch                       | Free | D03b      | Framework M98o (planned, not yet implemented)           | Bounded by the launch-time maximum lifetime the application set; never silently lengthened                    |
 | VSIX preview with measured compatibility               | Free | D04       | D03b; framework release containing `diagnostics-plugin` | Real framework/editor exercises                                                                               |
-| Generator/task UI with change preview                  | Free | D05       | Separate execution/write plan                           | Keep using the existing CLI until then                                                                        |
+| Generator/task UI with change preview                  | Free | D05       | Separate execution/write plan; pinned CLI version       | Keep using the existing CLI until then                                                                        |
 | Health summary                                         | Free | D05       | M98d (`/v1/health`)                                     | Retained latest observations, collected by the framework's scheduler                                          |
 | Safe source navigation                                 | Free | Follow-on | New reviewed workspace-relative source projection       | Never arbitrary file or data access                                                                           |
 | Route percentiles, outcome trends, slow-stage analysis | Pro  | P01       | M98a                                                    | Sample size, losses and window visible                                                                        |
@@ -125,17 +125,17 @@ contexts must be refused explicitly.
 
 ## Milestones
 
-| ID   | State                               | Deliverable                                                    | Prerequisites                                                                | Canonical plan                      |
-| ---- | ----------------------------------- | -------------------------------------------------------------- | ---------------------------------------------------------------------------- | ----------------------------------- |
-| D01  | Implemented; locally verified       | Extension shell, trust gate, workspace discovery, fixtures, CI | None                                                                         | [D01 plan](plans/d01-foundation.md) |
-| D02  | Implemented; independently reviewed | Explicit launch, pairing, bounded reader, teardown             | D01 + M98a–c + local compatibility evidence                                  | [D02 plan](plans/d02-connection.md) |
-| D03  | Implemented; independently reviewed | Composition graph, route/middleware views, request timeline    | D01 fixtures for parallel UI work; D02 for integration                       | [D03 plan](plans/d03-inspection.md) |
-| D03b | Planned; blocked on framework       | Session renewal without relaunch                               | D02; framework renewal operation designed, implemented and released          | Pending: `plans/d03b-renewal.md`    |
-| D04  | Planned                             | Security/compatibility exercises, VSIX, free preview docs      | D01–D03b; framework release containing `diagnostics-plugin`; pinned packages | Pending: `plans/d04-release.md`     |
-| D05  | Direction only                      | Health summary, generator/task UI                              | D04; separate plan                                                           |                                     |
-| P01  | Direction only                      | Live Pro analysis, multi-app workflows, licensing              | D04; validation criteria met (see open decisions); separate plan             |                                     |
-| P02  | Direction only                      | Retained investigations and comparisons                        | Persistence/export threat review; separate plan                              |                                     |
-| P03  | Direction only                      | Capability-specific inspectors                                 | Pin moved past M98n; contract register refreshed; tier decision; plan        |                                     |
+| ID   | State                               | Deliverable                                                    | Prerequisites                                                                  | Canonical plan                      |
+| ---- | ----------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------ | ----------------------------------- |
+| D01  | Implemented; locally verified       | Extension shell, trust gate, workspace discovery, fixtures, CI | None                                                                           | [D01 plan](plans/d01-foundation.md) |
+| D02  | Implemented; independently reviewed | Explicit launch, pairing, bounded reader, teardown             | D01 + M98a–c + local compatibility evidence                                    | [D02 plan](plans/d02-connection.md) |
+| D03  | Implemented; independently reviewed | Composition graph, route/middleware views, request timeline    | D01 fixtures for parallel UI work; D02 for integration                         | [D03 plan](plans/d03-inspection.md) |
+| D03b | Planned; blocked on framework M98o  | Session renewal without relaunch                               | D02; framework M98o implemented and released; contract pin moved to include it | Pending: `plans/d03b-renewal.md`    |
+| D04  | Planned                             | Security/compatibility exercises, VSIX, free preview docs      | D01–D03b; framework release containing `diagnostics-plugin`; pinned packages   | Pending: `plans/d04-release.md`     |
+| D05  | Direction only                      | Health summary, generator/task UI                              | D04; separate plan                                                             |                                     |
+| P01  | Direction only                      | Live Pro analysis, multi-app workflows, licensing              | D04; validation criteria met (see open decisions); separate plan               |                                     |
+| P02  | Direction only                      | Retained investigations and comparisons                        | Persistence/export threat review; separate plan                                |                                     |
+| P03  | Direction only                      | Capability-specific inspectors                                 | Pin moved past M98n; contract register refreshed; tier decision; plan          |                                     |
 
 Evidence: [D01](docs/d01-validation.md), [D02](docs/d02-validation.md) and its
 [security review](docs/d02-security-review.md), [D03](docs/d03-validation.md)
@@ -148,35 +148,71 @@ user must relaunch the application. A debugging tool stays open all day, so a
 forced relaunch every 15 minutes makes the preview unusable for its main
 workflow. The preview should not ship with it.
 
-The framework exposes no renewal operation, expiry accessor or typed expiry
-error. Renewal therefore starts as framework work, and the devtool must not
-invent it. In particular, the extension must not silently relaunch, lengthen the
-TTL past the framework maximum, or retry on failure.
+The framework at the contract pin exposes no renewal operation, so the devtool
+must not invent one. The extension must never relaunch the application silently,
+extend the session beyond the framework's maximum, or retry a refused renewal.
 
 D03b covers:
 
-1. A framework milestone that designs, security-reviews and ships a renewal
-   operation on the authenticated connector. It must define the renewal bound,
-   the maximum total session lifetime, and behaviour on revocation and app
-   restart. It needs its own framework plan; nothing here pre-approves a design.
-2. Devtool consumption: renew before the local deadline, show the real remaining
-   time when the framework exposes it, and keep relaunch as the fallback on
-   refusal.
+1. **Framework milestone M98o.** Its plan,
+   `plans/milestone-98o-session-renewal.md` in the framework repository
+   ([setu-ts#389](https://github.com/setu-ts/setu-ts/pull/389)), has passed its
+   design security review. All maintainer decisions were approved on 2026-10-02.
+   Implementation has not started. The design:
+   - An application opts in at launch with `maxSessionLifetimeMs`, between
+     `ttlMs` and a hard ceiling of 12 hours of awake time. CLI-generated
+     development entries set 8 hours. Without the option, the session behaves
+     exactly as today, and a renewal request is refused.
+   - `GET /v1/renew` is a signed request on the existing session. It keeps the
+     same key, session ID, instance binding and sequence. It moves the expiry
+     to `min(now + ttlMs, activation + maxSessionLifetimeMs)`, and the expiry
+     never moves backwards.
+   - The status body gains an optional `renewal` member, and the native client
+     gains `session()` and `renew()`. `renew()` throws `notRenewable` without
+     sending a request when the application did not opt in.
+   - Revocation and an application restart end the session exactly as today.
+     Real expiry still closes the listener.
+2. **Devtool consumption.**
+   - Read the deadline from `session()`, and renew at half the remaining time.
+   - Show the real remaining time and the maximum lifetime that is left.
+   - On `notRenewable`, show the fixed deadline and do not attempt renewal.
+   - Keep relaunch as the explicit fallback when renewal is refused.
 3. Updates to the design baselines that currently forbid renewal: the session
    timer in `docs/architecture.md`, security case S09 in `docs/security.md`, and
    the session-lifecycle row in `docs/framework-compatibility.md`. This change
    touches credentials and authenticated transport, so it needs a renewed
    independent security review.
 
-If the framework cannot ship renewal in time, decide explicitly whether to
-release D04 without it. Never let the 15-minute session ship by default.
+**Release requirement.** The first published devtool must bundle a client that
+understands renewal, and its contract pin must move to a framework commit that
+contains M98o. The framework's status parser stays exact, so a client pinned
+before M98o refuses any status body that carries `renewal`. M98o's CLI emission
+ships in step with this re-pin.
+
+A framework publication hold is proposed in
+[setu-ts#390](https://github.com/setu-ts/setu-ts/pull/390), which is not yet
+merged. Once it merges, the hold refuses every framework release until M98o
+merges. D04 then cannot reach a published framework release without renewal
+unless the framework removes the hold on purpose. Never let the 15-minute session ship by default.
+
+### D05 — scaffolding runs the matching CLI
+
+The generator/task UI will scaffold projects through the framework CLI. Wherever
+the devtool invokes the CLI, it must run the CLI version that matches its bundled
+client, not whatever `setu` is on the user's `PATH`. Generated development
+entries carry options (M98o's `maxSessionLifetimeMs`, for example) that must
+agree with the client that will pair with them.
 
 ## Framework work in priority order
 
-1. **Release `diagnostics-plugin`.** D04 needs a published framework release
-   that contains it. Until then, D04's published-provenance gates stay open.
-   The D04 plan's version numbers must match whatever that release is.
-2. **Session renewal** for D03b (above).
+1. **Session renewal (M98o)** for D03b (above). Its plan is approved and
+   implementation has not started.
+2. **Release `diagnostics-plugin`.** D04 needs a published framework release
+   that contains it. Once the proposed publication hold
+   ([setu-ts#390](https://github.com/setu-ts/setu-ts/pull/390)) merges, it keeps
+   the package unpublished until M98o merges, so this release follows item 1. Until then, D04's
+   published-provenance gates stay open. The D04 plan's version numbers must
+   match whatever that release is.
 3. **Move the contract pin** past M98n and refresh the
    [contract register](docs/framework-compatibility.md). This requalifies D02/D03
    against the new pin, and is a P03 prerequisite.
@@ -207,7 +243,9 @@ authorization reviews. Resending a request is not deterministic replay.
   keeping cross-session analysis, history and multi-app correlation.
 - **What "validated free workflow" means for P01.** Define the users, signal
   and threshold before P01 is planned, so the gate can actually be met.
-- **Release without renewal.** Only if the D03b framework work slips; see above.
+- **Release without renewal.** Only if M98o slips. Once the proposed framework
+  publication hold merges, this also requires removing that hold on purpose; see
+  [D03b](#d03b--session-renewal-before-d04).
 
 ## Subscription without a custom portal
 

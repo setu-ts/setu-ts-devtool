@@ -100,8 +100,8 @@ enable or migrate projects automatically, capture application output, or attach
 to an existing process. Optional `setuDevtool.denoPath` is an absolute user-level
 setting; workspace overrides are ignored. A fresh local session lasts at most
 15 minutes and is never automatically renewed or restarted. Renewal without
-relaunch is planned as [D03b](ROADMAP.md#d03b--session-renewal-before-d04) and
-depends on a framework renewal operation that does not exist yet.
+relaunch is planned as [D03b](ROADMAP.md#d03b--session-renewal-before-d04). It
+depends on framework milestone M98o, which is designed but not yet implemented.
 
 If status says **Cleanup required**, new launches stay blocked. Stop remaining
 application processes manually if necessary and run **Setu-TS: Recheck Cleanup**;
