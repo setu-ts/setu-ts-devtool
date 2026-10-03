@@ -11,8 +11,10 @@ integration reference, not a minimum supported release; manifest versions and
 also carries M98h–n and M98o session renewal. This register has **not** been
 refreshed against it: every row below still describes the commit above. In
 particular, the session-lifecycle row's "no renewal operation" is true only at
-this pin, and the pinned status parser refuses the `renewal` member that
-`cli@0.8.0` development entries now send. Refreshing this register is
+this pin. A `cli@0.8.0` development entry is refused twice: by the launcher's
+recipe catalog, which is built from the pinned CLI and no longer matches the
+entry text, and by the pinned status parser, which refuses the `renewal` member
+that entry sends. Refreshing this register is
 [framework work item 1](../ROADMAP.md#framework-work-in-priority-order).
 
 This register replaces the earlier M98 proposal baseline. It records observed

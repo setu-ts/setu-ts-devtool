@@ -199,11 +199,15 @@ before M98o refuses any status body that carries `renewal`.
 
 **Consequence now that `v0.8.0` is published.** The CLI emission did not wait
 for this re-pin: `cli@0.8.0` writes `maxSessionLifetimeMs` into every generated
-development entry, so those entries answer status with a `renewal` member. The
+development entry. Two barriers follow, in order. First, preflight: the
+launcher accepts a `main.dev.ts` only when it is byte-identical to the recipe
+catalog built from the pinned CLI (`src/launch/recipes.ts`), and the `0.8.0`
+entry carries that extra line, so the launch is refused before anything runs.
+Second, pairing: those entries answer status with a `renewal` member, and the
 client at the current pin counts status keys exactly (`protocol.ts:511-512` at
-`26aebd0e`), so the devtool as built today refuses to pair with any project
+`26aebd0e`). The devtool as built today therefore cannot inspect any project
 scaffolded or enabled by `cli@0.8.0`. Projects generated before `v0.8.0` still
-pair. Moving the pin is therefore no longer optional housekeeping; it is what
+work. Moving the pin is therefore no longer optional housekeeping; it is what
 keeps the devtool working against current scaffolds.
 
 The framework publication hold
