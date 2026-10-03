@@ -45,10 +45,12 @@ The contract register is pinned to merged framework commit
 and current M98d–g client additions,
 generated development entries, credential handoff and the repaired core client.
 Local builds use that exact revision before publication; released-package and
-VSIX compatibility still need separate evidence. Framework `main` has since
-merged the M98h–n observation families, which are not qualified against this
-pin, and no published framework release contains `@setu-ts/diagnostics-plugin`
-yet. See the [roadmap's framework baseline](ROADMAP.md#framework-baseline).
+VSIX compatibility still need separate evidence. Framework `v0.8.0`
+(2026-10-03) is the first published release containing
+`@setu-ts/diagnostics-plugin`; it adds the M98h–n observation families and M98o
+session renewal, none of which is qualified against this pin. Projects
+scaffolded or enabled by `cli@0.8.0` do not pair with the devtool until the pin
+moves. See the [roadmap's framework baseline](ROADMAP.md#framework-baseline).
 
 ## Develop and verify
 
@@ -100,8 +102,8 @@ enable or migrate projects automatically, capture application output, or attach
 to an existing process. Optional `setuDevtool.denoPath` is an absolute user-level
 setting; workspace overrides are ignored. A fresh local session lasts at most
 15 minutes and is never automatically renewed or restarted. Renewal without
-relaunch is planned as [D03b](ROADMAP.md#d03b--session-renewal-before-d04). It
-depends on framework milestone M98o, which is designed but not yet implemented.
+relaunch is planned as [D03b](ROADMAP.md#d03b--session-renewal-before-d04). The
+framework side, M98o, shipped in `v0.8.0`; D03b waits on the contract pin move.
 
 If status says **Cleanup required**, new launches stay blocked. Stop remaining
 application processes manually if necessary and run **Setu-TS: Recheck Cleanup**;

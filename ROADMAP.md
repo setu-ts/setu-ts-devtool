@@ -28,17 +28,19 @@ The devtool consumes the framework's authenticated local diagnostics connector
   `26aebd0e3fd16074d7b578623577fe87a1930e83` (2026-09-27), recorded in
   `scripts/framework-pin.json`. It contains M98a–g. D01–D03 are qualified
   against it.
-- **Framework `main`** — commit `2b72167e` (2026-10-02). It has since merged the
-  M98h–n observation families. They are not qualified here until the pin moves
-  and the [contract register](docs/framework-compatibility.md) is refreshed.
+- **Framework release `v0.8.0`** — tag at merge commit
+  `6520e12e03118a9fc96f893a907aa7f6e3751e59` (2026-10-03). It contains the
+  M98h–n observation families and M98o session renewal. None of these is
+  qualified here until the pin moves and the
+  [contract register](docs/framework-compatibility.md) is refreshed.
 
-No published framework release contains `@setu-ts/diagnostics-plugin`. The
-latest release, `v0.7.0` (2026-09-19), predates the contract pin. JSR returned
-404 for `diagnostics-plugin` on 2026-09-28. D04 therefore depends on a framework
-release that does not yet exist; see
-[framework work](#framework-work-in-priority-order).
+`v0.8.0` is the first published framework release containing
+`@setu-ts/diagnostics-plugin`: JSR lists `diagnostics-plugin@0.8.0`, published
+2026-10-03, with `cli@0.8.0` beside it. D04's dependency on a published release
+is therefore met; moving the contract pin to the release commit is what remains.
+See [framework work](#framework-work-in-priority-order).
 
-Observations the connector already serves, as of framework `main`:
+Observations the connector serves as of `v0.8.0`:
 
 | Connector route     | Client method          | Framework milestone | In contract pin |
 | ------------------- | ---------------------- | ------------------- | --------------- |
@@ -63,33 +65,33 @@ empty view.
 
 ## Feature allocation
 
-| Feature                                                | Tier | Delivery  | Dependency                                              | Limitation                                                                                                    |
-| ------------------------------------------------------ | ---- | --------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| Project and monorepo discovery                         | Free | D01       | None                                                    | Reads bounded local manifests; never imports application code                                                 |
-| Explicit local launch and pairing                      | Free | D02       | M98a–c                                                  | Prepared Deno application, native extension host                                                              |
-| Plugin/capability graph and route explorer             | Free | D03       | M98a minimized DTOs                                     | Names require application-side approval                                                                       |
-| Middleware order and individual request timeline       | Free | D03       | M98a                                                    | Inclusive elapsed durations, not CPU profiling                                                                |
-| Available lifecycle stages and connection state        | Free | D03       | M98a                                                    | No complete post-failure startup history                                                                      |
-| Search, filters, capture gaps, clear/disconnect        | Free | D03       | —                                                       | Bounded in-memory capture only                                                                                |
-| Contextual documentation links                         | Free | D03       | —                                                       | Built-in destination allowlist                                                                                |
-| Session renewal without relaunch                       | Free | D03b      | Framework M98o (planned, not yet implemented)           | Bounded by the launch-time maximum lifetime the application set; never silently lengthened                    |
-| VSIX preview with measured compatibility               | Free | D04       | D03b; framework release containing `diagnostics-plugin` | Real framework/editor exercises                                                                               |
-| Generator/task UI with change preview                  | Free | D05       | Separate execution/write plan; pinned CLI version       | Keep using the existing CLI until then                                                                        |
-| Health summary                                         | Free | D05       | M98d (`/v1/health`)                                     | Retained latest observations, collected by the framework's scheduler                                          |
-| Safe source navigation                                 | Free | Follow-on | New reviewed workspace-relative source projection       | Never arbitrary file or data access                                                                           |
-| Route percentiles, outcome trends, slow-stage analysis | Pro  | P01       | M98a                                                    | Sample size, losses and window visible                                                                        |
-| Compare two windows in the same live session           | Pro  | P01       | M98a                                                    | No persistence or cross-restart identity claim                                                                |
-| Focused dependency subgraphs, declared impact analysis | Pro  | P01       | M98a                                                    | Declared dependencies do not prove runtime calls                                                              |
-| Multi-application dashboard                            | Pro  | P01       | Independent launched/paired sessions                    | Separate memory budgets; does not reconstruct cross-service causality                                         |
-| Saved filters and layouts                              | Pro  | P01       | —                                                       | Preferences only; exclude diagnostic records and labels by default                                            |
-| Local recordings, history, architecture diffs          | Pro  | P02       | Retention/access review; semantic identity matching     | M98 identifiers are instance-local                                                                            |
-| Explicit investigation bundle export/import            | Pro  | P02       | Hostile-file validation and export preview              | Metadata can be sensitive                                                                                     |
-| Queue attempt and outcome inspector                    | Pro  | P03       | M98f (`/v1/queues`)                                     | Settlement is `unknown` on RabbitMQ/SQS; depth may be `unavailable`; durable job listing remains out of scope |
-| Trace inspector and cross-application correlation      | Pro  | P03       | M98g (`/v1/traces`)                                     | Correlates on equal trace ids only; parent visibility is shown, never a fabricated edge                       |
-| Configuration provenance                               | Pro  | P03       | M98e (`/v1/config`)                                     | Value-free; unapproved keys are never observed                                                                |
-| Authorization explanations                             | Pro  | P03       | M98h (`/v1/authorization`); pin move                    | First-party RBAC only; custom providers report `unsupported`                                                  |
-| Cache, event and scheduler inspectors                  | Pro  | P03       | M98i–k; pin move                                        | Counters and local timer fires; a skipped local fire is not a missed execution                                |
-| Realtime, storage and outbound-HTTP inspectors         | Pro  | P03       | M98l–n; pin move                                        | Counters and status classes only; no frames, paths, URLs or payloads                                          |
+| Feature                                                | Tier | Delivery  | Dependency                                          | Limitation                                                                                                    |
+| ------------------------------------------------------ | ---- | --------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Project and monorepo discovery                         | Free | D01       | None                                                | Reads bounded local manifests; never imports application code                                                 |
+| Explicit local launch and pairing                      | Free | D02       | M98a–c                                              | Prepared Deno application, native extension host                                                              |
+| Plugin/capability graph and route explorer             | Free | D03       | M98a minimized DTOs                                 | Names require application-side approval                                                                       |
+| Middleware order and individual request timeline       | Free | D03       | M98a                                                | Inclusive elapsed durations, not CPU profiling                                                                |
+| Available lifecycle stages and connection state        | Free | D03       | M98a                                                | No complete post-failure startup history                                                                      |
+| Search, filters, capture gaps, clear/disconnect        | Free | D03       | —                                                   | Bounded in-memory capture only                                                                                |
+| Contextual documentation links                         | Free | D03       | —                                                   | Built-in destination allowlist                                                                                |
+| Session renewal without relaunch                       | Free | D03b      | Framework M98o (released in `v0.8.0`); pin move     | Bounded by the launch-time maximum lifetime the application set; never silently lengthened                    |
+| VSIX preview with measured compatibility               | Free | D04       | D03b; framework `v0.8.0` published packages         | Real framework/editor exercises                                                                               |
+| Generator/task UI with change preview                  | Free | D05       | Separate execution/write plan; pinned CLI version   | Keep using the existing CLI until then                                                                        |
+| Health summary                                         | Free | D05       | M98d (`/v1/health`)                                 | Retained latest observations, collected by the framework's scheduler                                          |
+| Safe source navigation                                 | Free | Follow-on | New reviewed workspace-relative source projection   | Never arbitrary file or data access                                                                           |
+| Route percentiles, outcome trends, slow-stage analysis | Pro  | P01       | M98a                                                | Sample size, losses and window visible                                                                        |
+| Compare two windows in the same live session           | Pro  | P01       | M98a                                                | No persistence or cross-restart identity claim                                                                |
+| Focused dependency subgraphs, declared impact analysis | Pro  | P01       | M98a                                                | Declared dependencies do not prove runtime calls                                                              |
+| Multi-application dashboard                            | Pro  | P01       | Independent launched/paired sessions                | Separate memory budgets; does not reconstruct cross-service causality                                         |
+| Saved filters and layouts                              | Pro  | P01       | —                                                   | Preferences only; exclude diagnostic records and labels by default                                            |
+| Local recordings, history, architecture diffs          | Pro  | P02       | Retention/access review; semantic identity matching | M98 identifiers are instance-local                                                                            |
+| Explicit investigation bundle export/import            | Pro  | P02       | Hostile-file validation and export preview          | Metadata can be sensitive                                                                                     |
+| Queue attempt and outcome inspector                    | Pro  | P03       | M98f (`/v1/queues`)                                 | Settlement is `unknown` on RabbitMQ/SQS; depth may be `unavailable`; durable job listing remains out of scope |
+| Trace inspector and cross-application correlation      | Pro  | P03       | M98g (`/v1/traces`)                                 | Correlates on equal trace ids only; parent visibility is shown, never a fabricated edge                       |
+| Configuration provenance                               | Pro  | P03       | M98e (`/v1/config`)                                 | Value-free; unapproved keys are never observed                                                                |
+| Authorization explanations                             | Pro  | P03       | M98h (`/v1/authorization`); pin move                | First-party RBAC only; custom providers report `unsupported`                                                  |
+| Cache, event and scheduler inspectors                  | Pro  | P03       | M98i–k; pin move                                    | Counters and local timer fires; a skipped local fire is not a missed execution                                |
+| Realtime, storage and outbound-HTTP inspectors         | Pro  | P03       | M98l–n; pin move                                    | Counters and status classes only; no frames, paths, URLs or payloads                                          |
 
 D02 consumes M98c's prepared development entry and launch tasks. Users enable or
 migrate projects through the existing CLI before launch.
@@ -125,17 +127,17 @@ contexts must be refused explicitly.
 
 ## Milestones
 
-| ID   | State                               | Deliverable                                                    | Prerequisites                                                                  | Canonical plan                      |
-| ---- | ----------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------ | ----------------------------------- |
-| D01  | Implemented; locally verified       | Extension shell, trust gate, workspace discovery, fixtures, CI | None                                                                           | [D01 plan](plans/d01-foundation.md) |
-| D02  | Implemented; independently reviewed | Explicit launch, pairing, bounded reader, teardown             | D01 + M98a–c + local compatibility evidence                                    | [D02 plan](plans/d02-connection.md) |
-| D03  | Implemented; independently reviewed | Composition graph, route/middleware views, request timeline    | D01 fixtures for parallel UI work; D02 for integration                         | [D03 plan](plans/d03-inspection.md) |
-| D03b | Planned; blocked on framework M98o  | Session renewal without relaunch                               | D02; framework M98o implemented and released; contract pin moved to include it | Pending: `plans/d03b-renewal.md`    |
-| D04  | Planned                             | Security/compatibility exercises, VSIX, free preview docs      | D01–D03b; framework release containing `diagnostics-plugin`; pinned packages   | Pending: `plans/d04-release.md`     |
-| D05  | Direction only                      | Health summary, generator/task UI                              | D04; separate plan                                                             |                                     |
-| P01  | Direction only                      | Live Pro analysis, multi-app workflows, licensing              | D04; validation criteria met (see open decisions); separate plan               |                                     |
-| P02  | Direction only                      | Retained investigations and comparisons                        | Persistence/export threat review; separate plan                                |                                     |
-| P03  | Direction only                      | Capability-specific inspectors                                 | Pin moved past M98n; contract register refreshed; tier decision; plan          |                                     |
+| ID   | State                               | Deliverable                                                    | Prerequisites                                                         | Canonical plan                      |
+| ---- | ----------------------------------- | -------------------------------------------------------------- | --------------------------------------------------------------------- | ----------------------------------- |
+| D01  | Implemented; locally verified       | Extension shell, trust gate, workspace discovery, fixtures, CI | None                                                                  | [D01 plan](plans/d01-foundation.md) |
+| D02  | Implemented; independently reviewed | Explicit launch, pairing, bounded reader, teardown             | D01 + M98a–c + local compatibility evidence                           | [D02 plan](plans/d02-connection.md) |
+| D03  | Implemented; independently reviewed | Composition graph, route/middleware views, request timeline    | D01 fixtures for parallel UI work; D02 for integration                | [D03 plan](plans/d03-inspection.md) |
+| D03b | Planned; M98o released in `v0.8.0`  | Session renewal without relaunch                               | D02; contract pin moved to a framework commit containing M98o         | Pending: `plans/d03b-renewal.md`    |
+| D04  | Planned                             | Security/compatibility exercises, VSIX, free preview docs      | D01–D03b; framework `v0.8.0` (published); pinned packages             | Pending: `plans/d04-release.md`     |
+| D05  | Direction only                      | Health summary, generator/task UI                              | D04; separate plan                                                    |                                     |
+| P01  | Direction only                      | Live Pro analysis, multi-app workflows, licensing              | D04; validation criteria met (see open decisions); separate plan      |                                     |
+| P02  | Direction only                      | Retained investigations and comparisons                        | Persistence/export threat review; separate plan                       |                                     |
+| P03  | Direction only                      | Capability-specific inspectors                                 | Pin moved past M98n; contract register refreshed; tier decision; plan |                                     |
 
 Evidence: [D01](docs/d01-validation.md), [D02](docs/d02-validation.md) and its
 [security review](docs/d02-security-review.md), [D03](docs/d03-validation.md)
@@ -154,28 +156,35 @@ extend the session beyond the framework's maximum, or retry a refused renewal.
 
 D03b covers:
 
-1. **Framework milestone M98o.** Its plan,
-   `plans/milestone-98o-session-renewal.md` in the framework repository
-   ([setu-ts#389](https://github.com/setu-ts/setu-ts/pull/389)), has passed its
-   design security review. All maintainer decisions were approved on 2026-10-02.
-   Implementation has not started. The design:
+1. **Framework milestone M98o — shipped.** Merged as
+   [setu-ts#392](https://github.com/setu-ts/setu-ts/pull/392) on 2026-10-03 and
+   released in `v0.8.0`; its plan was
+   [setu-ts#389](https://github.com/setu-ts/setu-ts/pull/389). The independent
+   committed-tree audit passed with no findings. As shipped:
    - An application opts in at launch with `maxSessionLifetimeMs`, between
-     `ttlMs` and a hard ceiling of 12 hours of awake time. CLI-generated
-     development entries set 8 hours. Without the option, the session behaves
-     exactly as today, and a renewal request is refused.
+     `ttlMs` and a hard ceiling of 12 hours (43,200,000 ms) of awake time.
+     CLI-generated development entries set 8 hours (`28_800_000`). Without the
+     option, the status bytes and expiry behave exactly as before, and a
+     renewal request is refused.
    - `GET /v1/renew` is a signed request on the existing session. It keeps the
-     same key, session ID, instance binding and sequence. It moves the expiry
-     to `min(now + ttlMs, activation + maxSessionLifetimeMs)`, and the expiry
-     never moves backwards.
-   - The status body gains an optional `renewal` member, and the native client
-     gains `session()` and `renew()`. `renew()` throws `notRenewable` without
-     sending a request when the application did not opt in.
-   - Revocation and an application restart end the session exactly as today.
+     same key, session ID, instance binding and sequence space, and sets the
+     expiry to
+     `max(current expiry, min(now + ttlMs, activation + maxSessionLifetimeMs))`,
+     so it never revives or shortens a session.
+   - The status body gains an optional `renewal` member. The native client
+     gains `session()` and `renew()`, both returning
+     `DiagnosticsSessionLifetime` (`expiresInMs`, and `renewal` as
+     `{ maxRemainingMs }` or `null`). `renew()` throws locally, without sending a
+     request, when the status did not advertise renewal.
+   - Revocation and an application restart end the session exactly as before.
      Real expiry still closes the listener.
 2. **Devtool consumption.**
    - Read the deadline from `session()`, and renew at half the remaining time.
    - Show the real remaining time and the maximum lifetime that is left.
-   - On `notRenewable`, show the fixed deadline and do not attempt renewal.
+   - Decide renewability from `session().renewal === null`, never from the
+     error `renew()` throws: that is a plain `Error` with no typed code, and S09
+     forbids classifying failures by error strings. When `renewal` is `null`,
+     show the fixed deadline and do not attempt renewal.
    - Keep relaunch as the explicit fallback when renewal is refused.
 3. Updates to the design baselines that currently forbid renewal: the session
    timer in `docs/architecture.md`, security case S09 in `docs/security.md`, and
@@ -186,14 +195,29 @@ D03b covers:
 **Release requirement.** The first published devtool must bundle a client that
 understands renewal, and its contract pin must move to a framework commit that
 contains M98o. The framework's status parser stays exact, so a client pinned
-before M98o refuses any status body that carries `renewal`. M98o's CLI emission
-ships in step with this re-pin.
+before M98o refuses any status body that carries `renewal`.
 
-A framework publication hold is proposed in
-[setu-ts#390](https://github.com/setu-ts/setu-ts/pull/390), which is not yet
-merged. Once it merges, the hold refuses every framework release until M98o
-merges. D04 then cannot reach a published framework release without renewal
-unless the framework removes the hold on purpose. Never let the 15-minute session ship by default.
+**Consequence now that `v0.8.0` is published.** The CLI emission did not wait
+for this re-pin: `cli@0.8.0` writes `maxSessionLifetimeMs` into every generated
+development entry. Preflight refuses such an entry before the application
+runs: the launcher accepts a `main.dev.ts` only when it is byte-identical to the
+recipe catalog built from the pinned CLI (`src/launch/recipes.ts`), and the
+`0.8.0` entry carries that extra line. Separately, the wire contract has
+diverged: those entries answer status with a `renewal` member, and the client
+at the current pin counts status keys exactly (`protocol.ts:511-512` at
+`26aebd0e`). That parser refusal is not a second failure on the supported
+launch path, because preflight stops the entry before the application starts or
+pairs; it means a recipe-only fix would still not be enough. The devtool as
+built today therefore cannot inspect any project scaffolded or enabled by
+`cli@0.8.0`. Projects generated before `v0.8.0` still work. Moving the pin is
+therefore no longer optional housekeeping; it is what keeps the devtool working
+against current scaffolds.
+
+The framework publication hold
+([setu-ts#390](https://github.com/setu-ts/setu-ts/pull/390)) merged on
+2026-10-02 and was lifted by M98o, so the first published release carrying
+`diagnostics-plugin` already includes renewal. The 15-minute session cannot ship
+by default.
 
 ### D05 — scaffolding runs the matching CLI
 
@@ -205,23 +229,26 @@ agree with the client that will pair with them.
 
 ## Framework work in priority order
 
-1. **Session renewal (M98o)** for D03b (above). Its plan is approved and
-   implementation has not started.
-2. **Release `diagnostics-plugin`.** D04 needs a published framework release
-   that contains it. Once the proposed publication hold
-   ([setu-ts#390](https://github.com/setu-ts/setu-ts/pull/390)) merges, it keeps
-   the package unpublished until M98o merges, so this release follows item 1. Until then, D04's
-   published-provenance gates stay open. The D04 plan's version numbers must
-   match whatever that release is.
-3. **Move the contract pin** past M98n and refresh the
+Done: **session renewal (M98o)** and **publishing `diagnostics-plugin`** both
+shipped in `v0.8.0` (2026-10-03). The D04 plan's version numbers are `0.8.0`.
+
+1. **Move the contract pin** to the `v0.8.0` release commit
+   (`6520e12e03118a9fc96f893a907aa7f6e3751e59`) and refresh the
    [contract register](docs/framework-compatibility.md). This requalifies D02/D03
-   against the new pin, and is a P03 prerequisite.
-4. **Workspace-relative source references**: a new reviewed metadata projection,
+   against the new pin, unblocks D03b, restores pairing with `cli@0.8.0`
+   scaffolds (see [D03b](#d03b--session-renewal-before-d04)), and is a P03
+   prerequisite. Prefer the release commit over a later `main` commit, so local
+   builds and D04's published packages describe the same source.
+2. **Track framework M101f.** The open `v0.8.0` smoke closeout changes the
+   generated `main.dev.ts` text. The launcher accepts only an entry
+   byte-identical to the CLI rendering, so the pin must move again in step with
+   that change.
+3. **Workspace-relative source references**: a new reviewed metadata projection,
    before safe source navigation.
-5. **Before P02**: review storage, deletion, import/export and identity across
+4. **Before P02**: review storage, deletion, import/export and identity across
    instances. M98 IDs are instance-local; matching `r1` between launches is
    incorrect.
-6. **Node/Bun diagnostics listener**, if the support matrix is to widen beyond
+5. **Node/Bun diagnostics listener**, if the support matrix is to widen beyond
    Deno.
 
 The observation families that blocked P03 (health, configuration, queues,
@@ -243,9 +270,6 @@ authorization reviews. Resending a request is not deterministic replay.
   keeping cross-session analysis, history and multi-app correlation.
 - **What "validated free workflow" means for P01.** Define the users, signal
   and threshold before P01 is planned, so the gate can actually be met.
-- **Release without renewal.** Only if M98o slips. Once the proposed framework
-  publication hold merges, this also requires removing that hold on purpose; see
-  [D03b](#d03b--session-renewal-before-d04).
 
 ## Subscription without a custom portal
 

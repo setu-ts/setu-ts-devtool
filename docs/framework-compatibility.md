@@ -2,10 +2,22 @@
 
 Source baseline: Setu-TS commit
 [`26aebd0e3fd16074d7b578623577fe87a1930e83`](https://github.com/setu-ts/setu-ts/commit/26aebd0e3fd16074d7b578623577fe87a1930e83),
-inspected 2026-09-27. M98a–g are implemented and merged. The diagnostics
-release remains unpublished in the development workflow. Publication is planned after M99 in the next framework release
-cycle. This commit is an integration reference, not a minimum supported release;
-manifest versions and `@since` comments do not establish availability.
+inspected 2026-09-27. M98a–g are implemented and merged. This commit is an
+integration reference, not a minimum supported release; manifest versions and
+`@since` comments do not establish availability.
+
+**Publication (2026-10-03).** Framework `v0.8.0` published
+`@setu-ts/diagnostics-plugin@0.8.0` to JSR, the first release to contain it. It
+also carries M98h–n and M98o session renewal. This register has **not** been
+refreshed against it: every row below still describes the commit above. In
+particular, the session-lifecycle row's "no renewal operation" is true only at
+this pin. The supported launch path refuses a `cli@0.8.0` development entry
+during preflight, because the launcher's recipe catalog is built from the pinned
+CLI and no longer matches the entry's `maxSessionLifetimeMs` line. Separately,
+the pinned status parser refuses a status body carrying `renewal`. That is a
+wire-contract incompatibility, not a second refusal reached for that entry,
+since preflight stops it before it runs. Refreshing this register is
+[framework work item 1](../ROADMAP.md#framework-work-in-priority-order).
 
 This register replaces the earlier M98 proposal baseline. It records observed
 implementation behavior and extension requirements. D02 now has
