@@ -265,13 +265,20 @@ emit `--devtool` for a Node target. D06 is the devtool half of that work:
   only a `deno.json` whose import map names `@setu-ts/`. D06 adds npm projects:
   a bounded read of `package.json` dependencies and the workspace manifest. It
   still never imports application code.
-- **Launch.** Accept the Node development entry only when it is byte-identical
-  to the pinned CLI's rendering, as D02 already requires for Deno. Spawn it
-  under `tsx` with the environment built explicitly. Replace the `denoPath`
-  setting with a per-runtime executable setting, or add a Node one beside it.
-- **Process ownership.** tsx runs the application in a child process. Teardown,
-  `Recheck Cleanup` and the S-cases in `docs/security.md` must cover the whole
-  process tree, not just the immediate child.
+- **Launch.** Accept the Node development entry and its `package.json` script
+  only when both are byte-identical to the pinned CLI's rendering, as D02
+  already requires for Deno. Run the script M126 names, with the environment
+  built explicitly. The script name is a contract that M126 settles with
+  framework M120. Replace the `denoPath` setting with a per-runtime executable
+  setting, or add a Node one beside it.
+- **Process ownership.** Under `npm run`, the application is four processes
+  below the supervisor: npm, a shell, tsx, then node. The supervisor's
+  process-group teardown (`process.kill(0, …)`) already reaches all of them,
+  provided nothing detaches. The framework's Node workspace runner currently
+  starts each member in a group of its own, and M126 removes that when the
+  devtool selects a member. Teardown, `Recheck Cleanup` and the S-cases in
+  `docs/security.md` are re-proved against the whole chain, including a
+  workspace launch.
 - **Compatibility evidence.** Rerun the D02/D03 exercises on Node against the
   release that contains M126. Add rows for Node to the contract register.
 
