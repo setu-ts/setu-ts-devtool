@@ -267,9 +267,10 @@ emit `--devtool` for a Node target. D06 is the devtool half of that work:
   still never imports application code.
 - **Launch.** Accept the Node development entry and its `package.json` script
   only when both are byte-identical to the pinned CLI's rendering, as D02
-  already requires for Deno. Run the script M126 names, with the environment
-  built explicitly. The script name is a contract that M126 settles with
-  framework M120. Replace the `denoPath` setting with a per-runtime executable
+  already requires for Deno. Run the `dev` script, the same name the Deno
+  task has, with the environment built explicitly. Framework M126 fixed this
+  name after M120 took `start:dev` (watch) and `start:debug`. `dev` is never a
+  watch script, because a restart is a new instance and ends the session. Replace the `denoPath` setting with a per-runtime executable
   setting, or add a Node one beside it.
 - **Process ownership.** Under `npm run`, the application is four processes
   below the supervisor: npm, a shell, tsx, then node. The supervisor's
