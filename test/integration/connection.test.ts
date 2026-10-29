@@ -207,19 +207,33 @@ for (const renewable of [true, false])
       );
       try {
         const executable = await resolveDeno(undefined, [fixture.root]);
-        const started = performance.now();
         await session.start(async () => ({ descriptor, executable }));
+        // Time from Live only; launch time varies (a cold CI launch took 9 s).
+        const live = performance.now();
         assert.equal(session.status().state, "Live");
-        assert.equal(session.status().lifetime?.renewable, renewable);
+        const atLive = session.status().lifetime;
+        assert.equal(atLive?.renewable, renewable);
+        // The deadline counts from pairing, so most of the 3 s window is left.
+        assert.ok(atLive.remainingMs > 1500, `left ${atLive.remainingMs} ms`);
         await waitFor(() => session.status().state === "Failed", 15000);
-        const lived = performance.now() - started;
+        const lived = performance.now() - live;
         assert.equal(session.status().ended, "deadline");
         if (renewable) {
           assert.ok(count.renewals >= 2, `renewals: ${count.renewals}`);
-          assert.ok(lived > 4000 && lived < 9000, `lived ${lived} ms`);
+          // Renewal carried it past the first window, but not past the cap.
+          assert.ok(
+            lived > atLive.remainingMs + 1000 &&
+              lived < atLive.maxRemainingMs! + 1000,
+            `lived ${lived} ms`,
+          );
         } else {
           assert.equal(count.renewals, 0);
-          assert.ok(lived < 4500, `lived ${lived} ms`);
+          // Stopped at the deadline it showed at Live: not early, not late.
+          assert.ok(
+            lived > atLive.remainingMs - 500 &&
+              lived < atLive.remainingMs + 1000,
+            `lived ${lived} ms`,
+          );
         }
         // The deadline stop is the ordinary cleanup: the listener is gone.
         assert.equal(
