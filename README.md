@@ -115,3 +115,7 @@ Diagnostics stay in bounded host memory and are cleared on Stop. Credentials
 reach the launched application through its environment, so this is not a
 sandbox against the selected application or other privileged local software.
 No account, billing client, diagnostic upload or VSIX release is included.
+
+## License
+
+MIT — see [LICENSE](LICENSE). Free to use, with no paid tier.
