@@ -1,9 +1,9 @@
 # Devtool roadmap
 
-Status, updated 2026-10-28: D01–D03 are implemented and locally verified. Next
+Status, updated 2026-10-29: D01–D03 are implemented and locally verified. Next
 is moving the contract pin to framework `v0.10.0`, then D03b and D04. Framework
-M126 (a Node diagnostics listener) is the framework's next milestone; D06
-consumes it. The [milestone table](#milestones) is the status record; per-milestone evidence is linked from it.
+M126 (a Node diagnostics listener) merged on 2026-10-29 and ships in the next
+framework release; D06 consumes it. The [milestone table](#milestones) is the status record; per-milestone evidence is linked from it.
 
 P01–P03 describe product direction, not approved implementation plans. Write a
 canonical plan with acceptance tests before starting each.
@@ -53,8 +53,8 @@ pinned source, never from JSR.
 `setu new` project targets Node and runs TypeScript under `tsx`. The
 diagnostics listener still binds only on Deno, and the CLI refuses
 `--devtool` on any other target. As a result, the devtool cannot inspect a
-project created with the defaults. Framework M126 removes both refusals for
-Node; D06 consumes it.
+project created with the defaults. Framework M126 (setu-ts#521, merged
+2026-10-29, not yet released) removes both refusals for Node; D06 consumes it.
 
 `v0.8.0` was the first published framework release containing
 `@setu-ts/diagnostics-plugin` (on JSR, 2026-10-03). npm has
@@ -162,7 +162,7 @@ contexts must be refused explicitly.
 | D03  | Implemented; independently reviewed | Composition graph, route/middleware views, request timeline    | D01 fixtures for parallel UI work; D02 for integration                | [D03 plan](plans/d03-inspection.md) |
 | D03b | Planned; M98o released in `v0.8.0`  | Session renewal without relaunch                               | D02; contract pin moved to `v0.10.0` (contains M98o)                  | Pending: `plans/d03b-renewal.md`    |
 | D04  | Planned; draft plan on a branch     | Security/compatibility exercises, VSIX, free preview docs      | D01–D03b; framework `v0.10.0` on npm; pinned packages                 | Pending: `plans/d04-release.md`     |
-| D06  | Planned; framework M126 next        | Node applications: npm project discovery, launch under `tsx`   | D02; framework M126 released; pin moved to that release               | Pending: `plans/d06-node.md`        |
+| D06  | Planned; framework M126 merged      | Node applications: npm project discovery, launch under `tsx`   | D02; framework M126 released; pin moved to that release               | Pending: `plans/d06-node.md`        |
 | D05  | Direction only                      | Health summary, generator/task UI                              | D04; separate plan                                                    |                                     |
 | P01  | Direction only                      | Live Pro analysis, multi-app workflows, licensing              | D04; validation criteria met (see open decisions); separate plan      |                                     |
 | P02  | Direction only                      | Retained investigations and comparisons                        | Persistence/export threat review; separate plan                       |                                     |
@@ -258,8 +258,9 @@ agree with the client that will pair with them.
 
 ### D06 — Node applications
 
-Framework M126 makes the diagnostics listener bind on Node and lets the CLI
-emit `--devtool` for a Node target. D06 is the devtool half of that work:
+Framework M126 (setu-ts#521) makes the diagnostics listener bind on Node and
+lets the CLI emit `--devtool` for a Node target. D06 is the devtool half of
+that work:
 
 - **Discovery.** The single-project path (`src/discovery/discover.ts`) accepts
   only a `deno.json` whose import map names `@setu-ts/`. D06 adds npm projects:
@@ -275,9 +276,10 @@ emit `--devtool` for a Node target. D06 is the devtool half of that work:
 - **Process ownership.** Under `npm run`, the application is four processes
   below the supervisor: npm, a shell, tsx, then node. The supervisor's
   process-group teardown (`process.kill(0, …)`) already reaches all of them,
-  provided nothing detaches. The framework's Node workspace runner currently
-  starts each member in a group of its own, and M126 removes that when the
-  devtool selects a member. Teardown, `Recheck Cleanup` and the S-cases in
+  provided nothing detaches. The framework's Node workspace runner starts each
+  member in a group of its own, except when the devtool selects a member: since
+  M126 it then keeps every child in the launcher's group and blanks the session
+  pair for every other member. Teardown, `Recheck Cleanup` and the S-cases in
   `docs/security.md` are re-proved against the whole chain, including a
   workspace launch.
 - **Compatibility evidence.** Rerun the D02/D03 exercises on Node against the
@@ -304,13 +306,23 @@ publishing references move from JSR to npm.
    the pinned CLI, which picks up the M101f entry text. Prefer the release
    commit over a later `develop` commit, so local builds and D04's published
    packages describe the same source.
-2. **Node diagnostics listener — framework M126, the framework's next
-   milestone.** It adds a Node `ILocalDiagnosticsListenerFactory` whose responses
-   match the Deno listener byte for byte, and it adds the CLI's `--devtool` arm
-   for Node targets. The pin moves again to the release that contains it, and
-   D06 consumes it. Under `tsx`, the application runs in a child process of the
-   process the launcher spawns. D06's teardown must own that whole process
-   tree.
+2. **Node diagnostics listener — framework M126, merged 2026-10-29
+   (setu-ts#521), unreleased.** It adds a Node `ILocalDiagnosticsListenerFactory`
+   and the CLI's `--devtool` arm for Node targets. For every request that reaches
+   the protocol, the Node listener answers exactly as the Deno one does. Each
+   runtime's HTTP parser refuses some malformed requests itself with a bare
+   `400`, and the two draw that line in different places; the framework records
+   both in a two-runtime conformance table. The pin moves again to the release
+   that contains M126, and D06 consumes it. Three consequences for the devtool:
+   - The generated `main.dev.ts` is now runtime-neutral on Deno too (it reads the
+     pair through `runtime.env`). The CLI still recognizes the 0.8–0.10
+     renderings, but the launcher's byte-identical recipe catalog
+     (`src/launch/recipes.ts`) must be regenerated from the CLI at that pin.
+   - Under `tsx`, the application runs in a child process of the process the
+     launcher spawns. D06's teardown must own that whole process tree.
+   - The Node listener keeps at most 32 sockets and evicts the oldest idle one
+     when full. The framework measured the native client's peak at no more than
+     16 connections; D06 keeps the client within that.
 3. **Workspace-relative source references**: a new reviewed metadata projection,
    before safe source navigation.
 4. **Before P02**: review storage, deletion, import/export and identity across
@@ -333,7 +345,8 @@ authorization reviews. Resending a request is not deterministic replay.
 - **Does the first preview wait for D06?** Node is the framework's default
   target, so a Deno-only preview cannot inspect a project created with the
   defaults. Shipping D04 first gets real feedback sooner. Waiting for D06 makes
-  the preview cover the common case. Decide once M126 has a plan and a date.
+  the preview cover the common case. M126 has merged; decide once the framework
+  release that contains it has a date.
 
 - **Tier of single-application inspectors.** The P03 inspectors render data the
   MIT-licensed framework serves free through a documented protocol and a native
