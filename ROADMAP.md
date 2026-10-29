@@ -1,7 +1,8 @@
 # Devtool roadmap
 
-Status, updated 2026-10-29: D01–D03 are implemented and locally verified. Next
-is moving the contract pin to framework `v0.10.0`, then D03b and D04. Framework
+Status, updated 2026-10-29: D01–D03 are implemented and locally verified. D03b
+(the contract pin moved to framework `v0.10.0`, and session renewal) is
+implemented and independently reviewed; D04 follows. Framework
 M126 (a Node diagnostics listener) merged on 2026-10-29 and ships in the next
 framework release; D06 consumes it. The [milestone table](#milestones) is the status record; per-milestone evidence is linked from it.
 
@@ -31,18 +32,18 @@ to an application.
 The devtool consumes the framework's authenticated local diagnostics connector
 (M98b) and its native client. Two framework revisions matter:
 
-- **Contract pin** — merged framework commit
-  `26aebd0e3fd16074d7b578623577fe87a1930e83` (2026-09-27), recorded in
-  `scripts/framework-pin.json`. It contains M98a–g. D01–D03 are qualified
-  against it.
+- **Contract pin** — the framework `v0.10.0` release commit
+  `d7a04734be8a4658774c7fe5b5e30297d5103ef3`, recorded in
+  `scripts/framework-pin.json` since D03b. D01–D03 were qualified against the
+  earlier pin `26aebd0e` (2026-09-27, M98a–g) and requalified on this one by
+  D03b's exercises.
 - **Framework release `v0.8.0`** — tag at merge commit
   `6520e12e03118a9fc96f893a907aa7f6e3751e59` (2026-10-03). It contains the
-  M98h–n observation families and M98o session renewal. None of these is
-  qualified here until the pin moves and the
-  [contract register](docs/framework-compatibility.md) is refreshed.
+  M98h–n observation families and M98o session renewal. D03b consumes M98o;
+  the M98h–n families are inside the pin but have no inspector yet (P03).
 - **Framework release `v0.10.0`** — tag at merge commit
   `d7a04734be8a4658774c7fe5b5e30297d5103ef3` (2026-10-23), the current release
-  and the recommended pin target. It serves the same connector routes as
+  and the contract pin. It serves the same connector routes as
   `v0.8.0`. The diagnostics changes between the two releases are in the CLI's
   devtool lifecycle (M101f, M113i), not the wire protocol. One later commit on
   framework `develop` (`d409fec8`, unreleased) changes only how connector rate
@@ -65,26 +66,27 @@ project created with the defaults. Framework M126 (setu-ts#521, merged
 `@setu-ts/diagnostics-plugin` (on JSR, 2026-10-03). npm has
 `@setu-ts/diagnostics-plugin@0.9.0` (2026-10-14) and
 `@setu-ts/diagnostics-plugin@0.10.0` (2026-10-23). D04's
-dependency on a published release is therefore met; moving the contract pin to
-a release commit is what remains.
+dependency on a published release is therefore met, and D03b moved the
+contract pin to the `v0.10.0` release commit.
 See [framework work](#framework-work-in-priority-order).
 
-Observations the connector serves as of `v0.8.0`:
+Operations the connector serves as of `v0.8.0`:
 
 | Connector route     | Client method          | Framework milestone | In contract pin |
 | ------------------- | ---------------------- | ------------------- | --------------- |
 | `/v1/snapshot`      | `snapshot()`, `read()` | M98a–b              | Yes             |
+| `/v1/renew`         | `session()`, `renew()` | M98o                | Yes             |
 | `/v1/health`        | `health()`             | M98d                | Yes             |
 | `/v1/config`        | `configuration()`      | M98e                | Yes             |
 | `/v1/queues`        | `queues()`             | M98f                | Yes             |
 | `/v1/traces`        | `traces()`             | M98g                | Yes             |
-| `/v1/authorization` | `authorization()`      | M98h                | No              |
-| `/v1/cache`         | `cache()`              | M98i                | No              |
-| `/v1/event`         | `events()`             | M98j                | No              |
-| `/v1/scheduler`     | `scheduler()`          | M98k                | No              |
-| `/v1/realtime`      | `realtime()`           | M98l                | No              |
-| `/v1/storage`       | `storage()`            | M98m                | No              |
-| `/v1/outbound-http` | `outboundHttp()`       | M98n                | No              |
+| `/v1/authorization` | `authorization()`      | M98h                | Yes             |
+| `/v1/cache`         | `cache()`              | M98i                | Yes             |
+| `/v1/event`         | `events()`             | M98j                | Yes             |
+| `/v1/scheduler`     | `scheduler()`          | M98k                | Yes             |
+| `/v1/realtime`      | `realtime()`           | M98l                | Yes             |
+| `/v1/storage`       | `storage()`            | M98m                | Yes             |
+| `/v1/outbound-http` | `outboundHttp()`       | M98n                | Yes             |
 
 Each capability-specific feed is opt-in on its own plugin through an explicit
 `diagnostics` option, with application-side alias approval. The app must enable
@@ -166,7 +168,7 @@ contexts must be refused explicitly.
 | D01  | Implemented; locally verified       | Extension shell, trust gate, workspace discovery, fixtures, CI | None                                                            | [D01 plan](plans/d01-foundation.md) |
 | D02  | Implemented; independently reviewed | Explicit launch, pairing, bounded reader, teardown             | D01 + M98a–c + local compatibility evidence                     | [D02 plan](plans/d02-connection.md) |
 | D03  | Implemented; independently reviewed | Composition graph, route/middleware views, request timeline    | D01 fixtures for parallel UI work; D02 for integration          | [D03 plan](plans/d03-inspection.md) |
-| D03b | Planned; M98o released in `v0.8.0`  | Session renewal without relaunch                               | D02; contract pin moved to `v0.10.0` (contains M98o)            | Pending: `plans/d03b-renewal.md`    |
+| D03b | Implemented; independently reviewed | Session renewal without relaunch                               | D02; contract pin moved to `v0.10.0` (contains M98o)            | [D03b plan](plans/d03b-renewal.md)  |
 | D04  | Planned; draft plan on a branch     | Security/compatibility exercises, VSIX, free preview docs      | D01–D03b; framework `v0.10.0` on npm; pinned packages           | Pending: `plans/d04-release.md`     |
 | D06  | Planned; framework M126 merged      | Node applications: npm project discovery, launch under `tsx`   | D02; framework M126 released; pin moved to that release         | Pending: `plans/d06-node.md`        |
 | D05  | Direction only                      | Health summary, generator/task UI                              | D04; separate plan                                              |                                     |
@@ -176,7 +178,8 @@ contexts must be refused explicitly.
 
 Evidence: [D01](docs/d01-validation.md), [D02](docs/d02-validation.md) and its
 [security review](docs/d02-security-review.md), [D03](docs/d03-validation.md)
-and its [security review](docs/d03-security-review.md).
+and its [security review](docs/d03-security-review.md), [D03b](docs/d03b-validation.md)
+and its [security review](docs/d03b-security-review.md).
 
 ### D03b — session renewal before D04
 
@@ -232,7 +235,7 @@ understands renewal, and its contract pin must move to a framework commit that
 contains M98o. The framework's status parser stays exact, so a client pinned
 before M98o refuses any status body that carries `renewal`.
 
-**Consequence now that `v0.8.0` is published.** The CLI emission did not wait
+**Consequence now that `v0.8.0` is published (resolved by D03b's pin move).** The CLI emission did not wait
 for this re-pin: `cli@0.8.0` writes `maxSessionLifetimeMs` into every generated
 development entry. Preflight refuses such an entry before the application
 runs: the launcher accepts a `main.dev.ts` only when it is byte-identical to the
@@ -303,15 +306,10 @@ draft plan (`feat/d04-release`, written 2026-09-28 against `0.8.0`) predates
 all of this and must be rebased: its version numbers become `0.10.0`, and its
 publishing references move from JSR to npm.
 
-1. **Move the contract pin** to the `v0.10.0` release commit
-   (`d7a04734be8a4658774c7fe5b5e30297d5103ef3`), not `v0.8.0`, and refresh the
-   [contract register](docs/framework-compatibility.md). This requalifies D02/D03
-   against the new pin, unblocks D03b, restores pairing with current scaffolds
-   (see [D03b](#d03b--session-renewal-before-d04)), and is a P03 prerequisite.
-   The launcher's recipe catalog (`src/launch/recipes.ts`) is regenerated from
-   the pinned CLI, which picks up the M101f entry text. Prefer the release
-   commit over a later `develop` commit, so local builds and D04's published
-   packages describe the same source.
+1. **Move the contract pin — done in D03b.** The pin is the `v0.10.0` release
+   commit (`d7a04734`), the [contract register](docs/framework-compatibility.md)
+   is refreshed, the recipe catalog is regenerated from the pinned CLI, and
+   D02/D03's real exercises pass on it. It remains a P03 prerequisite met.
 2. **Node diagnostics listener — framework M126, merged 2026-10-29
    (setu-ts#521), unreleased.** It adds a Node `ILocalDiagnosticsListenerFactory`
    and the CLI's `--devtool` arm for Node targets. For every request that reaches

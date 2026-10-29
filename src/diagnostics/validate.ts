@@ -4,6 +4,7 @@ import type {
   DiagnosticsNode,
   DiagnosticsEvent,
 } from "@setu-ts/common";
+import type { DiagnosticsSessionLifetime } from "@setu-ts/diagnostics-plugin";
 /** The pinned public client validates wire DTOs. This boundary owns a minimal copy. */
 function node(value: DiagnosticsNode): DiagnosticsNode {
   return Object.freeze({
@@ -83,5 +84,40 @@ export function batchProjection(
     next: value.next,
     lost: value.lost,
     closed: value.closed,
+  });
+}
+/** At most the framework's maximum `ttlMs` and its renewable ceiling. */
+const MAX_WINDOW_MS = 3_600_000;
+const MAX_LIFETIME_MS = 43_200_000;
+const bounded = (value: unknown, min: number, max: number): value is number =>
+  Number.isSafeInteger(value) &&
+  (value as number) >= min &&
+  (value as number) <= max;
+export function lifetimeProjection(
+  value: DiagnosticsSessionLifetime,
+): DiagnosticsSessionLifetime {
+  // Each field is read once, so an accessor cannot pass a bound then change.
+  const keys = Object.keys(value).sort().join();
+  const expiresInMs: unknown = value.expiresInMs;
+  const renewal: unknown = value.renewal;
+  const maxRemainingMs: unknown =
+    renewal !== null &&
+    typeof renewal === "object" &&
+    Object.keys(renewal).join() === "maxRemainingMs"
+      ? (renewal as { maxRemainingMs: unknown }).maxRemainingMs
+      : undefined;
+  if (
+    keys !== "expiresInMs,renewal" ||
+    !bounded(expiresInMs, 0, MAX_WINDOW_MS) ||
+    (renewal !== null &&
+      !bounded(maxRemainingMs, expiresInMs as number, MAX_LIFETIME_MS))
+  )
+    throw new Error("CONNECTION_FAILED");
+  return Object.freeze({
+    expiresInMs: expiresInMs as number,
+    renewal:
+      renewal === null
+        ? null
+        : Object.freeze({ maxRemainingMs: maxRemainingMs as number }),
   });
 }
