@@ -19,7 +19,7 @@ export function loopbackTransport(
     if (!input.startsWith(base + "/")) throw new Error("CONNECTION_FAILED");
     const target = input.slice(base.length);
     if (
-      !/^\/v1\/(status|snapshot)$/.test(target) &&
+      !/^\/v1\/(status|snapshot|renew)$/.test(target) &&
       !/^\/v1\/events\?after=(0|[1-9][0-9]*)&limit=([1-9]|[1-9][0-9]|1[01][0-9]|12[0-8])$/.test(
         target,
       )

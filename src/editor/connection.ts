@@ -5,11 +5,44 @@ import type { Project } from "../discovery/discover";
 import { prepareLaunch } from "../launch/preflight";
 import { resolveDeno, verifyDeno } from "../launch/executable";
 import { SessionController, type SessionState } from "../session/controller";
+import { duration } from "../session/lifetime";
 
 export function statusCommand(state: SessionState): string {
   return state === "Cleanup required"
     ? "setuDevtool.recheckCleanup"
     : "setuDevtool.stop";
+}
+
+/** Status bar text and tooltip; lifetimes are whole minutes, rounded down. */
+export function statusDisplay(value: ReturnType<SessionController["status"]>): {
+  text: string;
+  tooltip: string;
+} {
+  const lifetime = value.lifetime;
+  if (value.state === "Live") {
+    const session =
+      lifetime === null
+        ? ""
+        : lifetime.renewable
+          ? ` Session renews automatically; up to ${duration(lifetime.maxRemainingMs ?? 0)} left in total.`
+          : ` Session ends in ${duration(lifetime.remainingMs)} and cannot be renewed. Launch again to continue.`;
+    return {
+      text:
+        lifetime !== null && !lifetime.renewable
+          ? `Setu: Live · ${duration(lifetime.remainingMs)} left`
+          : "Setu: Live",
+      tooltip: `Application: ${value.application}; ${value.events} events.${session} Stop ends the whole launch.`,
+    };
+  }
+  return {
+    text: `Setu: ${value.state}`,
+    tooltip:
+      value.state === "Cleanup required"
+        ? "Cleanup could not be confirmed. Stop the application manually if needed, then run Setu-TS: Recheck Cleanup. New launches are blocked."
+        : value.ended === "deadline"
+          ? "Session ended at its deadline. Launch again to continue."
+          : "Setu-TS local diagnostics",
+  };
 }
 
 export function connectCommands(
@@ -27,13 +60,9 @@ export function connectCommands(
     join(context.extensionPath, "dist/supervisor.mjs"),
     () => {
       const value = session.status();
-      status.text = `Setu: ${value.state}`;
-      status.tooltip =
-        value.state === "Live"
-          ? `Application: ${value.application}; ${value.events} events. Local session limit: 15 minutes. Stop ends the whole launch.`
-          : value.state === "Cleanup required"
-            ? "Cleanup could not be confirmed. Stop the application manually if needed, then run Setu-TS: Recheck Cleanup. New launches are blocked."
-            : "Setu-TS local diagnostics";
+      const display = statusDisplay(value);
+      status.text = display.text;
+      status.tooltip = display.tooltip;
       status.command = statusCommand(value.state);
       status.show();
       changed();
@@ -76,7 +105,7 @@ export function connectCommands(
           `Launch ${project.label}?`,
           {
             modal: true,
-            detail: `Directory: ${descriptor.root}\nStarts: ${descriptor.members.join(", ")}\nInstrumented: ${project.label}\nDeno: ${executable.path}\nDiagnostics port: ${port}\nLocal limit: 15 minutes. Stop terminates all started members. Application output is not captured.`,
+            detail: `Directory: ${descriptor.root}\nStarts: ${descriptor.members.join(", ")}\nInstrumented: ${project.label}\nDeno: ${executable.path}\nDiagnostics port: ${port}\nThe session renews automatically while the application allows it. Stop terminates all started members. Application output is not captured.`,
           },
           "Launch",
         );
