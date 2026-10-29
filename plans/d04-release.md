@@ -60,9 +60,11 @@ their resolved URLs and integrity. The CLI is installed into its own
 the preparation script copies there first), so its full dependency graph is
 pinned too. Generated Deno projects name the
 framework as `npm:@setu-ts/<pkg>@^0.10.0` (measured 2026-10-29); the preparation
-step rewrites each to the exact `npm:@setu-ts/<pkg>@0.10.0` and writes a frozen
-Deno lock, so no caret range, newest release or mixed local/published package
-is accepted.
+step rewrites each to the exact `npm:@setu-ts/<pkg>@0.10.0` and freezes each
+fixture's own Deno lock (below), so no caret range, newest release or mixed
+local/published package is accepted. A user's project keeps the caret range
+the CLI wrote; while `0.10.0` is the only `0.10.x` release, that range resolves
+to the qualified set.
 
 The CLI's renderer helpers are internal. D04 does not import
 `src/devtool/dev-entry.ts`, `src/workspace/dev-runner.ts` or any other
@@ -70,8 +72,8 @@ unpublished subpath. It runs only the published `setu` bin. The checked-in
 fixture overlay adds only deterministic `/ready`, `/items`, hostile-label and
 stress routes; the generated entry, tasks, runner and manifests stay CLI output.
 The preparation audit rejects any generated framework import that is not
-rewritten to an exact `0.10.0` specifier and verifies the Deno lock before
-launch.
+rewritten to an exact `0.10.0` specifier and verifies each fixture's lock hash
+before launch.
 
 ## Work that can proceed and hard blockers
 
@@ -111,16 +113,21 @@ maps stay outside the VSIX. The build continues to reject non-`vscode`/Node
 runtime imports, development sample markers, fixture modules and temporary
 paths.
 
-Published preparation installs the CLI from its committed lockfile, then caches
-the fixture graph against the exact Deno lock:
+Published preparation installs the CLI from its committed lockfile:
 
 ```sh
 npm ci --prefix .tmp/framework-published/cli --ignore-scripts
-deno cache --frozen --lock=.tmp/framework-published/deno.lock \
-  npm:@setu-ts/common@0.10.0 npm:@setu-ts/diagnostics-plugin@0.10.0 \
-  npm:@setu-ts/kernel@0.10.0 npm:@setu-ts/runtime@0.10.0 \
-  npm:@setu-ts/testing@0.10.0
 ```
+
+A shared lock cannot govern the fixtures. At `cli@0.10.0` every standalone Deno
+project, and every workspace root, declares `nodeModulesDir: "auto"` and
+resolves through its own `deno.lock` when its task runs. So, after the
+specifier rewrite, preparation runs `deno install` once in each standalone
+fixture and workspace root, records the resulting `deno.lock` hash in published
+provenance, and adds `"lock": { "frozen": true }` to that `deno.json`. The
+launcher's preflight compares tasks, entries and runners, not other manifest
+keys; a test proves it still accepts the frozen fixtures, and that a fixture
+whose lock no longer matches fails to start rather than re-resolving.
 
 The script, not a human, runs the CLI commands below in an empty
 `.tmp/release-fixtures` root, checks each exit status and output, rewrites the
@@ -133,16 +140,32 @@ $SETU new d04-standalone --runtime deno --devtool --devtool-port 49191 \
   --yes --dir .tmp/release-fixtures
 $SETU new d04-workspace --workspace --runtime deno --yes \
   --dir .tmp/release-fixtures
-$SETU generate app api --devtool --devtool-port 49192 --port 43101 \
+$SETU generate app api --devtool --devtool-port 49191 --port 43101 \
   --dir .tmp/release-fixtures/d04-workspace
 $SETU generate app worker --port 43102 --depends-on api \
   --dir .tmp/release-fixtures/d04-workspace
 ```
 
+Both generated entries use port 49191 because it is the catalog's placeholder:
+`entryMatches` substitutes the launch port only for `port: 49191,`, so a
+template generated at any other port would match only that port.
+
+The task catalog must cover every template a user can enable. For each name
+the published `setu new --help` lists under `--template`, preparation runs
+`setu new d04-<template> --runtime deno --devtool --devtool-port 49191 --yes`.
+A template the CLI refuses with `--devtool` (the starter-composed ones) is
+recorded as unsupported, with the refusal text. Each accepted template's `dev`
+task must be in the catalog.
+
 It derives the release `recipes.json` only from the generated `main.dev.ts`,
-root runner and task strings, records their hashes in published provenance, and
-proves `prepareLaunch` accepts both generated projects. No private CLI renderer
-is bundled or invoked.
+root runner and task strings, and records their hashes in published provenance.
+It then checks the derived catalog against the one built from the source pin.
+That pin is the `v0.10.0` release commit, so the two must be equal. Any
+difference fails preparation and names the differing entry.
+
+Finally it proves `prepareLaunch` accepts every generated project, including a
+copy of the workspace whose member is re-allocated to diagnostics port 49192.
+No private CLI renderer is bundled or invoked.
 
 Any permission found unnecessary during implementation is removed; no broader
 permission may be added without updating and reviewing this plan.
@@ -180,8 +203,13 @@ The auditor rejects duplicate, directory, absolute, backslash, traversal,
 symlink and unexpected entries; missing entries; executable mode; source maps;
 source/test/config files; `.tmp` or absolute paths; source-checkout commit/path
 fallbacks; fixture/sample markers; `Deno` or workspace module resolution in the
-host; credential names or test values; remote assets; and runtime imports other
-than `vscode` or Node built-ins. It parses the manifest/XML, verifies
+host; credential values, test session IDs/keys and fixture secrets; remote
+assets; and runtime imports other
+than `vscode` or Node built-ins. The credential variable names
+(`SETU_DEVTOOL_SESSION_ID`, `SETU_DEVTOOL_SESSION_KEY`, `SETU_DEVTOOL_MEMBER`)
+are expected: the launcher sets them and the supervisor reads and clears them.
+They are allowed in `dist/extension.cjs` and `dist/supervisor.mjs` and nowhere
+else in the archive. It parses the manifest/XML, verifies
 publisher/name/version/preview/engine/main/resource paths, hashes every entry,
 and writes:
 
@@ -331,7 +359,7 @@ logs; success removes profiles only after evidence is copied. Nothing under
 
 | File                                                                                                                                         | Consumer/change                                                                                       | Test                                                                                                                                             |
 | -------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `scripts/framework-release.json`, `package.json`, `package-lock.json`                                                                        | Exact five-package release set and release/test tools                                                 | `test/release/published-framework.test.mjs`                                                                                                      |
+| `scripts/framework-release.json`, `package.json`, `package-lock.json`                                                                        | Exact six-package release set and release/test tools                                                  | `test/release/published-framework.test.mjs`                                                                                                      |
 | `scripts/prepare-framework.mjs`, `scripts/framework-integrity.mjs`, `scripts/build.mjs`                                                      | Separate local/published provenance, aliases and notices                                              | Existing build tests plus `test/release/published-framework.test.mjs` and `test/release/release-build.test.mjs`                                  |
 | `scripts/release/cli/package.json`, `scripts/release/cli/package-lock.json`                                                                  | Exact `@setu-ts/cli@0.10.0` install graph for fixture generation                                      | `test/release/published-framework.test.mjs`: the lock names exactly `0.10.0` with integrity                                                      |
 | `scripts/release/prepare-published-framework.mjs`                                                                                            | Public registry resolution, locks, CLI fixture generation and overlay audit                           | `test/release/published-framework.test.mjs`: absent/mixed/range/private-import/hash/export/lock/permission failures and guarded real npm success |
@@ -432,8 +460,12 @@ installation command for each qualified editor, SHA-256 verification, supported
 matrix, Select → Launch → Inspect → Clear/Stop workflow, workspace all-member
 launch warning, the session lifetime (renewed by D03b up to the cap the generated
 entry sets), fixed documentation destinations and
-uninstall instructions. It names the extension version, framework release set,
-candidate digest and validation document.
+uninstall instructions. It names the extension version, the framework release
+set and the validation document. It does not contain the candidate digest: the
+README is packaged in the VSIX, so writing the digest into it would change the
+digest. The SHA-256 is published beside the VSIX in
+`setu-ts-devtool-0.0.1.sha256` and recorded in `docs/d04-validation.md`, and
+the README tells the user how to check a download against that file.
 
 Known limitations remain explicit: local Linux/Deno only; one active application
 per window; no attach, automatic restart, persistence, export, log capture,
