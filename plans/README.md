@@ -9,9 +9,8 @@ and the canonical plan for each.
    and teardown.
 3. [D03 inspection](d03-inspection.md): topology, request timeline and secure
    webview.
-4. D03b session renewal: plan pending (`d03b-renewal.md`). Framework milestone
-   M98o shipped in `v0.8.0`; D03b needs the contract pin moved to include it.
-   See the [roadmap section](../ROADMAP.md#d03b--session-renewal-before-d04).
+4. [D03b renewal](d03b-renewal.md): the contract pin moved to `v0.10.0`, and
+   session renewal without relaunch (framework M98o).
 5. D04 release: plan pending (`d04-release.md`). Requires D03b, the published
    framework `v0.8.0` packages (which contain `@setu-ts/diagnostics-plugin`), and
    editor/OS evidence.

@@ -166,7 +166,7 @@ contexts must be refused explicitly.
 | D01  | Implemented; locally verified       | Extension shell, trust gate, workspace discovery, fixtures, CI | None                                                            | [D01 plan](plans/d01-foundation.md) |
 | D02  | Implemented; independently reviewed | Explicit launch, pairing, bounded reader, teardown             | D01 + M98a–c + local compatibility evidence                     | [D02 plan](plans/d02-connection.md) |
 | D03  | Implemented; independently reviewed | Composition graph, route/middleware views, request timeline    | D01 fixtures for parallel UI work; D02 for integration          | [D03 plan](plans/d03-inspection.md) |
-| D03b | Planned; M98o released in `v0.8.0`  | Session renewal without relaunch                               | D02; contract pin moved to `v0.10.0` (contains M98o)            | Pending: `plans/d03b-renewal.md`    |
+| D03b | Planned; plan written               | Session renewal without relaunch                               | D02; contract pin moved to `v0.10.0` (contains M98o)            | [D03b plan](plans/d03b-renewal.md)  |
 | D04  | Planned; draft plan on a branch     | Security/compatibility exercises, VSIX, free preview docs      | D01–D03b; framework `v0.10.0` on npm; pinned packages           | Pending: `plans/d04-release.md`     |
 | D06  | Planned; framework M126 merged      | Node applications: npm project discovery, launch under `tsx`   | D02; framework M126 released; pin moved to that release         | Pending: `plans/d06-node.md`        |
 | D05  | Direction only                      | Health summary, generator/task UI                              | D04; separate plan                                              |                                     |
