@@ -19,6 +19,9 @@ was performed by the reviewer.
 
 - Branch `feat/d03b-renewal`, commits `4359937`, `901af43`, `18d5e84`,
   `1c4954d`, `03fa9a5`; base `faadc64` (`origin/main`).
+- Fix delta `03fa9a5..94a64a0` (`src`, `test`) re-reviewed by the same
+  reviewer: the hostile-input probe re-run, the accessor case now refused, and
+  both send-time mutations caught. No findings.
 - Framework source prepared at `d7a04734` (tag `v0.10.0`); Node 24.22.1,
   Deno 2.9.6.
 
@@ -97,8 +100,8 @@ Each mutation was applied, tested and reverted:
 
 - F1 is closed by a controller test whose fake `session()` and `renew()` take
   120 ms of real time; it asserts the remaining window is shorter by at least
-  100 ms. Moving the pairing send-time read after the reply makes that test
-  fail (observed).
+  100 ms. Moving either the pairing or the renewal send-time read after the
+  reply makes that test fail (both observed by the reviewer).
 - `lifetimeProjection` now reads each field once before checking it.
 
 ## Limits
