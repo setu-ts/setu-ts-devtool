@@ -2,7 +2,8 @@
 
 Status, updated 2026-10-29: D01–D03 are implemented and locally verified. D03b
 (the contract pin moved to framework `v0.10.0`, and session renewal) is
-implemented and independently reviewed; D04 follows. Framework
+implemented and independently reviewed. D06 (Node applications) comes next and
+D04 (the preview release) after it, by the maintainer's decision of 2026-10-29. Framework
 M126 (a Node diagnostics listener) merged on 2026-10-29 and ships in the next
 framework release; D06 consumes it. The [milestone table](#milestones) is the status record; per-milestone evidence is linked from it.
 
@@ -107,7 +108,7 @@ empty view.
 | Contextual documentation links                         | D03       | —                                                   | Built-in destination allowlist                                                                                |
 | Node application discovery and launch                  | D06       | Framework M126; pin move                            | npm projects run under `tsx`; the launcher owns the whole process tree; Bun still refused                     |
 | Session renewal without relaunch                       | D03b      | Framework M98o (released in `v0.8.0`); pin move     | Bounded by the launch-time maximum lifetime the application set; never silently lengthened                    |
-| VSIX preview with measured compatibility               | D04       | D03b; framework `v0.10.0` on npm                    | Real framework/editor exercises                                                                               |
+| VSIX preview with measured compatibility               | D04       | D03b; D06; the framework release containing M126    | Real framework/editor exercises                                                                               |
 | Generator/task UI with change preview                  | D05       | Separate execution/write plan; pinned CLI version   | Keep using the existing CLI until then                                                                        |
 | Health summary                                         | D05       | M98d (`/v1/health`)                                 | Retained latest observations, collected by the framework's scheduler                                          |
 | Safe source navigation                                 | Follow-on | New reviewed workspace-relative source projection   | Never arbitrary file or data access                                                                           |
@@ -169,7 +170,7 @@ contexts must be refused explicitly.
 | D02  | Implemented; independently reviewed | Explicit launch, pairing, bounded reader, teardown             | D01 + M98a–c + local compatibility evidence                     | [D02 plan](plans/d02-connection.md) |
 | D03  | Implemented; independently reviewed | Composition graph, route/middleware views, request timeline    | D01 fixtures for parallel UI work; D02 for integration          | [D03 plan](plans/d03-inspection.md) |
 | D03b | Implemented; independently reviewed | Session renewal without relaunch                               | D02; contract pin moved to `v0.10.0` (contains M98o)            | [D03b plan](plans/d03b-renewal.md)  |
-| D04  | Planned; draft plan on a branch     | Security/compatibility exercises, VSIX, free preview docs      | D01–D03b; framework `v0.10.0` on npm; pinned packages           | Pending: `plans/d04-release.md`     |
+| D04  | Planned                             | Security/compatibility exercises, VSIX, free preview docs      | D01–D03b, D06; framework release with M126; pinned packages     | [D04 plan](plans/d04-release.md)    |
 | D06  | Planned; framework M126 merged      | Node applications: npm project discovery, launch under `tsx`   | D02; framework M126 released; pin moved to that release         | Pending: `plans/d06-node.md`        |
 | D05  | Direction only                      | Health summary, generator/task UI                              | D04; separate plan                                              |                                     |
 | P01  | Direction only                      | Live analysis, multi-app workflows                             | D04; separate plan                                              |                                     |
@@ -301,10 +302,8 @@ credentials), so it needs an independent security review.
 
 Done: **session renewal (M98o)** and **publishing `diagnostics-plugin`** both
 shipped in `v0.8.0` (2026-10-03). **M101f** (the devtool lifecycle, framework
-PR #414) changed the generated `main.dev.ts` and shipped in `v0.9.0`. The D04
-draft plan (`feat/d04-release`, written 2026-09-28 against `0.8.0`) predates
-all of this and must be rebased: its version numbers become `0.10.0`, and its
-publishing references move from JSR to npm.
+PR #414) changed the generated `main.dev.ts` and shipped in `v0.9.0`. The
+[D04 plan](plans/d04-release.md) was rebased on 2026-10-29 onto `0.10.0` on npm.
 
 1. **Move the contract pin — done in D03b.** The pin is the `v0.10.0` release
    commit (`d7a04734`), the [contract register](docs/framework-compatibility.md)
