@@ -171,7 +171,7 @@ contexts must be refused explicitly.
 | D03  | Implemented; independently reviewed | Composition graph, route/middleware views, request timeline    | D01 fixtures for parallel UI work; D02 for integration          | [D03 plan](plans/d03-inspection.md) |
 | D03b | Implemented; independently reviewed | Session renewal without relaunch                               | D02; contract pin moved to `v0.10.0` (contains M98o)            | [D03b plan](plans/d03b-renewal.md)  |
 | D04  | Planned                             | Security/compatibility exercises, VSIX, free preview docs      | D01–D03b, D06; framework release with M126; pinned packages     | [D04 plan](plans/d04-release.md)    |
-| D06  | Planned; framework M126 merged      | Node applications: npm project discovery, launch under `tsx`   | D02; framework M126 released; pin moved to that release         | Pending: `plans/d06-node.md`        |
+| D06  | Planned; plan written               | Node applications: npm project discovery, launch under `tsx`   | D02; framework M126 released; pin moved to that release         | [D06 plan](plans/d06-node.md)       |
 | D05  | Direction only                      | Health summary, generator/task UI                              | D04; separate plan                                              |                                     |
 | P01  | Direction only                      | Live analysis, multi-app workflows                             | D04; separate plan                                              |                                     |
 | P02  | Direction only                      | Retained investigations and comparisons                        | Persistence/export threat review; separate plan                 |                                     |

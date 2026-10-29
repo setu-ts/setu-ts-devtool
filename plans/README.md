@@ -16,7 +16,8 @@ and the canonical plan for each.
    evidence.
 6. D05 free follow-ons (health summary, generator/task UI): direction only; plan
    after D04.
-7. D06 Node applications: plan pending (`d06-node.md`). Needs a framework release
-   containing M126.
+7. [D06 Node applications](d06-node.md): npm project discovery and launch under
+   `tsx`. Built against framework `develop`; merges after the release that
+   contains M126.
 
 Capability-specific inspectors (P03) remain follow-on work.
