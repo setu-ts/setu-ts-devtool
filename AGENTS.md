@@ -92,6 +92,10 @@ ownership, cleanup, trust gates, or diagnostic data boundaries.
   live in Git's shared common directory, so the command is available from every
   properly provisioned linked worktree.
 
-GitHub cannot enforce the framework's server-side ruleset on this private
-repository under the current plan. The shared local hooks and guarded merge
-command are therefore part of the repository workflow, not optional advice.
+The repository is public, and GitHub enforces a "protect main" ruleset on
+`main`: changes arrive only through a pull request merged with a merge commit,
+the `linux` check must pass, every review thread must be resolved, and
+force-pushes and deletion are refused. Secret scanning and push protection are
+enabled. The shared local hooks and the guarded merge command remain part of
+the workflow: they check the same conditions locally, plus the maintainer
+label, which the ruleset does not.
