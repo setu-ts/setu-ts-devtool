@@ -122,7 +122,11 @@ probes used a CLI bundled from that commit, scaffolds it generated, and Node
 - the Node runner from `workspaceDevRunner(workspaceProfile('node'))`;
 - `profile.runAll`.
 
-Preparation fails if any export it needs is missing at the pinned commit. The
+Preparation fails if any export it needs is missing at the pinned commit. If
+the CLI exposes no per-template script renderer, preparation instead runs the
+CLI bundled from the pinned commit (`src/bin.ts`, as this plan's probe did) in a
+scratch directory, once per template, and reads the scripts from what it
+writes. The
 Deno section is regenerated from the same commit, with `'deno'` passed to
 `renderDevEntry`.
 
