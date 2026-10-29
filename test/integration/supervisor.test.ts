@@ -1,7 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawn, type Serializable } from "node:child_process";
-import { resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
+import { access, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { once } from "node:events";
 import { liveMembers } from "../../src/launch/process-group";
 const valid = {
@@ -86,5 +87,50 @@ test("supervisor refuses missing credentials, wrong group setup, and cleans up I
       else child.send(valid, () => {});
     }
     await ended;
+  }
+});
+test("supervisor runs node only with npm's CLI script, never another script", async () => {
+  await mkdir(".tmp", { recursive: true });
+  const base = await mkdtemp(resolve(".tmp/supervisor-npm-"));
+  const cli = join(base, "node_modules/npm/bin/npm-cli.js");
+  await mkdir(dirname(cli), { recursive: true });
+  const write = (marker: string) =>
+    `require("node:fs").writeFileSync(${JSON.stringify(join(base, marker))}, "ran");`;
+  await writeFile(cli, write("cli-ran"));
+  await writeFile(join(base, "evil.js"), write("evil-ran"));
+  const send = async (npm: string) => {
+    const child = spawn(process.execPath, [resolve("dist/supervisor.mjs")], {
+      detached: true,
+      stdio: ["ignore", "ignore", "ignore", "ipc"],
+      env: {
+        SETU_DEVTOOL_SESSION_ID: "a".repeat(32),
+        SETU_DEVTOOL_SESSION_KEY: "b".repeat(64),
+        ...(process.env.NODE_V8_COVERAGE
+          ? { NODE_V8_COVERAGE: process.env.NODE_V8_COVERAGE }
+          : {}),
+      },
+    });
+    const ended = once(child, "exit");
+    await once(child, "message");
+    child.send(
+      {
+        ...valid,
+        executable: process.execPath,
+        cwd: base,
+        runtime: "node",
+        npm,
+      },
+      () => {},
+    );
+    await ended;
+  };
+  try {
+    await send(join(base, "evil.js"));
+    await assert.rejects(access(join(base, "evil-ran")));
+    // Positive control: the same harness does observe a permitted script.
+    await send(cli);
+    await access(join(base, "cli-ran"));
+  } finally {
+    await rm(base, { recursive: true, force: true });
   }
 });
