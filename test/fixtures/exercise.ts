@@ -2,14 +2,24 @@ import assert from "node:assert/strict";
 import { rm } from "node:fs/promises";
 import { resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
-import { preparedProject } from "./projects";
+import { preparedNodeProject, preparedProject } from "./projects";
 import { discover } from "../../src/discovery/discover";
 import { prepareLaunch } from "../../src/launch/preflight";
-import { resolveDeno, verifyDeno } from "../../src/launch/executable";
+import {
+  resolveDeno,
+  resolveNode,
+  verifyDeno,
+  verifyNode,
+} from "../../src/launch/executable";
 import { SessionController } from "../../src/session/controller";
 import { listening } from "../../src/launch/readiness";
-export async function exerciseConnection(workspace: boolean): Promise<void> {
-  const fixture = await preparedProject(workspace);
+export async function exerciseConnection(
+  workspace: boolean,
+  runtime: "deno" | "node" = "deno",
+): Promise<void> {
+  const fixture = await (runtime === "node"
+    ? preparedNodeProject(workspace)
+    : preparedProject(workspace));
   const previous = process.env.PORT;
   process.env.PORT = String(fixture.appPort);
   const session = new SessionController(
@@ -20,8 +30,13 @@ export async function exerciseConnection(workspace: boolean): Promise<void> {
     const project = (await discover([fixture.root])).projects[0];
     assert.ok(project);
     const descriptor = await prepareLaunch(project, fixture.port);
-    const executable = await resolveDeno(undefined, [fixture.root]);
-    await verifyDeno(executable);
+    assert.equal(project.runtime, runtime);
+    const executable =
+      runtime === "node"
+        ? await resolveNode(undefined, [fixture.root])
+        : await resolveDeno(undefined, [fixture.root]);
+    if (runtime === "node") await verifyNode(executable);
+    else await verifyDeno(executable);
     await session.start(async () => ({ descriptor, executable }));
     assert.equal(session.status().state, "Live");
     let ready = false;

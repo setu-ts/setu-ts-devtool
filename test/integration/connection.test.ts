@@ -16,12 +16,13 @@ import { planLifetime } from "../../src/session/lifetime";
 import type { LaunchDescriptor } from "../../src/launch/preflight";
 import { SessionController } from "../../src/session/controller";
 
-for (const workspace of [false, true])
-  test(
-    `real ${workspace ? "workspace" : "standalone"} launch, pair, request capture and Stop`,
-    { timeout: 90000 },
-    () => exerciseConnection(workspace),
-  );
+for (const runtime of ["deno", "node"] as const)
+  for (const workspace of [false, true])
+    test(
+      `real ${runtime} ${workspace ? "workspace" : "standalone"} launch, pair, request capture and Stop`,
+      { timeout: 90000 },
+      () => exerciseConnection(workspace, runtime),
+    );
 
 test(
   "occupied port refuses launch; failed startup requires a fresh explicit launch",

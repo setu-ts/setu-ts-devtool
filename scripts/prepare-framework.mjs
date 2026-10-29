@@ -191,6 +191,41 @@ if (
 )
   throw new Error("The pinned CLI's Node scaffold does not match its exports");
 await rm(scratch, { recursive: true, force: true });
+// Node test fixtures run the prepared sources under tsx; their third-party
+// imports are installed once, at the versions the framework locks.
+const lock = await readFile(resolve(source, "pnpm-lock.yaml"), "utf8");
+const locked = (name) => {
+  const escaped = name.replace(/[/@-]/g, (c) => "\\" + c);
+  const version = new RegExp(`^ {2}'?${escaped}@([0-9][^:(']*)`, "m").exec(
+    lock,
+  )?.[1];
+  if (version === undefined)
+    throw new Error(`The framework lock has no ${name}`);
+  return version;
+};
+const fixtureDeps = resolve(".tmp/node-fixture-deps");
+await rm(fixtureDeps, { recursive: true, force: true });
+await mkdir(fixtureDeps, { recursive: true });
+await writeFile(
+  `${fixtureDeps}/package.json`,
+  JSON.stringify({
+    private: true,
+    dependencies: Object.fromEntries(
+      ["hono", "@hono/node-server", "tsx"].map((name) => [name, locked(name)]),
+    ),
+  }),
+);
+execFileSync(
+  "npm",
+  [
+    "install",
+    "--ignore-scripts",
+    "--no-audit",
+    "--no-fund",
+    "--loglevel=error",
+  ],
+  { cwd: fixtureDeps, stdio: "inherit", timeout: 300000 },
+);
 const recipes = {
   commit: pin.commit,
   standalone: variants(
