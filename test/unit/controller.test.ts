@@ -427,3 +427,31 @@ test("failed cleanup rechecks coalesce, keep launch blocked, and allow a later r
   assert.equal(checks, 2);
   assert.equal(h.controller.status().state, "Idle");
 });
+
+test("deadlines are measured from the send time, so a slow answer shortens them", async () => {
+  const h = harness();
+  const slow = <T>(value: T) =>
+    new Promise<T>((resolve) => setTimeout(() => resolve(value), 120));
+  h.ports.client = () => ({
+    session: () => slow(renewable),
+    renew: () => slow(renewable),
+    snapshot: async () => snap,
+    read: async () => ({
+      version: 1,
+      instanceId: "id",
+      events: [],
+      next: 0,
+      lost: 0,
+      closed: false,
+    }),
+    close() {},
+  });
+  await h.controller.start(async () => prepared);
+  try {
+    assert.ok(h.controller.status().lifetime!.remainingMs <= 900000 - 100);
+    await h.renewal().run();
+    assert.ok(h.controller.status().lifetime!.remainingMs <= 900000 - 100);
+  } finally {
+    await h.controller.stop();
+  }
+});

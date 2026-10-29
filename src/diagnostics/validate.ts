@@ -96,26 +96,28 @@ const bounded = (value: unknown, min: number, max: number): value is number =>
 export function lifetimeProjection(
   value: DiagnosticsSessionLifetime,
 ): DiagnosticsSessionLifetime {
+  // Each field is read once, so an accessor cannot pass a bound then change.
   const keys = Object.keys(value).sort().join();
+  const expiresInMs: unknown = value.expiresInMs;
   const renewal: unknown = value.renewal;
+  const maxRemainingMs: unknown =
+    renewal !== null &&
+    typeof renewal === "object" &&
+    Object.keys(renewal).join() === "maxRemainingMs"
+      ? (renewal as { maxRemainingMs: unknown }).maxRemainingMs
+      : undefined;
   if (
     keys !== "expiresInMs,renewal" ||
-    !bounded(value.expiresInMs, 0, MAX_WINDOW_MS) ||
+    !bounded(expiresInMs, 0, MAX_WINDOW_MS) ||
     (renewal !== null &&
-      (typeof renewal !== "object" ||
-        Object.keys(renewal).join() !== "maxRemainingMs" ||
-        !bounded(
-          (renewal as { maxRemainingMs: unknown }).maxRemainingMs,
-          value.expiresInMs,
-          MAX_LIFETIME_MS,
-        )))
+      !bounded(maxRemainingMs, expiresInMs as number, MAX_LIFETIME_MS))
   )
     throw new Error("CONNECTION_FAILED");
   return Object.freeze({
-    expiresInMs: value.expiresInMs,
+    expiresInMs: expiresInMs as number,
     renewal:
-      value.renewal === null
+      renewal === null
         ? null
-        : Object.freeze({ maxRemainingMs: value.renewal.maxRemainingMs }),
+        : Object.freeze({ maxRemainingMs: maxRemainingMs as number }),
   });
 }

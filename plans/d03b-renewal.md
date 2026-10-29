@@ -1,6 +1,6 @@
 # D03b — Session renewal and the v0.10.0 contract pin
 
-Status: planned. D01–D03 are merged to `main`. Framework M98o (session renewal)
+Status: implemented and independently reviewed ([validation](../docs/d03b-validation.md), [security review](../docs/d03b-security-review.md)). D01–D03 are merged to `main`. Framework M98o (session renewal)
 shipped in `v0.8.0`; this milestone moves the contract pin to the `v0.10.0`
 release commit and consumes renewal. It is the prerequisite for D04, whose plan
 is in review on `docs/d04-release-plan`.
