@@ -1,7 +1,9 @@
 # Devtool roadmap
 
-Status, updated 2026-10-02: D01–D03 are implemented and locally verified. D03b
-and D04 are next. The [milestone table](#milestones) is the status record; per-milestone evidence is linked from it.
+Status, updated 2026-10-29: D01–D03 are implemented and locally verified. Next
+is moving the contract pin to framework `v0.10.0`, then D03b and D04. Framework
+M126 (a Node diagnostics listener) merged on 2026-10-29 and ships in the next
+framework release; D06 consumes it. The [milestone table](#milestones) is the status record; per-milestone evidence is linked from it.
 
 P01–P03 describe product direction, not approved implementation plans. Write a
 canonical plan with acceptance tests before starting each.
@@ -33,11 +35,33 @@ The devtool consumes the framework's authenticated local diagnostics connector
   M98h–n observation families and M98o session renewal. None of these is
   qualified here until the pin moves and the
   [contract register](docs/framework-compatibility.md) is refreshed.
+- **Framework release `v0.10.0`** — tag at merge commit
+  `d7a04734be8a4658774c7fe5b5e30297d5103ef3` (2026-10-23), the current release
+  and the recommended pin target. It serves the same connector routes as
+  `v0.8.0`. The diagnostics changes between the two releases are in the CLI's
+  devtool lifecycle (M101f, M113i), not the wire protocol. One later commit on
+  framework `develop` (`d409fec8`, unreleased) changes only how connector rate
+  buckets are swept internally.
 
-`v0.8.0` is the first published framework release containing
-`@setu-ts/diagnostics-plugin`: JSR lists `diagnostics-plugin@0.8.0`, published
-2026-10-03, with `cli@0.8.0` beside it. D04's dependency on a published release
-is therefore met; moving the contract pin to the release commit is what remains.
+**Distribution moved to npm.** Starting with `v0.9.0` (2026-10-14), the
+framework publishes to npm under `@setu-ts`, and JSR gets no further releases
+(framework M111, M111f). Generated Deno projects import `npm:@setu-ts/…`.
+Release builds and D04 must therefore take the client from npm or from the
+pinned source, never from JSR.
+
+**Node is the default runtime.** Starting with framework M111d, a stock
+`setu new` project targets Node and runs TypeScript under `tsx`. The
+diagnostics listener still binds only on Deno, and the CLI refuses
+`--devtool` on any other target. As a result, the devtool cannot inspect a
+project created with the defaults. Framework M126 (setu-ts#521, merged
+2026-10-29, not yet released) removes both refusals for Node; D06 consumes it.
+
+`v0.8.0` was the first published framework release containing
+`@setu-ts/diagnostics-plugin` (on JSR, 2026-10-03). npm has
+`@setu-ts/diagnostics-plugin@0.9.0` (2026-10-14) and
+`@setu-ts/diagnostics-plugin@0.10.0` (2026-10-23). D04's
+dependency on a published release is therefore met; moving the contract pin to
+a release commit is what remains.
 See [framework work](#framework-work-in-priority-order).
 
 Observations the connector serves as of `v0.8.0`:
@@ -74,8 +98,9 @@ empty view.
 | Available lifecycle stages and connection state        | Free | D03       | M98a                                                | No complete post-failure startup history                                                                      |
 | Search, filters, capture gaps, clear/disconnect        | Free | D03       | —                                                   | Bounded in-memory capture only                                                                                |
 | Contextual documentation links                         | Free | D03       | —                                                   | Built-in destination allowlist                                                                                |
+| Node application discovery and launch                  | Free | D06       | Framework M126; pin move                            | npm projects run under `tsx`; the launcher owns the whole process tree; Bun still refused                     |
 | Session renewal without relaunch                       | Free | D03b      | Framework M98o (released in `v0.8.0`); pin move     | Bounded by the launch-time maximum lifetime the application set; never silently lengthened                    |
-| VSIX preview with measured compatibility               | Free | D04       | D03b; framework `v0.8.0` published packages         | Real framework/editor exercises                                                                               |
+| VSIX preview with measured compatibility               | Free | D04       | D03b; framework `v0.10.0` on npm                    | Real framework/editor exercises                                                                               |
 | Generator/task UI with change preview                  | Free | D05       | Separate execution/write plan; pinned CLI version   | Keep using the existing CLI until then                                                                        |
 | Health summary                                         | Free | D05       | M98d (`/v1/health`)                                 | Retained latest observations, collected by the framework's scheduler                                          |
 | Safe source navigation                                 | Free | Follow-on | New reviewed workspace-relative source projection   | Never arbitrary file or data access                                                                           |
@@ -116,10 +141,14 @@ platform. Add Windows/macOS only after their process cleanup and
 packaged-extension matrix passes. Node is the extension host; Deno is the
 inspected application runtime.
 
-Node and Bun applications are not supported. The framework's local diagnostics
-listener is Deno-only and rejects every `listen` on other platforms before
-binding. Widening this needs framework listener work first; see
-[framework work](#framework-work-in-priority-order).
+Node and Bun applications are not supported in the D04 preview. The framework's
+local diagnostics listener is Deno-only and rejects every `listen` on other
+platforms before binding. Node is now the framework's default target, so this is
+the preview's largest limitation, and the preview docs must state it. Framework
+M126 adds a Node listener and the CLI's Node devtool arm. D06 adds Node support
+here. Whether the preview waits for D06 is an
+[open decision](#open-decisions). Bun stays unsupported until the framework takes
+it.
 
 Browser editors, SSH/WSL/containers/Codespaces sessions, remote connections, and
 production access are outside the first support matrix. Unsupported execution
@@ -132,8 +161,9 @@ contexts must be refused explicitly.
 | D01  | Implemented; locally verified       | Extension shell, trust gate, workspace discovery, fixtures, CI | None                                                                  | [D01 plan](plans/d01-foundation.md) |
 | D02  | Implemented; independently reviewed | Explicit launch, pairing, bounded reader, teardown             | D01 + M98a–c + local compatibility evidence                           | [D02 plan](plans/d02-connection.md) |
 | D03  | Implemented; independently reviewed | Composition graph, route/middleware views, request timeline    | D01 fixtures for parallel UI work; D02 for integration                | [D03 plan](plans/d03-inspection.md) |
-| D03b | Planned; M98o released in `v0.8.0`  | Session renewal without relaunch                               | D02; contract pin moved to a framework commit containing M98o         | Pending: `plans/d03b-renewal.md`    |
-| D04  | Planned                             | Security/compatibility exercises, VSIX, free preview docs      | D01–D03b; framework `v0.8.0` (published); pinned packages             | Pending: `plans/d04-release.md`     |
+| D03b | Planned; M98o released in `v0.8.0`  | Session renewal without relaunch                               | D02; contract pin moved to `v0.10.0` (contains M98o)                  | Pending: `plans/d03b-renewal.md`    |
+| D04  | Planned; draft plan on a branch     | Security/compatibility exercises, VSIX, free preview docs      | D01–D03b; framework `v0.10.0` on npm; pinned packages                 | Pending: `plans/d04-release.md`     |
+| D06  | Planned; framework M126 merged      | Node applications: npm project discovery, launch under `tsx`   | D02; framework M126 released; pin moved to that release               | Pending: `plans/d06-node.md`        |
 | D05  | Direction only                      | Health summary, generator/task UI                              | D04; separate plan                                                    |                                     |
 | P01  | Direction only                      | Live Pro analysis, multi-app workflows, licensing              | D04; validation criteria met (see open decisions); separate plan      |                                     |
 | P02  | Direction only                      | Retained investigations and comparisons                        | Persistence/export threat review; separate plan                       |                                     |
@@ -227,29 +257,80 @@ client, not whatever `setu` is on the user's `PATH`. Generated development
 entries carry options (M98o's `maxSessionLifetimeMs`, for example) that must
 agree with the client that will pair with them.
 
+### D06 — Node applications
+
+Framework M126 (setu-ts#521) makes the diagnostics listener bind on Node and
+lets the CLI emit `--devtool` for a Node target. D06 is the devtool half of
+that work:
+
+- **Discovery.** The single-project path (`src/discovery/discover.ts`) accepts
+  only a `deno.json` or `deno.jsonc` whose import map names `@setu-ts/`. D06 adds npm projects:
+  a bounded read of `package.json` dependencies and the workspace manifest. It
+  still never imports application code.
+- **Launch.** Accept the Node development entry and its `package.json` script
+  only when both are byte-identical to the pinned CLI's rendering, as D02
+  already requires for Deno. Run the `dev` script, the same name the Deno
+  task has, with the environment built explicitly. Framework M126 fixed this
+  name after M120 took `start:dev` (watch) and `start:debug`. `dev` is never a
+  watch script, because a restart is a new instance and ends the session. Replace the `denoPath` setting with a per-runtime executable
+  setting, or add a Node one beside it.
+- **Process ownership.** Under `npm run`, the application is four processes
+  below the supervisor: npm, a shell, tsx, then node. The supervisor's
+  process-group teardown (`process.kill(0, …)`) already reaches all of them,
+  provided nothing detaches. The framework's Node workspace runner starts each
+  member in a group of its own, except when the devtool selects a member: since
+  M126 it then keeps every child in the launcher's group and blanks the session
+  pair for every other member. Teardown, `Recheck Cleanup` and the S-cases in
+  `docs/security.md` are re-proved against the whole chain, including a
+  workspace launch.
+- **Compatibility evidence.** Rerun the D02/D03 exercises on Node against the
+  release that contains M126. Add rows for Node to the contract register.
+
+This crosses the same trust boundary as D02 (launching processes and handling
+credentials), so it needs an independent security review.
+
 ## Framework work in priority order
 
 Done: **session renewal (M98o)** and **publishing `diagnostics-plugin`** both
-shipped in `v0.8.0` (2026-10-03). The D04 plan's version numbers are `0.8.0`.
+shipped in `v0.8.0` (2026-10-03). **M101f** (the devtool lifecycle, framework
+PR #414) changed the generated `main.dev.ts` and shipped in `v0.9.0`. The D04
+draft plan (`feat/d04-release`, written 2026-09-28 against `0.8.0`) predates
+all of this and must be rebased: its version numbers become `0.10.0`, and its
+publishing references move from JSR to npm.
 
-1. **Move the contract pin** to the `v0.8.0` release commit
-   (`6520e12e03118a9fc96f893a907aa7f6e3751e59`) and refresh the
+1. **Move the contract pin** to the `v0.10.0` release commit
+   (`d7a04734be8a4658774c7fe5b5e30297d5103ef3`), not `v0.8.0`, and refresh the
    [contract register](docs/framework-compatibility.md). This requalifies D02/D03
-   against the new pin, unblocks D03b, restores pairing with `cli@0.8.0`
-   scaffolds (see [D03b](#d03b--session-renewal-before-d04)), and is a P03
-   prerequisite. Prefer the release commit over a later `main` commit, so local
-   builds and D04's published packages describe the same source.
-2. **Track framework M101f.** The open `v0.8.0` smoke closeout changes the
-   generated `main.dev.ts` text. The launcher accepts only an entry
-   byte-identical to the CLI rendering, so the pin must move again in step with
-   that change.
+   against the new pin, unblocks D03b, restores pairing with current scaffolds
+   (see [D03b](#d03b--session-renewal-before-d04)), and is a P03 prerequisite.
+   The launcher's recipe catalog (`src/launch/recipes.ts`) is regenerated from
+   the pinned CLI, which picks up the M101f entry text. Prefer the release
+   commit over a later `develop` commit, so local builds and D04's published
+   packages describe the same source.
+2. **Node diagnostics listener — framework M126, merged 2026-10-29
+   (setu-ts#521), unreleased.** It adds a Node `ILocalDiagnosticsListenerFactory`
+   and the CLI's `--devtool` arm for Node targets. For every request that reaches
+   the protocol, the Node listener answers exactly as the Deno one does. Each
+   runtime's HTTP parser refuses some malformed requests itself with a bare
+   `400`, and the two draw that line in different places; the framework records
+   both in a two-runtime conformance table. The pin moves again to the release
+   that contains M126, and D06 consumes it. Three consequences for the devtool:
+   - The generated `main.dev.ts` is now runtime-neutral on Deno too (it reads the
+     pair through `runtime.env`). The CLI still recognizes the 0.8–0.10
+     renderings, but the launcher's byte-identical recipe catalog
+     (`src/launch/recipes.ts`) must be regenerated from the CLI at that pin.
+   - Under `tsx`, the application runs in a child process of the process the
+     launcher spawns. D06's teardown must own that whole process tree.
+   - The Node listener keeps at most 32 sockets and evicts the oldest idle one
+     when full. The framework measured the native client's peak at no more than
+     16 connections; D06 keeps the client within that.
 3. **Workspace-relative source references**: a new reviewed metadata projection,
    before safe source navigation.
 4. **Before P02**: review storage, deletion, import/export and identity across
    instances. M98 IDs are instance-local; matching `r1` between launches is
    incorrect.
-5. **Node/Bun diagnostics listener**, if the support matrix is to widen beyond
-   Deno.
+5. **Bun diagnostics listener.** Named but not taken in M126. Request it from the
+   framework only if the support matrix is to include Bun.
 
 The observation families that blocked P03 (health, configuration, queues,
 tracing, authorization) shipped as M98d–h, each with its own security audit.
@@ -261,6 +342,12 @@ releases. They require capability-specific inspection or control contracts and
 authorization reviews. Resending a request is not deterministic replay.
 
 ## Open decisions
+
+- **Does the first preview wait for D06?** Node is the framework's default
+  target, so a Deno-only preview cannot inspect a project created with the
+  defaults. Shipping D04 first gets real feedback sooner. Waiting for D06 makes
+  the preview cover the common case. M126 has merged; decide once the framework
+  release that contains it has a date.
 
 - **Tier of single-application inspectors.** The P03 inspectors render data the
   MIT-licensed framework serves free through a documented protocol and a native
