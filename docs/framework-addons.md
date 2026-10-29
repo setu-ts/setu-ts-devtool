@@ -24,8 +24,8 @@ baseline.
 
 Keep D01–D04 scoped to the free M98 preview. Make the following features
 explicit dependency-gated follow-ons rather than silently dropping them or
-treating them as UI-only work. Their framework projections remain free; the tier
-describes the devtool experience, never permission to read an application.
+treating them as UI-only work. Their framework projections remain free, and so does the devtool
+(2026-10-29 decision); no feature grants permission to read an application.
 
 | Feature                       | Existing foundation                                                                     | Required addition before devtool implementation                                                              | Product placement                                      |
 | ----------------------------- | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------ |
@@ -208,8 +208,7 @@ The M98 connector/client does not currently advertise these inspector types or
 provide a generic extension endpoint. Any new transport surface requires a
 reviewed version/capability contract, signed requests/responses and compatible
 client delivery. A registered plugin is not proof that an inspector is
-supported. Do not infer support from package names, failed requests or Pro
-entitlement.
+supported. Do not infer support from package names or failed requests.
 
 Future availability must distinguish unsupported, disabled,
 enabled-with-no-data, stale and collection-failed states, with collection scope

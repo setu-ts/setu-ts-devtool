@@ -341,8 +341,8 @@ Local D02 artifacts may use the pinned unpublished framework revision as
 recorded in the contract register. D04 needs released-package reproducibility.
 Package only production bundles/assets and notices, never fixture captures,
 local mappings, source credentials or an automatic downloader. No billing,
-licensing, telemetry, recording, account portal or Pro checks enter the free
-preview. Later Pro analysis may consume the validated model; it must not bypass
+licensing, telemetry, recording or account portal enters the devtool, which is
+free. Later analysis (P01) may consume the validated model; it must not bypass
 connection or data protections.
 
 Fixture preview is a development/test-only command, visibly marked as sample

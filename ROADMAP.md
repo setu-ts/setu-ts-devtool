@@ -6,7 +6,9 @@ M126 (a Node diagnostics listener) merged on 2026-10-29 and ships in the next
 framework release; D06 consumes it. The [milestone table](#milestones) is the status record; per-milestone evidence is linked from it.
 
 P01–P03 describe product direction, not approved implementation plans. Write a
-canonical plan with acceptance tests before starting each.
+canonical plan with acceptance tests before starting each. They were first
+scoped as a paid tier; since the 2026-10-29 decision they are free features and
+keep their IDs.
 
 The [architecture](docs/architecture.md) defines the preview's components,
 launch lifecycle and resource budgets. The [security model](docs/security.md)
@@ -15,11 +17,14 @@ baselines for the free preview.
 
 ## Product boundary
 
-Free provides everyday single-application debugging. Pro adds deeper analysis
-and coordinated investigation across applications. Both tiers get the same
-protections: authentication, minimization, compatibility checks, bounded
-resources, capture-quality indicators, and the framework diagnostic APIs. A
-license never authorizes access to an application.
+The whole devtool is free, with no paid tier (maintainer decision, 2026-10-29).
+Its purpose is to promote adoption of the framework. Everyday single-application
+debugging, deeper analysis and investigation across applications are all part of
+the same free product. Every feature gets the same protections: authentication,
+minimization, compatibility checks, bounded resources, capture-quality
+indicators, and the framework diagnostic APIs. There is no account, licence or
+entitlement check, so nothing but the pairing credentials ever authorizes access
+to an application.
 
 ## Framework baseline
 
@@ -89,34 +94,34 @@ empty view.
 
 ## Feature allocation
 
-| Feature                                                | Tier | Delivery  | Dependency                                          | Limitation                                                                                                    |
-| ------------------------------------------------------ | ---- | --------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| Project and monorepo discovery                         | Free | D01       | None                                                | Reads bounded local manifests; never imports application code                                                 |
-| Explicit local launch and pairing                      | Free | D02       | M98a–c                                              | Prepared Deno application, native extension host                                                              |
-| Plugin/capability graph and route explorer             | Free | D03       | M98a minimized DTOs                                 | Names require application-side approval                                                                       |
-| Middleware order and individual request timeline       | Free | D03       | M98a                                                | Inclusive elapsed durations, not CPU profiling                                                                |
-| Available lifecycle stages and connection state        | Free | D03       | M98a                                                | No complete post-failure startup history                                                                      |
-| Search, filters, capture gaps, clear/disconnect        | Free | D03       | —                                                   | Bounded in-memory capture only                                                                                |
-| Contextual documentation links                         | Free | D03       | —                                                   | Built-in destination allowlist                                                                                |
-| Node application discovery and launch                  | Free | D06       | Framework M126; pin move                            | npm projects run under `tsx`; the launcher owns the whole process tree; Bun still refused                     |
-| Session renewal without relaunch                       | Free | D03b      | Framework M98o (released in `v0.8.0`); pin move     | Bounded by the launch-time maximum lifetime the application set; never silently lengthened                    |
-| VSIX preview with measured compatibility               | Free | D04       | D03b; framework `v0.10.0` on npm                    | Real framework/editor exercises                                                                               |
-| Generator/task UI with change preview                  | Free | D05       | Separate execution/write plan; pinned CLI version   | Keep using the existing CLI until then                                                                        |
-| Health summary                                         | Free | D05       | M98d (`/v1/health`)                                 | Retained latest observations, collected by the framework's scheduler                                          |
-| Safe source navigation                                 | Free | Follow-on | New reviewed workspace-relative source projection   | Never arbitrary file or data access                                                                           |
-| Route percentiles, outcome trends, slow-stage analysis | Pro  | P01       | M98a                                                | Sample size, losses and window visible                                                                        |
-| Compare two windows in the same live session           | Pro  | P01       | M98a                                                | No persistence or cross-restart identity claim                                                                |
-| Focused dependency subgraphs, declared impact analysis | Pro  | P01       | M98a                                                | Declared dependencies do not prove runtime calls                                                              |
-| Multi-application dashboard                            | Pro  | P01       | Independent launched/paired sessions                | Separate memory budgets; does not reconstruct cross-service causality                                         |
-| Saved filters and layouts                              | Pro  | P01       | —                                                   | Preferences only; exclude diagnostic records and labels by default                                            |
-| Local recordings, history, architecture diffs          | Pro  | P02       | Retention/access review; semantic identity matching | M98 identifiers are instance-local                                                                            |
-| Explicit investigation bundle export/import            | Pro  | P02       | Hostile-file validation and export preview          | Metadata can be sensitive                                                                                     |
-| Queue attempt and outcome inspector                    | Pro  | P03       | M98f (`/v1/queues`)                                 | Settlement is `unknown` on RabbitMQ/SQS; depth may be `unavailable`; durable job listing remains out of scope |
-| Trace inspector and cross-application correlation      | Pro  | P03       | M98g (`/v1/traces`)                                 | Correlates on equal trace ids only; parent visibility is shown, never a fabricated edge                       |
-| Configuration provenance                               | Pro  | P03       | M98e (`/v1/config`)                                 | Value-free; unapproved keys are never observed                                                                |
-| Authorization explanations                             | Pro  | P03       | M98h (`/v1/authorization`); pin move                | First-party RBAC only; custom providers report `unsupported`                                                  |
-| Cache, event and scheduler inspectors                  | Pro  | P03       | M98i–k; pin move                                    | Counters and local timer fires; a skipped local fire is not a missed execution                                |
-| Realtime, storage and outbound-HTTP inspectors         | Pro  | P03       | M98l–n; pin move                                    | Counters and status classes only; no frames, paths, URLs or payloads                                          |
+| Feature                                                | Delivery  | Dependency                                          | Limitation                                                                                                    |
+| ------------------------------------------------------ | --------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Project and monorepo discovery                         | D01       | None                                                | Reads bounded local manifests; never imports application code                                                 |
+| Explicit local launch and pairing                      | D02       | M98a–c                                              | Prepared Deno application, native extension host                                                              |
+| Plugin/capability graph and route explorer             | D03       | M98a minimized DTOs                                 | Names require application-side approval                                                                       |
+| Middleware order and individual request timeline       | D03       | M98a                                                | Inclusive elapsed durations, not CPU profiling                                                                |
+| Available lifecycle stages and connection state        | D03       | M98a                                                | No complete post-failure startup history                                                                      |
+| Search, filters, capture gaps, clear/disconnect        | D03       | —                                                   | Bounded in-memory capture only                                                                                |
+| Contextual documentation links                         | D03       | —                                                   | Built-in destination allowlist                                                                                |
+| Node application discovery and launch                  | D06       | Framework M126; pin move                            | npm projects run under `tsx`; the launcher owns the whole process tree; Bun still refused                     |
+| Session renewal without relaunch                       | D03b      | Framework M98o (released in `v0.8.0`); pin move     | Bounded by the launch-time maximum lifetime the application set; never silently lengthened                    |
+| VSIX preview with measured compatibility               | D04       | D03b; framework `v0.10.0` on npm                    | Real framework/editor exercises                                                                               |
+| Generator/task UI with change preview                  | D05       | Separate execution/write plan; pinned CLI version   | Keep using the existing CLI until then                                                                        |
+| Health summary                                         | D05       | M98d (`/v1/health`)                                 | Retained latest observations, collected by the framework's scheduler                                          |
+| Safe source navigation                                 | Follow-on | New reviewed workspace-relative source projection   | Never arbitrary file or data access                                                                           |
+| Route percentiles, outcome trends, slow-stage analysis | P01       | M98a                                                | Sample size, losses and window visible                                                                        |
+| Compare two windows in the same live session           | P01       | M98a                                                | No persistence or cross-restart identity claim                                                                |
+| Focused dependency subgraphs, declared impact analysis | P01       | M98a                                                | Declared dependencies do not prove runtime calls                                                              |
+| Multi-application dashboard                            | P01       | Independent launched/paired sessions                | Separate memory budgets; does not reconstruct cross-service causality                                         |
+| Saved filters and layouts                              | P01       | —                                                   | Preferences only; exclude diagnostic records and labels by default                                            |
+| Local recordings, history, architecture diffs          | P02       | Retention/access review; semantic identity matching | M98 identifiers are instance-local                                                                            |
+| Explicit investigation bundle export/import            | P02       | Hostile-file validation and export preview          | Metadata can be sensitive                                                                                     |
+| Queue attempt and outcome inspector                    | P03       | M98f (`/v1/queues`)                                 | Settlement is `unknown` on RabbitMQ/SQS; depth may be `unavailable`; durable job listing remains out of scope |
+| Trace inspector and cross-application correlation      | P03       | M98g (`/v1/traces`)                                 | Correlates on equal trace ids only; parent visibility is shown, never a fabricated edge                       |
+| Configuration provenance                               | P03       | M98e (`/v1/config`)                                 | Value-free; unapproved keys are never observed                                                                |
+| Authorization explanations                             | P03       | M98h (`/v1/authorization`); pin move                | First-party RBAC only; custom providers report `unsupported`                                                  |
+| Cache, event and scheduler inspectors                  | P03       | M98i–k; pin move                                    | Counters and local timer fires; a skipped local fire is not a missed execution                                |
+| Realtime, storage and outbound-HTTP inspectors         | P03       | M98l–n; pin move                                    | Counters and status classes only; no frames, paths, URLs or payloads                                          |
 
 D02 consumes M98c's prepared development entry and launch tasks. Users enable or
 migrate projects through the existing CLI before launch.
@@ -156,18 +161,18 @@ contexts must be refused explicitly.
 
 ## Milestones
 
-| ID   | State                               | Deliverable                                                    | Prerequisites                                                         | Canonical plan                      |
-| ---- | ----------------------------------- | -------------------------------------------------------------- | --------------------------------------------------------------------- | ----------------------------------- |
-| D01  | Implemented; locally verified       | Extension shell, trust gate, workspace discovery, fixtures, CI | None                                                                  | [D01 plan](plans/d01-foundation.md) |
-| D02  | Implemented; independently reviewed | Explicit launch, pairing, bounded reader, teardown             | D01 + M98a–c + local compatibility evidence                           | [D02 plan](plans/d02-connection.md) |
-| D03  | Implemented; independently reviewed | Composition graph, route/middleware views, request timeline    | D01 fixtures for parallel UI work; D02 for integration                | [D03 plan](plans/d03-inspection.md) |
-| D03b | Planned; M98o released in `v0.8.0`  | Session renewal without relaunch                               | D02; contract pin moved to `v0.10.0` (contains M98o)                  | Pending: `plans/d03b-renewal.md`    |
-| D04  | Planned; draft plan on a branch     | Security/compatibility exercises, VSIX, free preview docs      | D01–D03b; framework `v0.10.0` on npm; pinned packages                 | Pending: `plans/d04-release.md`     |
-| D06  | Planned; framework M126 merged      | Node applications: npm project discovery, launch under `tsx`   | D02; framework M126 released; pin moved to that release               | Pending: `plans/d06-node.md`        |
-| D05  | Direction only                      | Health summary, generator/task UI                              | D04; separate plan                                                    |                                     |
-| P01  | Direction only                      | Live Pro analysis, multi-app workflows, licensing              | D04; validation criteria met (see open decisions); separate plan      |                                     |
-| P02  | Direction only                      | Retained investigations and comparisons                        | Persistence/export threat review; separate plan                       |                                     |
-| P03  | Direction only                      | Capability-specific inspectors                                 | Pin moved past M98n; contract register refreshed; tier decision; plan |                                     |
+| ID   | State                               | Deliverable                                                    | Prerequisites                                                   | Canonical plan                      |
+| ---- | ----------------------------------- | -------------------------------------------------------------- | --------------------------------------------------------------- | ----------------------------------- |
+| D01  | Implemented; locally verified       | Extension shell, trust gate, workspace discovery, fixtures, CI | None                                                            | [D01 plan](plans/d01-foundation.md) |
+| D02  | Implemented; independently reviewed | Explicit launch, pairing, bounded reader, teardown             | D01 + M98a–c + local compatibility evidence                     | [D02 plan](plans/d02-connection.md) |
+| D03  | Implemented; independently reviewed | Composition graph, route/middleware views, request timeline    | D01 fixtures for parallel UI work; D02 for integration          | [D03 plan](plans/d03-inspection.md) |
+| D03b | Planned; M98o released in `v0.8.0`  | Session renewal without relaunch                               | D02; contract pin moved to `v0.10.0` (contains M98o)            | Pending: `plans/d03b-renewal.md`    |
+| D04  | Planned; draft plan on a branch     | Security/compatibility exercises, VSIX, free preview docs      | D01–D03b; framework `v0.10.0` on npm; pinned packages           | Pending: `plans/d04-release.md`     |
+| D06  | Planned; framework M126 merged      | Node applications: npm project discovery, launch under `tsx`   | D02; framework M126 released; pin moved to that release         | Pending: `plans/d06-node.md`        |
+| D05  | Direction only                      | Health summary, generator/task UI                              | D04; separate plan                                              |                                     |
+| P01  | Direction only                      | Live analysis, multi-app workflows                             | D04; separate plan                                              |                                     |
+| P02  | Direction only                      | Retained investigations and comparisons                        | Persistence/export threat review; separate plan                 |                                     |
+| P03  | Direction only                      | Capability-specific inspectors                                 | Pin moved past M98n; contract register refreshed; separate plan |                                     |
 
 Evidence: [D01](docs/d01-validation.md), [D02](docs/d02-validation.md) and its
 [security review](docs/d02-security-review.md), [D03](docs/d03-validation.md)
@@ -349,25 +354,9 @@ authorization reviews. Resending a request is not deterministic replay.
   the preview cover the common case. M126 has merged; decide once the framework
   release that contains it has a date.
 
-- **Tier of single-application inspectors.** The P03 inspectors render data the
-  MIT-licensed framework serves free through a documented protocol and a native
-  client. Anyone can build those views, so a paid single-app view is weak to
-  defend. P01/P02 analysis and retention do need devtool-side work. Decide
-  before the P03 plan whether single-app inspectors move to Free, with Pro
-  keeping cross-session analysis, history and multi-app correlation.
-- **What "validated free workflow" means for P01.** Define the users, signal
-  and threshold before P01 is planned, so the gate can actually be met.
+## No accounts, billing or licensing
 
-## Subscription without a custom portal
-
-The free preview contains no account system, billing client, entitlement checks,
-or application-data upload. P01 will select hosted checkout/billing management
-and a small entitlement service or a managed licensing provider. Provider
-selection and commercial terms are not decided in this plan.
-
-The future license design must define expiry, cancellation, bounded offline
-grace, and recovery from service failures. License secrets stay in host-managed
-secret storage, not workspace settings or the webview. No diagnostic data or
-pairing credential reaches licensing infrastructure. Loss of Pro entitlement
-leaves free inspection working. Framework packages contain no paid-feature
-checks.
+The devtool contains no account system, billing client, licence or entitlement
+check, and uploads no application data. Framework packages contain no
+paid-feature checks. Adding any of these later is a product change that needs
+its own decision and threat review, not an implementation detail.
