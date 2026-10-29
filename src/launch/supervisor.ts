@@ -77,7 +77,17 @@ process.on("message", (raw: unknown) => {
       void stop();
       return;
     }
-    if (value.kind !== "start" || started || Object.keys(value).length !== 5)
+    if (value.kind !== "start" || started || Object.keys(value).length !== 7)
+      throw new Error();
+    // Node runs `node <npm-cli.js> run dev`: the verified node runs npm.
+    const npm = value.npm;
+    if (!(
+      (value.runtime === "deno" && npm === null) ||
+      (value.runtime === "node" &&
+        typeof npm === "string" &&
+        isAbsolute(npm) &&
+        npm.endsWith("/node_modules/npm/bin/npm-cli.js"))
+    ))
       throw new Error();
     if (
       typeof value.executable !== "string" ||
@@ -128,12 +138,16 @@ process.on("message", (raw: unknown) => {
     if (value.member !== null) env.SETU_DEVTOOL_MEMBER = value.member;
     started = true;
     clearTimeout(startupTimer);
-    const child = spawn(value.executable, ["task", "dev"], {
-      cwd: value.cwd,
-      env,
-      shell: false,
-      stdio: "ignore",
-    });
+    const child = spawn(
+      value.executable,
+      typeof npm === "string" ? [npm, "run", "dev"] : ["task", "dev"],
+      {
+        cwd: value.cwd,
+        env,
+        shell: false,
+        stdio: "ignore",
+      },
+    );
     delete process.env.SETU_DEVTOOL_SESSION_ID;
     delete process.env.SETU_DEVTOOL_SESSION_KEY;
     child.once("spawn", () => send({ kind: "started" }));

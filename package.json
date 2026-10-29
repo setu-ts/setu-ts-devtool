@@ -79,6 +79,11 @@
           "type": "string",
           "scope": "application",
           "description": "Absolute path to the qualified Deno executable. Workspace overrides are ignored."
+        },
+        "setuDevtool.nodePath": {
+          "type": "string",
+          "scope": "application",
+          "description": "Absolute path to the Node executable (24.22.1 or later on the 24 line). npm 11 must sit in the same directory. Workspace overrides are ignored."
         }
       }
     }

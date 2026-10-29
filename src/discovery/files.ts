@@ -28,6 +28,16 @@ export async function safePath(root: string, path: string): Promise<string> {
   }
   return target;
 }
+/** Presence only: a lock file may be binary or larger than any manifest. */
+export async function exists(root: string, path: string): Promise<boolean> {
+  try {
+    await lstat(await safePath(root, path));
+    return true;
+  } catch (error) {
+    if (missing(error)) return false;
+    throw new Error("INVALID_PROJECT");
+  }
+}
 export async function readFile(
   root: string,
   path: string,

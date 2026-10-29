@@ -1,9 +1,16 @@
 import { createHash } from "node:crypto";
 import { relative, join } from "node:path";
 import { discover, type Project } from "../discovery/discover";
-import { readFile } from "../discovery/files";
+import { exists, readFile } from "../discovery/files";
 import { readJson, object } from "../discovery/json";
-import { entryMatches, runnerMatches, taskMatches, rootTask } from "./recipes";
+import {
+  entryMatches,
+  runnerMatches,
+  taskMatches,
+  scriptMatches,
+  rootTask,
+  rootScript,
+} from "./recipes";
 export interface LaunchDescriptor {
   readonly root: string;
   readonly directory: string;
@@ -11,6 +18,7 @@ export interface LaunchDescriptor {
   readonly port: number;
   readonly members: readonly string[];
   readonly fingerprint: string;
+  readonly runtime: "deno" | "node";
 }
 export async function prepareLaunch(
   project: Project,
@@ -46,7 +54,32 @@ export async function prepareLaunch(
       true,
     );
   };
-  if (project.member !== null) {
+  const runtime = selected.runtime;
+  const scripts = async (directory: string) => {
+    const path = join(relative(project.root, directory), "package.json");
+    return object(readJson(await read(path), false).scripts);
+  };
+  if (runtime === "node") {
+    if (project.member !== null) {
+      await read("setu.workspace.json");
+      if (
+        (await scripts(project.root)).dev !== rootScript ||
+        !runnerMatches(await read("scripts/dev.mjs"), "node")
+      )
+        throw new Error("PREPARATION_FAILED");
+    }
+    // npm_config_ignore_scripts stops pre/post scripts, so only the named
+    // script is compared. The devtool never installs: tsx must be present.
+    const tsx = join("node_modules", "tsx", "package.json");
+    if (
+      !(await exists(project.root, tsx)) &&
+      !(await exists(
+        project.root,
+        join(relative(project.root, selected.directory), tsx),
+      ))
+    )
+      throw new Error("PREPARATION_FAILED");
+  } else if (project.member !== null) {
     await read("setu.workspace.json");
     const root = await config(project.root);
     const tasks = object(root.tasks);
@@ -59,10 +92,17 @@ export async function prepareLaunch(
       throw new Error("PREPARATION_FAILED");
   }
   for (const member of current.projects) {
-    const tasks = object((await config(member.directory)).tasks);
     const chosen = member.directory === selected.directory;
+    if (runtime === "node") {
+      const values = await scripts(member.directory);
+      if (!scriptMatches(values[chosen ? "dev" : "start:dev"], chosen))
+        throw new Error("PREPARATION_FAILED");
+    }
+    const tasks =
+      runtime === "node" ? {} : object((await config(member.directory)).tasks);
     if (
-      !taskMatches(tasks[chosen ? "dev" : "start"], chosen) ||
+      (runtime === "deno" &&
+        !taskMatches(tasks[chosen ? "dev" : "start"], chosen)) ||
       tasks.predev !== undefined ||
       tasks.postdev !== undefined ||
       tasks.prestart !== undefined ||
@@ -77,6 +117,7 @@ export async function prepareLaunch(
         ),
         port,
         member.member !== null,
+        runtime,
       )
     )
       throw new Error("PREPARATION_FAILED");
@@ -95,5 +136,6 @@ export async function prepareLaunch(
     port,
     members: Object.freeze(current.projects.map((p) => p.label)),
     fingerprint: hash.digest("hex"),
+    runtime,
   });
 }

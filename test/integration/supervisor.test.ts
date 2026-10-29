@@ -10,7 +10,10 @@ const valid = {
   cwd: resolve(".tmp"),
   member: null,
   env: { PATH: "/usr/bin" },
+  runtime: "deno",
+  npm: null,
 };
+const npmCli = "/opt/node/lib/node_modules/npm/bin/npm-cli.js";
 test(
   "supervisor rejects malformed control messages without starting application code",
   { timeout: 20000 },
@@ -28,6 +31,17 @@ test(
       { ...valid, env: { NODE_CHANNEL_FD: "3" } },
       { ...valid, env: { NODE_OPTIONS: "unsafe" } },
       { ...valid, env: { VSCODE_IPC: "x" } },
+      { ...valid, runtime: "bun" },
+      { ...valid, npm: npmCli },
+      { ...valid, runtime: "node", npm: null },
+      {
+        ...valid,
+        runtime: "node",
+        npm: "relative/node_modules/npm/bin/npm-cli.js",
+      },
+      { ...valid, runtime: "node", npm: "/opt/evil.js" },
+      { ...valid, extra: true },
+      { ...valid, runtime: "node", npm: npmCli },
       { kind: "x", payload: "x".repeat(1024 * 1024) },
       valid,
     ];

@@ -128,7 +128,13 @@ export async function launchOwned(
       executable: executable.path,
       cwd: descriptor.root,
       member: descriptor.member,
-      env: applicationEnvironment(executable.pathValue),
+      env: applicationEnvironment(
+        executable.pathValue,
+        process.env,
+        descriptor.runtime,
+      ),
+      runtime: descriptor.runtime,
+      npm: descriptor.runtime === "node" ? (executable.npm?.path ?? "") : null,
     };
     if (Buffer.byteLength(JSON.stringify(messageToSend)) > 1024 * 1024)
       throw new Error("LAUNCH_FAILED");

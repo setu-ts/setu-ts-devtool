@@ -198,6 +198,7 @@ for (const renewable of [true, false])
         port: fixture.port,
         members: ["app"],
         fingerprint: "short-lifetime",
+        runtime: "deno",
       };
       const { client, count } = countingClient();
       const session = new SessionController(

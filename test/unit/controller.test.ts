@@ -27,6 +27,7 @@ const prepared: Prepared = {
     port: 4919,
     members: ["app"],
     fingerprint: "x",
+    runtime: "deno",
   },
   executable: { path: "/deno", identity: "x", pathValue: "/bin" },
 };
