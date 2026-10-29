@@ -18,11 +18,13 @@ launch/restart.
 
 The first support claim is **Linux x64 desktop VS Code 1.138.0 and Code OSS
 1.138.0, local `file:` workspaces, Deno 2.9.6 and prepared Setu-TS 0.10.0
-applications**. Node applications are D06 and are not part of this claim (see
-"Order relative to D03b and D06" below). Browser, remote/SSH/WSL/container/Codespaces, virtual,
+applications**. D04 runs after D06 (maintainer decision, 2026-10-29), so this
+claim, the release set and the fixture commands move to the framework release
+that contains M126, and gain the Node rows, when D04 starts (see "Order relative
+to D03b and D06" below). Browser, remote/SSH/WSL/container/Codespaces, virtual,
 untrusted and non-Linux contexts must refuse. Windows and macOS remain
-unsupported after their installed refusal checks; support can expand only after
-their own real launch/process-cleanup matrices pass.
+unsupported; support can expand only after their own real
+launch/process-cleanup matrices pass.
 
 A source checkout, `.tmp/framework`, development-host load, unpacked extension,
 mock editor, or locally bundled helper cannot close distributable
@@ -83,7 +85,7 @@ before launch.
 | Unblocked by D03b (merged)             | Published preparation, release build, reproducibility proof, exact VSIX digest, installed launch/pairing and S17 helper-provenance evidence (the packages are published)                       |
 | Available locally after implementation | Linux Code OSS installed trusted/restricted/virtual workflow, Linux crash/stress/egress exercises                                                                                              |
 | Needs another installed product        | Microsoft VS Code Linux matrix; `/usr/bin/code` and `/usr/bin/code-oss` currently identify the same Code OSS build and count once                                                              |
-| Needs external environments            | Real Remote-SSH window; web extension host; Windows and macOS installed refusal runs                                                                                                           |
+| Optional, when an environment exists   | Real Remote-SSH window; Windows and macOS installed refusal runs (not release gates; see the refusal matrix)                                                                                   |
 | Remains blocked after Linux release    | Windows/macOS support, Marketplace publication, crash-proof cleanup, remote/browser/virtual support, and Node applications (D06)                                                               |
 
 Missing published or environment evidence is a failed/open gate, never a skip.
@@ -278,7 +280,15 @@ Required refusal runs are hard gates:
 | Remote        | A self-hosted Linux qualification runner opens a real Remote-SSH window against an isolated loopback SSH fixture with an exact pinned Remote-SSH extension; the local UI host sees `env.remoteName` and refuses before reading/launching. |
 | Windows/macOS | Native runners install the candidate and invoke all commands in trusted local workspaces; the platform refusal occurs before discovery/network/process creation. These runs do not qualify launch or cleanup support.                     |
 
-Absence of the real Remote-SSH, web, Windows, macOS, VS Code or Code OSS result
+**Required and optional rows (maintainer decision, 2026-10-29).** Restricted,
+virtual and web are required: each runs on the local Linux machine, web through
+`@vscode/test-web`. Remote-SSH, Windows and macOS are optional. Their refusal is
+proved by the existing context-gate unit tests (`env.remoteName` and
+`process.platform`). The validation record marks them "unit-tested only, not
+exercised installed" until a real run exists, and the README says so. A real
+run, when a machine or runner is available, replaces that wording.
+
+Absence of the real web, restricted, virtual, VS Code or Code OSS result
 blocks D04 release qualification. Unit context doubles remain regression tests,
 not substitutes.
 
@@ -387,16 +397,24 @@ coverage, normal coverage, release build, two-extraction reproducibility and
 archive audit. It fails while the pin, `framework-release.json` or a lock is out
 of step with `0.10.0`; it is never conditionally skipped. The separately triggered
 `release-qualification.yml` uses pinned actions and named self-hosted labels for
-Linux VS Code, Linux Code OSS, Linux Remote-SSH, Windows and macOS. Raw `.tmp`
-evidence is uploaded only after sanitization; the VSIX is retained as a CI
-artifact, not published.
+Linux VS Code and Linux Code OSS; the optional Remote-SSH, Windows and macOS
+jobs exist but do not gate. Until such runners exist, the required rows are run
+locally with the same commands and the evidence is recorded identically. Raw
+`.tmp` evidence is uploaded only after sanitization.
+
+**Distribution (maintainer decision, 2026-10-29).** The qualified VSIX and its
+`.sha256` file are attached to a GitHub Release of this repository, tagged
+`v0.0.1`. Creating that release is a separate, explicitly authorized action.
+The README's install command is `code --install-extension
+setu-ts-devtool-0.0.1.vsix` (and the `code-oss` equivalent). Open VSX and the
+Marketplace come later, each separately authorized.
 
 The exact runner selectors are `[self-hosted,d04,linux,x64,vscode]`,
 `[self-hosted,d04,linux,x64,code-oss]`,
 `[self-hosted,d04,linux,x64,remote-ssh]`,
 `[self-hosted,d04,windows,x64,refusal]`, and
 `[self-hosted,d04,macos,arm64,refusal]`. A runner with a different label set
-cannot produce evidence for that row.
+cannot produce evidence for that row. Only the first two are required.
 
 ```sh
 npm ci
@@ -434,7 +452,7 @@ changes require installed re-exercise.
 
 | IDs     | D04 closure requirement                                                                                                                                                                                                            |
 | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| S01     | Installed trusted/restricted/virtual/web/Remote-SSH/Windows/macOS direct-command matrix. D04 supplies the missing editor/context evidence.                                                                                         |
+| S01     | Installed trusted/restricted/virtual/web direct-command matrix; Remote-SSH/Windows/macOS refusal by unit tests, installed runs optional. D04 supplies the missing editor/context evidence.                                         |
 | S02–S07 | Re-run D01/D02 parser, preflight, credential, executable, readiness and signed-transport suites; installed standalone/workspace workflow confirms the release bundle. Carry prior independent findings only for unchanged sources. |
 | S08     | Installed proxy canary, `strace` target-host classification, browser-Origin framework regression and CSP fetch attempt.                                                                                                            |
 | S09     | Re-run neutral-error/deadline suite and inspect installed wording; renewal behaves as D03b specifies, with no retry of a refused renewal.                                                                                          |
@@ -482,10 +500,12 @@ partially working modes.
 D04 depends on D03b (ROADMAP milestone table): the preview must not ship with a
 fixed 15-minute session. D03b (merged, setu-ts-devtool#14) moved the contract pin
 to `v0.10.0`, regenerated the launcher's recipe catalog from `cli@0.10.0` and
-added renewal; D04 qualifies that build. Node applications are D06, which needs a framework release containing
-M126 (merged, not yet released). Whether the first preview waits for D06 is an
-open ROADMAP decision. If it does, this plan's support claim, release set and
-fixture commands move to that release and gain the Node rows in the same PR.
+added renewal. The first preview waits for D06 (maintainer decision,
+2026-10-29): a default `setu new` project targets Node, so a Deno-only preview
+could not inspect what most users create, and qualifying twice is wasted work.
+D06 needs a framework release containing M126 (merged 2026-10-29, not yet
+released). When D04 starts, this plan's support claim, release set and fixture
+commands move to that release and gain the Node rows, in D04's own PR.
 
 The devtool is free and MIT-licensed (2026-10-29). Marketplace publication stays
 a separate, explicitly authorized action.
@@ -512,7 +532,8 @@ a separate, explicitly authorized action.
 
 D04 is complete only when the exact release set resolves from npm; both clean
 builds match; package audit passes; identified Linux VS Code and Code OSS
-installed workflows pass; every refusal context has real evidence; all required
+installed workflows pass; every required refusal context has real evidence and
+every optional one is marked unit-tested only; all required
 S01–S18 rows have a non-open disposition; normal/release coverage passes; and
 the independent review approves the candidate. Unavailable evidence blocks the
 release claim without reducing the acceptance criteria.
