@@ -20,6 +20,7 @@ import {
   entryMatches,
   taskMatches,
   runnerMatches,
+  scriptMatches,
 } from "../../src/launch/recipes";
 import {
   parseStat,
@@ -28,7 +29,7 @@ import {
   terminateUnknownGroup,
   liveMembers,
 } from "../../src/launch/process-group";
-import { preparedProject } from "../fixtures/projects";
+import { preparedNodeProject, preparedProject } from "../fixtures/projects";
 import recipes from "../../.tmp/artifacts/recipes.json";
 test("preflight validates the entire scope and detects changed or custom recipes", async () => {
   const f = await preparedProject(true);
@@ -157,6 +158,31 @@ test("credentials are fresh; inherited handoff and runtime injection are removed
   a.key.fill(0);
   b.key.fill(0);
 });
+test("a Node launch replaces every inherited npm setting with the fixed ones", () => {
+  const source = {
+    PATH: ".",
+    npm_config_script_shell: "/evil",
+    NPM_CONFIG_NODE_OPTIONS: "--require=/evil.js",
+    Npm_Config_Userconfig: "/evil/npmrc",
+    npm_config_registry: "https://registry.example",
+    NORMAL: "keep",
+  };
+  assert.deepEqual(applicationEnvironment("/safe", source, "node"), {
+    PATH: "/safe",
+    NORMAL: "keep",
+    npm_config_ignore_scripts: "true",
+    npm_config_script_shell: "/bin/sh",
+    npm_config_node_options: " ",
+    npm_config_update_notifier: "false",
+    npm_config_fund: "false",
+    npm_config_audit: "false",
+  });
+  // Deno honours an npm registry setting from the environment: kept.
+  assert.equal(
+    applicationEnvironment("/safe", source).npm_config_registry,
+    "https://registry.example",
+  );
+});
 test("Linux identity handles parentheses and zero system groups without losing identity", async () => {
   const record = await processIdentity(process.pid);
   assert.equal(record.pid, process.pid);
@@ -203,4 +229,80 @@ test("Linux cleanup classifies vanished processes and escalates unknown groups",
     /EXIT/,
   );
   assert.equal(calls.at(-1), "failed-signal-exit:1");
+});
+test("Node preflight compares the scripts, entry and runner, and requires an installed tsx", async () => {
+  for (const workspace of [false, true]) {
+    const fixture = await preparedNodeProject(workspace);
+    try {
+      const project = (await discover([fixture.root])).projects.find(
+        (p) => p.member === null || p.member === "api",
+      );
+      assert.ok(project);
+      assert.equal(project.runtime, "node");
+      const ready = await prepareLaunch(project, fixture.port);
+      assert.equal(ready.runtime, "node");
+      const dir = workspace ? join(fixture.root, "apps/api") : fixture.root;
+      const edits: [string, (text: string) => string][] = [
+        [join(dir, "main.dev.ts"), (t) => t.replace("4919", "4918") + " "],
+        [
+          join(dir, "package.json"),
+          (t) => t.replace('"tsx main.dev.ts"', '"tsx watch main.dev.ts"'),
+        ],
+        ...(workspace
+          ? ([
+              [join(fixture.root, "scripts/dev.mjs"), (t: string) => t + "\n"],
+              [
+                join(fixture.root, "package.json"),
+                (t: string) => t.replace("node scripts/dev.mjs", "node x.mjs"),
+              ],
+              [
+                join(fixture.root, "apps/worker/package.json"),
+                (t: string) => t.replace("tsx watch main.ts", "tsx main.ts"),
+              ],
+            ] as [string, (text: string) => string][])
+          : []),
+      ];
+      for (const [path, edit] of edits) {
+        const text = await readFile(path, "utf8");
+        await writeFile(path, edit(text));
+        await assert.rejects(
+          prepareLaunch(project, fixture.port),
+          /PREPARATION_FAILED/,
+          path,
+        );
+        await writeFile(path, text);
+      }
+      // ignore_scripts stops these, so they are not refused.
+      const manifest = join(dir, "package.json");
+      const original = await readFile(manifest, "utf8");
+      const withHooks = JSON.parse(original);
+      withHooks.scripts.predev = "echo pre";
+      await writeFile(manifest, JSON.stringify(withHooks));
+      await prepareLaunch(project, fixture.port);
+      await writeFile(manifest, original);
+      await rm(join(fixture.root, "node_modules/tsx"), { recursive: true });
+      await assert.rejects(
+        prepareLaunch(project, fixture.port),
+        /PREPARATION_FAILED/,
+      );
+    } finally {
+      await rm(fixture.root, { recursive: true, force: true });
+    }
+  }
+});
+test("recipe matchers cover the Node catalog", () => {
+  assert.ok(
+    entryMatches(
+      recipes.node.standalone[0]!.replace("port: 49191,", "port: 5000,"),
+      5000,
+      false,
+      "node",
+    ),
+  );
+  assert.ok(runnerMatches(recipes.node.runner[0]!, "node"));
+  assert.equal(runnerMatches(recipes.node.runner[0]!), false);
+  assert.ok(scriptMatches("tsx main.dev.ts", true));
+  assert.ok(scriptMatches("tsx dev.ts", false));
+  assert.equal(scriptMatches("tsx main.dev.ts", false), false);
+  assert.equal(scriptMatches(1, false), false);
 });

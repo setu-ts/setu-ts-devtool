@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdir, mkdtemp, rm, writeFile, symlink } from "node:fs/promises";
 import { resolve, join } from "node:path";
 import { readJson, MAX_BYTES } from "../../src/discovery/json";
-import { readFile } from "../../src/discovery/files";
+import { exists, readFile } from "../../src/discovery/files";
 import { discover } from "../../src/discovery/discover";
 async function fixture(): Promise<string> {
   await mkdir(".tmp", { recursive: true });
@@ -211,6 +211,12 @@ test("Bun is refused by name, by lock file or by workspace runtime", async () =>
       }),
     );
     assert.match((await discover([root])).issues[0] ?? "", /could not be/);
+    // A linked path on the way to a lock file is an issue, not "absent".
+    await rm(join(root, "setu.workspace.json"));
+    await writeFile(join(root, "package.json"), pkg);
+    await mkdir(join(root, "real"));
+    await symlink(join(root, "real"), join(root, "linked"));
+    await assert.rejects(exists(root, "linked/bun.lock"), /INVALID_PROJECT/);
   } finally {
     await rm(root, { recursive: true });
   }

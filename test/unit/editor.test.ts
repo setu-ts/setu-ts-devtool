@@ -7,7 +7,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import { activate, deactivate } from "../../src/extension";
 import { statusCommand } from "../../src/editor/connection";
 import * as editor from "../fixtures/vscode";
-import { preparedProject } from "../fixtures/projects";
+import { preparedNodeProject, preparedProject } from "../fixtures/projects";
 function context() {
   const subscriptions: { dispose(): unknown }[] = [];
   return {
@@ -224,5 +224,36 @@ test("production activation in an empty window exposes no sample command or proj
     await deactivate();
     for (const d of ctx.subscriptions) d.dispose();
     editor.workspace.workspaceFolders = previous;
+  }
+});
+test("a Node project launches with the verified node and npm named in the confirmation", async () => {
+  const fixture = await preparedNodeProject(),
+    ctx = context();
+  editor.workspace.workspaceFolders = [
+    { uri: { scheme: "file", fsPath: fixture.root } },
+  ];
+  const api = activate(ctx);
+  const previous = process.env.PORT;
+  process.env.PORT = String(fixture.appPort);
+  try {
+    editor.state.errors = [];
+    await select(api);
+    editor.state.input = String(fixture.port);
+    editor.state.confirmation = "Launch";
+    await editor.commands.executeCommand("setuDevtool.launch");
+    assert.match(editor.state.details.at(-1) ?? "", /\nNode: \S+ \(npm 11\./);
+    assert.deepEqual(editor.state.errors, []);
+    await editor.commands.executeCommand("setuDevtool.stop");
+    // Without an installed tsx the launch is refused with the Node guidance.
+    await rm(join(fixture.root, "node_modules/tsx"), { recursive: true });
+    await editor.commands.executeCommand("setuDevtool.launch");
+    assert.match(editor.state.errors.at(-1) ?? "", /setuDevtool\.nodePath/);
+  } finally {
+    await deactivate();
+    for (const d of ctx.subscriptions) d.dispose();
+    if (previous === undefined) delete process.env.PORT;
+    else process.env.PORT = previous;
+    editor.state.errors = [];
+    await rm(fixture.root, { recursive: true, force: true });
   }
 });
