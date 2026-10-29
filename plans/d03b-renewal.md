@@ -16,18 +16,16 @@ reached, the extension shows the fixed deadline, stops the launch when it
 passes, and says that a new explicit launch is needed.
 
 The pin move is part of this milestone, because renewal cannot be consumed
-without it and the devtool on `main` cannot launch any project the `0.8.0`,
-`0.9.0` or `0.10.0` CLI wrote (see the
-[roadmap](../ROADMAP.md#d03b--session-renewal-before-d04)).
+without it, and the devtool on `main` refuses the development entry the
+current CLI generates (see the
+[roadmap](../ROADMAP.md#d03b--session-renewal-before-d04)). The catalog
+accepts only the pinned CLI's rendering, as D02 requires; the framework has no
+users yet, so no older CLI's entries are accepted or tested.
 
 Excluded:
 
 - Node projects, npm discovery and the `tsx` launch path (D06, which needs a
   framework release containing M126).
-- Accepting development entries written by an earlier CLI. The pinned CLI still
-  recognizes its `0.8.0` and `0.9.0` renderings as its own
-  (`devEntryVariants`), so `setu devtool enable` from `cli@0.10.0` rewrites
-  them; the devtool accepts only the pinned rendering, as D02 requires.
 - Addon inspectors (`health()`, `queues()` and the rest). The new pin carries
   them; P03 plans them.
 - A setting for the renewal policy, renewal after a failure, automatic relaunch,
@@ -173,7 +171,7 @@ Nothing here is exported beyond the extension bundle.
 | ------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
 | `scripts/framework-pin.json`    | New commit                                             | CI prepare step; `build.mjs` provenance check                                                                                   |
 | `scripts/prepare-framework.mjs` | Archive list                                           | Prepare from a clean `v0.10.0` checkout; refusal on a dirty tree or another commit (manual, recorded)                           |
-| `src/launch/recipes.ts`         | None; catalog regenerated                              | `test/unit/launch.test.ts` against the new catalog, including a `0.9.0` entry refused                                           |
+| `src/launch/recipes.ts`         | None; catalog regenerated                              | `test/unit/launch.test.ts` against the new catalog                                                                              |
 | `src/diagnostics/transport.ts`  | Admit `/v1/renew`                                      | `test/integration/transport.test.ts`: renew allowed; renew with a query, other verbs and paths refused                          |
 | `src/diagnostics/validate.ts`   | `lifetimeProjection`                                   | New `test/unit/lifetime.test.ts`: every bound, both `renewal` shapes, extra fields, non-integers                                |
 | `src/diagnostics/client.ts`     | `session()`, `renew()`                                 | `test/integration/transport.test.ts`: signed fake server with renewable, non-renewable and invalid lifetimes                    |
