@@ -138,3 +138,37 @@ test("the real node on PATH verifies", async () => {
   const found = await resolveNode(undefined, [resolve(".tmp")]);
   assert.match(await verifyNode(found), /^11\./);
 });
+
+test("npm is found beside the resolved node and verified from npm's own directory", async () => {
+  const { base, bin, workspace } = await install();
+  try {
+    // An override symlink in another directory, with no npm beside it.
+    const elsewhere = join(base, "links");
+    await mkdir(elsewhere);
+    await symlink(join(bin, "node"), join(elsewhere, "node"));
+    const found = await resolveNode(join(elsewhere, "node"), [workspace], "");
+    assert.equal(
+      found.npm?.path,
+      join(base, "lib/node_modules/npm/bin/npm-cli.js"),
+    );
+    assert.equal(found.pathValue.split(":")[0], bin);
+    const seen: unknown[] = [];
+    const run = ((
+      _file: string,
+      args: string[],
+      options: { cwd?: string },
+      done: Function,
+    ) => {
+      seen.push(options.cwd);
+      done(null, args.length === 1 ? "v24.22.1\n" : "11.19.1\n");
+    }) as unknown as Parameters<typeof verifyNode>[1];
+    await verifyNode(found, run);
+    // Never the extension host's directory, where npm would read a .npmrc.
+    assert.deepEqual(seen, [
+      join(base, "lib/node_modules/npm/bin"),
+      join(base, "lib/node_modules/npm/bin"),
+    ]);
+  } finally {
+    await rm(base, { recursive: true });
+  }
+});

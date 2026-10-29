@@ -7,6 +7,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import { activate, deactivate } from "../../src/extension";
 import { statusCommand } from "../../src/editor/connection";
 import * as editor from "../fixtures/vscode";
+import recipes from "../../.tmp/artifacts/recipes.json";
 import { preparedNodeProject, preparedProject } from "../fixtures/projects";
 function context() {
   const subscriptions: { dispose(): unknown }[] = [];
@@ -253,6 +254,42 @@ test("a Node project launches with the verified node and npm named in the confir
     for (const d of ctx.subscriptions) d.dispose();
     if (previous === undefined) delete process.env.PORT;
     else process.env.PORT = previous;
+    editor.state.errors = [];
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+test("a selected Node project that becomes a Deno project before launch is refused", async () => {
+  const fixture = await preparedNodeProject(),
+    ctx = context();
+  editor.workspace.workspaceFolders = [
+    { uri: { scheme: "file", fsPath: fixture.root } },
+  ];
+  const api = activate(ctx);
+  try {
+    editor.state.errors = [];
+    await select(api);
+    // A catalog-valid Deno project now: discovery would call it Deno.
+    await writeFile(
+      join(fixture.root, "deno.json"),
+      JSON.stringify({
+        imports: { "@setu-ts/kernel": "npm:@setu-ts/kernel@0.0.0" },
+        tasks: { dev: recipes.tasks[0] },
+      }),
+    );
+    await writeFile(
+      join(fixture.root, "main.dev.ts"),
+      recipes.standalone[0]!.replace("port: 49191,", `port: ${fixture.port},`),
+    );
+    editor.state.input = String(fixture.port);
+    editor.state.confirmation = "Launch";
+    const details = editor.state.details.length;
+    await editor.commands.executeCommand("setuDevtool.launch");
+    // Refused before the confirmation: no launch scope was ever shown.
+    assert.equal(editor.state.details.length, details);
+    assert.equal(editor.state.errors.length, 1);
+  } finally {
+    await deactivate();
+    for (const d of ctx.subscriptions) d.dispose();
     editor.state.errors = [];
     await rm(fixture.root, { recursive: true, force: true });
   }
