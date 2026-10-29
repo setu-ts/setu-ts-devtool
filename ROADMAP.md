@@ -58,7 +58,8 @@ project created with the defaults. Framework M126 (setu-ts#521, merged
 
 `v0.8.0` was the first published framework release containing
 `@setu-ts/diagnostics-plugin` (on JSR, 2026-10-03). npm has
-`diagnostics-plugin@0.9.0` (2026-10-14) and `@0.10.0` (2026-10-23). D04's
+`@setu-ts/diagnostics-plugin@0.9.0` (2026-10-14) and
+`@setu-ts/diagnostics-plugin@0.10.0` (2026-10-23). D04's
 dependency on a published release is therefore met; moving the contract pin to
 a release commit is what remains.
 See [framework work](#framework-work-in-priority-order).
@@ -99,7 +100,7 @@ empty view.
 | Contextual documentation links                         | Free | D03       | —                                                   | Built-in destination allowlist                                                                                |
 | Node application discovery and launch                  | Free | D06       | Framework M126; pin move                            | npm projects run under `tsx`; the launcher owns the whole process tree; Bun still refused                     |
 | Session renewal without relaunch                       | Free | D03b      | Framework M98o (released in `v0.8.0`); pin move     | Bounded by the launch-time maximum lifetime the application set; never silently lengthened                    |
-| VSIX preview with measured compatibility               | Free | D04       | D03b; framework `v0.8.0` published packages         | Real framework/editor exercises                                                                               |
+| VSIX preview with measured compatibility               | Free | D04       | D03b; framework `v0.10.0` on npm                    | Real framework/editor exercises                                                                               |
 | Generator/task UI with change preview                  | Free | D05       | Separate execution/write plan; pinned CLI version   | Keep using the existing CLI until then                                                                        |
 | Health summary                                         | Free | D05       | M98d (`/v1/health`)                                 | Retained latest observations, collected by the framework's scheduler                                          |
 | Safe source navigation                                 | Free | Follow-on | New reviewed workspace-relative source projection   | Never arbitrary file or data access                                                                           |
@@ -263,7 +264,7 @@ lets the CLI emit `--devtool` for a Node target. D06 is the devtool half of
 that work:
 
 - **Discovery.** The single-project path (`src/discovery/discover.ts`) accepts
-  only a `deno.json` whose import map names `@setu-ts/`. D06 adds npm projects:
+  only a `deno.json` or `deno.jsonc` whose import map names `@setu-ts/`. D06 adds npm projects:
   a bounded read of `package.json` dependencies and the workspace manifest. It
   still never imports application code.
 - **Launch.** Accept the Node development entry and its `package.json` script
