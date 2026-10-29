@@ -81,12 +81,17 @@ const variants = (text) => [
 const profile = generator.workspaceProfile("deno");
 const recipes = {
   commit: pin.commit,
-  standalone: variants(generator.renderDevEntry({ devtoolPort: 49191 })),
+  standalone: variants(
+    generator.renderDevEntry({ devtoolPort: 49191 }, "deno"),
+  ),
   member: variants(
-    generator.renderDevEntry({
-      devtoolPort: 49191,
-      port: { symbol: "SERVICE_PORT", from: "./src/discovery/services.ts" },
-    }),
+    generator.renderDevEntry(
+      {
+        devtoolPort: 49191,
+        port: { symbol: "SERVICE_PORT", from: "./src/discovery/services.ts" },
+      },
+      "deno",
+    ),
   ),
   runner: variants(generator.workspaceDevRunner(profile).contents),
   rootTask: profile.runAll,
