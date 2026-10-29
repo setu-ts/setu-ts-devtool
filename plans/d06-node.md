@@ -61,9 +61,12 @@ probes used a CLI bundled from that commit, scaffolds it generated, and Node
 
 ### 1. Discovery
 
-- **Standalone:** a root with `package.json` and no `deno.json`/`deno.jsonc`,
-  whose `dependencies` or `devDependencies` name an `@setu-ts/` package. A root
-  with both manifests is an issue, not a guess.
+- **Standalone:** a root with `deno.json`/`deno.jsonc` stays a Deno project, as
+  today, even when it also has a `package.json`. A Deno full-stack scaffold
+  emits both, so treating "both" as an error would break it. A root with only
+  `package.json`, whose `dependencies` or `devDependencies` name an `@setu-ts/`
+  package, is a Node project. Its `task` is `candidate` when `scripts.dev` is a
+  non-empty string and `missing` otherwise, matching the Deno rule.
 - **Bun:** a root with `bun.lock` or `bun.lockb`, or a workspace manifest with
   `"runtime": "bun"`, is reported as unsupported.
 - **Workspace:** `runtime` may now be `"node"`. A Node member's manifest is
@@ -81,13 +84,20 @@ probes used a CLI bundled from that commit, scaffolds it generated, and Node
   realpath must be `…/node_modules/npm/bin/npm-cli.js`, also outside workspace
   roots, with its identity recorded.
 - `verifyNode` runs `node --version` and requires Node 24, at least 24.22.1, the
-  qualified line. `npm --version`, run through that same `node`, must be 11.x.
+  qualified line. `npm --version`, run through that same `node` with the fixed
+  npm environment below (so no update check reaches the registry), must be
+  11.x. Node is checked rather than trusted from `PATH`: on the probe machine
+  `/usr/bin/node` is 26.10.0, below the CLI's own engines floor for 26
+  (`>=26.12.1`). Such a machine is refused with a message naming
+  `setuDevtool.nodePath`.
 - The supervisor runs `node <npm-cli.js> run dev`. The shebang is not used, so
   the verified `node` is the one that runs npm. The child `PATH` starts with
   that Node directory, so the workspace runner's `npm` and npm's `tsx` resolve
   as verified.
 - The application environment is the existing filtered one, with every
-  inherited `npm_config_*` removed. These are set instead:
+  inherited npm configuration variable removed. npm reads the prefix in either
+  case, so both `npm_config_*` and `NPM_CONFIG_*` are removed. These are set
+  instead:
 
   | Variable                     | Value     | Why                                                                 |
   | ---------------------------- | --------- | ------------------------------------------------------------------- |
@@ -106,7 +116,9 @@ probes used a CLI bundled from that commit, scaffolds it generated, and Node
 
 - the standalone and member entries from `renderDevEntry(…, 'node')`;
 - `NODE_DEVTOOL_DEV_SCRIPT`;
-- the `start:dev` script the Node template renders;
+- the `dev` and `start:dev` scripts of every template that renders a Node
+  project, rendered one template at a time, so a sibling built from any
+  template is matched (the gap CodeRabbit found in D04's plan);
 - the Node runner from `workspaceDevRunner(workspaceProfile('node'))`;
 - `profile.runAll`.
 
