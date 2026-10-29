@@ -40,17 +40,13 @@ the framework repository and its own milestone branch. Each devtool
 implementation milestone gets its own branch and keeps its follow-up fixes there
 until merge.
 
-The contract register is pinned to merged framework commit
-`26aebd0e3fd16074d7b578623577fe87a1930e83`. It covers core M98a–c contracts
-and current M98d–g client additions,
-generated development entries, credential handoff and the repaired core client.
-Local builds use that exact revision before publication; released-package and
-VSIX compatibility still need separate evidence. Framework `v0.8.0`
-(2026-10-03) is the first published release containing
-`@setu-ts/diagnostics-plugin`; it adds the M98h–n observation families and M98o
-session renewal, none of which is qualified against this pin. Projects
-scaffolded or enabled by `cli@0.8.0` do not pair with the devtool until the pin
-moves. See the [roadmap's framework baseline](ROADMAP.md#framework-baseline).
+The contract register is pinned to the framework `v0.10.0` release commit
+`d7a04734be8a4658774c7fe5b5e30297d5103ef3`. It covers the core M98a–c
+contracts, M98o session renewal, generated development entries and credential
+handoff. Local builds use that exact revision; released-package and VSIX
+compatibility still need separate evidence (D04). The devtool accepts the
+development entry `cli@0.10.0` generates for a Deno project. See the
+[roadmap's framework baseline](ROADMAP.md#framework-baseline).
 
 ## Develop and verify
 
@@ -100,16 +96,18 @@ panel persists no state and is rebuilt from the bounded host capture.
 Only qualified CLI-generated Deno recipes are accepted. The extension does not
 enable or migrate projects automatically, capture application output, or attach
 to an existing process. Optional `setuDevtool.denoPath` is an absolute user-level
-setting; workspace overrides are ignored. A fresh local session lasts at most
-15 minutes and is never automatically renewed or restarted. Renewal without
-relaunch is planned as [D03b](ROADMAP.md#d03b--session-renewal-before-d04). The
-framework side, M98o, shipped in `v0.8.0`; D03b waits on the contract pin move.
+setting; workspace overrides are ignored. A session renews itself at half of its remaining window while the
+application allows it: generated entries allow 8 hours of awake time. The status
+bar shows how much of that is left. A session that cannot be renewed, or has
+reached its maximum, stops at its deadline; launch again to continue. A failed
+renewal is never retried.
 
 If status says **Cleanup required**, new launches stay blocked. Stop remaining
 application processes manually if necessary and run **Setu-TS: Recheck Cleanup**;
 that action only checks for disappearance. Deliberately detached descendants
 and abrupt host/supervisor death are outside the cleanup guarantee. Diagnostic
-TTL does not terminate application processes.
+TTL expiring on the server alone does not terminate application processes; the
+extension's deadline stop does.
 
 Diagnostics stay in bounded host memory and are cleared on Stop. Credentials
 reach the launched application through its environment, so this is not a

@@ -18,7 +18,7 @@ const TOPICS = Object.freeze({
   security:
     "https://github.com/setu-ts/setu-ts-devtool/blob/main/docs/security.md",
   "framework-contract":
-    "https://github.com/setu-ts/setu-ts/blob/26aebd0e3fd16074d7b578623577fe87a1930e83/docs/diagnostics-protocol.md",
+    "https://github.com/setu-ts/setu-ts/blob/d7a04734be8a4658774c7fe5b5e30297d5103ef3/docs/diagnostics-protocol.md",
 });
 
 export interface InspectionSession {
