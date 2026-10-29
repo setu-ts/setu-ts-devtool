@@ -34,18 +34,23 @@ const REDIRECTING_NPM_KEYS = new Set([
   "userconfig",
   "globalconfig",
 ]);
+/**
+ * A key npm reads exactly as written. npm expands `${VAR}` in keys,
+ * JSON-decodes quoted keys and nests `[section]` lines, so any key outside this
+ * set could become a refused one at run time (D06 re-review F1).
+ */
+const PLAIN_KEY = /^[A-Za-z0-9@:/._-]+$/;
 export function redirectsNpm(npmrc: string): boolean {
-  return npmrc.split(/\r?\n/).some((raw) => {
+  // ini splits on any run of CR or LF, a lone CR included.
+  return npmrc.split(/[\r\n]+/).some((raw) => {
     const line = raw.trim();
     if (line === "" || line.startsWith("#") || line.startsWith(";"))
       return false;
     const key = (line.includes("=") ? line.slice(0, line.indexOf("=")) : line)
       .trim()
-      .replace(/^["']|["']$/g, "")
-      .replace(/\[\]$/, "")
-      .toLowerCase()
-      .replace(/_/g, "-");
-    return REDIRECTING_NPM_KEYS.has(key);
+      .replace(/\[\]$/, "");
+    if (!PLAIN_KEY.test(key)) return true;
+    return REDIRECTING_NPM_KEYS.has(key.toLowerCase().replace(/_/g, "-"));
   });
 }
 export async function prepareLaunch(

@@ -315,10 +315,15 @@ test("npm settings that redirect which script runs are recognised in any spellin
     "workspaces",
     "include_workspace_root=true",
     "include-workspace-root=true",
-    '"userconfig"=/tmp/other',
     "globalconfig=/tmp/other",
     "workspace[]=apps/worker",
     "registry=https://r.example\r\nworkspace=b",
+    // Spellings npm reads differently from the text (D06 re-review).
+    "foo=bar\rworkspace=b",
+    '"workspace"=b',
+    "${npm_package_name}=worker",
+    "work\\space=b",
+    "[section]",
   ])
     assert.ok(redirectsNpm(text), text);
   for (const text of [

@@ -154,7 +154,21 @@ test(
       );
       assert.ok(project);
       await prepareLaunch(project, fixture.port);
-      for (const npmrc of ["workspace=apps/worker", "userconfig=/tmp/x"]) {
+      // npm sets npm_package_name from the root package for the runner, so
+      // the third key becomes `workspace` inside the runner's nested npm.
+      const rootManifest = join(fixture.root, "package.json");
+      const root = JSON.parse(await readFile(rootManifest, "utf8"));
+      await writeFile(
+        rootManifest,
+        JSON.stringify({ ...root, name: "workspace" }),
+      );
+      for (const npmrc of [
+        "workspace=apps/worker",
+        "userconfig=/tmp/x",
+        "${npm_package_name}=worker",
+        '"workspace"=worker',
+        "foo=bar\rworkspace=worker",
+      ]) {
         await writeFile(join(fixture.root, ".npmrc"), npmrc + "\n");
         await assert.rejects(
           prepareLaunch(project, fixture.port),

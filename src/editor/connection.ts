@@ -138,11 +138,9 @@ export function connectCommands(
         if (node) await verifyNode(executable);
         else await verifyDeno(executable);
         const fresh = await prepareLaunch(project, port);
-        if (
-          fresh.fingerprint !== descriptor.fingerprint ||
-          fresh.runtime !== project.runtime
-        )
-          throw new Error();
+        // A runtime change also changes which manifests are read, so the
+        // fingerprint covers it here.
+        if (fresh.fingerprint !== descriptor.fingerprint) throw new Error();
         signal.throwIfAborted();
         if (guard() || selected()?.id !== generation) throw new Error();
         return { descriptor: fresh, executable };
