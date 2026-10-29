@@ -1,6 +1,7 @@
 # D04 — Free-preview release qualification
 
-Status: planned. This is the single D04 implementation plan. It does not
+Status: planned; rebased 2026-10-29 onto framework `v0.10.0` on npm (it was first
+written 2026-09-28 against `0.7.0` on JSR). This is the single D04 implementation plan. It does not
 authorize publication, a Marketplace listing, a framework change, a push, or a
 merge.
 
@@ -16,8 +17,9 @@ remote attachment, source inspection, application-output capture, or automatic
 launch/restart.
 
 The first support claim is **Linux x64 desktop VS Code 1.138.0 and Code OSS
-1.138.0, local `file:` workspaces, Deno 2.9.6 and prepared Setu-TS 0.7.0
-applications**. Browser, remote/SSH/WSL/container/Codespaces, virtual,
+1.138.0, local `file:` workspaces, Deno 2.9.6 and prepared Setu-TS 0.10.0
+applications**. Node applications are D06 and are not part of this claim (see
+"Order relative to D03b and D06" below). Browser, remote/SSH/WSL/container/Codespaces, virtual,
 untrusted and non-Linux contexts must refuse. Windows and macOS remain
 unsupported after their installed refusal checks; support can expand only after
 their own real launch/process-cleanup matrices pass.
@@ -28,50 +30,59 @@ qualification. D02/D03 local evidence remains useful regression evidence only.
 
 ## Verified prerequisites and release set
 
-The source contract pin is framework commit
-`26aebd0e3fd16074d7b578623577fe87a1930e83`. At that commit `common`, `kernel`,
-`runtime`, `cli`, and `diagnostics-plugin` all declare version `0.7.0`; Deno is
-`2.9.6`. On 2026-09-28 JSR published the first four at 0.7.0 but returned 404
-for diagnostics-plugin. The exact release set is therefore fixed but currently
-blocked:
+The source contract pin moves to the framework `v0.10.0` release commit
+`d7a04734be8a4658774c7fe5b5e30297d5103ef3` (ROADMAP, framework work item 1). That
+move is D03b's prerequisite and lands before D04 implementation starts. Since
+`v0.9.0` the framework publishes only to npm; JSR receives no further releases.
+On 2026-10-29 npm served every package below at `0.10.0`, each with a
+`sha512` integrity, and `@setu-ts/cli@0.10.0` declares a `setu` bin with
+`engines.node` `^22.23.4 || ^24.22.1 || >=26.12.1`. The framework's own Deno lane
+still pins Deno `2.9.6`.
 
-| Component                     | Required release | D04 consumer                                                    |
-| ----------------------------- | ---------------- | --------------------------------------------------------------- |
-| `@setu-ts/common`             | `0.7.0`          | Extension DTO types and diagnostics-client dependency           |
-| `@setu-ts/diagnostics-plugin` | `0.7.0`          | Bundled public `createDiagnosticsClient`; currently unavailable |
-| `@setu-ts/kernel`             | `0.7.0`          | Real standalone/workspace fixture application                   |
-| `@setu-ts/runtime`            | `0.7.0`          | Fixture runtime and public CLI dependency                       |
-| `@setu-ts/cli`                | `0.7.0`          | Public `./main` entry generates the qualification fixtures      |
-| Deno                          | `2.9.6`          | CLI generation and inspected application runtime                |
-| VS Code / Code OSS            | `1.138.0`        | Independently identified installed-extension hosts              |
+| Component                     | Required release | D04 consumer                                                               |
+| ----------------------------- | ---------------- | -------------------------------------------------------------------------- |
+| `@setu-ts/common`             | `0.10.0`         | Extension DTO types and diagnostics-client dependency                      |
+| `@setu-ts/diagnostics-plugin` | `0.10.0`         | Bundled public `createDiagnosticsClient`; also imported by fixture members |
+| `@setu-ts/kernel`             | `0.10.0`         | Real standalone/workspace fixture application                              |
+| `@setu-ts/runtime`            | `0.10.0`         | Fixture runtime                                                            |
+| `@setu-ts/testing`            | `0.10.0`         | Listed in every generated Deno project's import map                        |
+| `@setu-ts/cli`                | `0.10.0`         | Public `setu` bin generates the qualification fixtures                     |
+| Node                          | `24.22.1`        | Runs the CLI and the extension host build                                  |
+| Deno                          | `2.9.6`          | Inspected application runtime                                              |
+| VS Code / Code OSS            | `1.138.0`        | Independently identified installed-extension hosts                         |
 
-`scripts/framework-release.json` will commit exactly those package names,
-versions, the source commit and Deno version. `package-lock.json` will pin the
-JSR npm-compatibility artifacts for common and diagnostics-plugin, including
-their resolved URLs and integrity. A separate frozen Deno lock generated from
-the five exact `jsr:` specifiers will pin the public CLI and fixture dependency
-graph. No caret/range result, newest release, or mixed local/published package
+`scripts/framework-release.json` commits exactly those package names, versions,
+the source commit and the Node and Deno versions. `package-lock.json` pins
+`@setu-ts/common` and `@setu-ts/diagnostics-plugin` from the npm registry with
+their resolved URLs and integrity. The CLI is installed into its own
+`.tmp/framework-published/cli` tree with `npm ci`, from
+`scripts/release/cli/package.json` and its committed `package-lock.json` (which
+the preparation script copies there first), so its full dependency graph is
+pinned too. Generated Deno projects name the
+framework as `npm:@setu-ts/<pkg>@^0.10.0` (measured 2026-10-29); the preparation
+step rewrites each to the exact `npm:@setu-ts/<pkg>@0.10.0` and writes a frozen
+Deno lock, so no caret range, newest release or mixed local/published package
 is accepted.
 
-The CLI's renderer helpers are intentionally private. D04 must not import
-`src/devtool/dev-entry.ts`, `src/workspace/dev-runner.ts`, or other unpublished
-subpaths. It executes the public `jsr:@setu-ts/cli@0.7.0/main` entry with
-`--cached-only` after the exact release set is cached. The checked-in fixture
-overlay adds only deterministic `/ready`, `/items`, hostile-label and stress
-routes; the generated entry, tasks, runner and manifests remain CLI output.
-The preparation audit rejects any generated import that is not rewritten to an
-exact 0.7.0 specifier and verifies the resulting Deno lock before launch.
+The CLI's renderer helpers are internal. D04 does not import
+`src/devtool/dev-entry.ts`, `src/workspace/dev-runner.ts` or any other
+unpublished subpath. It runs only the published `setu` bin. The checked-in
+fixture overlay adds only deterministic `/ready`, `/items`, hostile-label and
+stress routes; the generated entry, tasks, runner and manifests stay CLI output.
+The preparation audit rejects any generated framework import that is not
+rewritten to an exact `0.10.0` specifier and verifies the Deno lock before
+launch.
 
 ## Work that can proceed and hard blockers
 
 | Class                                  | Work                                                                                                                                                                                           |
 | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Can start now                          | Deterministic staging/ZIP canonicalization, archive auditor, release-script unit tests, installed-host orchestration, fixture overlay, acceptance-ledger format, local D01–D03 regression lane |
-| Needs published packages               | Published preparation, release build, reproducibility proof, exact VSIX digest, installed launch/pairing and S17 helper-provenance evidence                                                    |
+| Needs the pin move and D03b            | Published preparation, release build, reproducibility proof, exact VSIX digest, installed launch/pairing and S17 helper-provenance evidence (the packages are published)                       |
 | Available locally after implementation | Linux Code OSS installed trusted/restricted/virtual workflow, Linux crash/stress/egress exercises                                                                                              |
 | Needs another installed product        | Microsoft VS Code Linux matrix; `/usr/bin/code` and `/usr/bin/code-oss` currently identify the same Code OSS build and count once                                                              |
 | Needs external environments            | Real Remote-SSH window; web extension host; Windows and macOS installed refusal runs                                                                                                           |
-| Remains blocked after Linux release    | Windows/macOS support, Marketplace publication, crash-proof cleanup, remote/browser/virtual support, and any Pro feature                                                                       |
+| Remains blocked after Linux release    | Windows/macOS support, Marketplace publication, crash-proof cleanup, remote/browser/virtual support, and Node applications (D06)                                                               |
 
 Missing published or environment evidence is a failed/open gate, never a skip.
 D04 cannot declare the Linux preview releasable while a required refusal,
@@ -94,48 +105,37 @@ There are two explicit, non-interchangeable artifact modes:
 `--framework=published`; it has no implicit mode. Both aliases point only into
 the selected prepared directory. Published mode bundles the npm-compatible
 public helper and common package, writes notices from recorded package license
-files, and names package versions, JSR URLs and integrity rather than a local
+files, and names package versions, npm registry URLs and integrity rather than a local
 checkout. Production supervisor source maps are disabled; development/test
 maps stay outside the VSIX. The build continues to reject non-`vscode`/Node
 runtime imports, development sample markers, fixture modules and temporary
 paths.
 
-Published preparation internally runs this exact registry-resolution command:
+Published preparation installs the CLI from its committed lockfile, then caches
+the fixture graph against the exact Deno lock:
 
 ```sh
-deno cache --lock=.tmp/framework-published/deno.lock \
-  jsr:@setu-ts/common@0.7.0 jsr:@setu-ts/diagnostics-plugin@0.7.0 \
-  jsr:@setu-ts/kernel@0.7.0 jsr:@setu-ts/runtime@0.7.0 \
-  jsr:@setu-ts/cli@0.7.0/main
+npm ci --prefix .tmp/framework-published/cli --ignore-scripts
+deno cache --frozen --lock=.tmp/framework-published/deno.lock \
+  npm:@setu-ts/common@0.10.0 npm:@setu-ts/diagnostics-plugin@0.10.0 \
+  npm:@setu-ts/kernel@0.10.0 npm:@setu-ts/runtime@0.10.0 \
+  npm:@setu-ts/testing@0.10.0
 ```
 
-The script, not a human, executes the CLI commands below in an empty
-`.tmp/release-fixtures` root, checks exit status/output and applies the fixed
-fixture overlay:
+The script, not a human, runs the CLI commands below in an empty
+`.tmp/release-fixtures` root, checks each exit status and output, rewrites the
+generated framework specifiers to exact versions and applies the fixed fixture
+overlay. The flags were checked against `cli@0.10.0` on 2026-10-29:
 
 ```sh
-deno run --cached-only --frozen-lockfile \
-  --lock=.tmp/framework-published/deno.lock \
-  --allow-read --allow-write --allow-env --allow-net=127.0.0.1 \
-  jsr:@setu-ts/cli@0.7.0/main new d04-standalone \
-  --runtime deno --devtool --devtool-port 49191 --yes \
+SETU=.tmp/framework-published/cli/node_modules/.bin/setu
+$SETU new d04-standalone --runtime deno --devtool --devtool-port 49191 \
+  --yes --dir .tmp/release-fixtures
+$SETU new d04-workspace --workspace --runtime deno --yes \
   --dir .tmp/release-fixtures
-deno run --cached-only --frozen-lockfile \
-  --lock=.tmp/framework-published/deno.lock \
-  --allow-read --allow-write --allow-env --allow-net=127.0.0.1 \
-  jsr:@setu-ts/cli@0.7.0/main new d04-workspace \
-  --workspace --runtime deno --yes --dir .tmp/release-fixtures
-deno run --cached-only --frozen-lockfile \
-  --lock=.tmp/framework-published/deno.lock \
-  --allow-read --allow-write --allow-env --allow-net=127.0.0.1 \
-  jsr:@setu-ts/cli@0.7.0/main generate app api \
-  --devtool --devtool-port 49192 --port 43101 \
+$SETU generate app api --devtool --devtool-port 49192 --port 43101 \
   --dir .tmp/release-fixtures/d04-workspace
-deno run --cached-only --frozen-lockfile \
-  --lock=.tmp/framework-published/deno.lock \
-  --allow-read --allow-write --allow-env --allow-net=127.0.0.1 \
-  jsr:@setu-ts/cli@0.7.0/main generate app worker \
-  --port 43102 --depends-on api \
+$SETU generate app worker --port 43102 --depends-on api \
   --dir .tmp/release-fixtures/d04-workspace
 ```
 
@@ -333,7 +333,8 @@ logs; success removes profiles only after evidence is copied. Nothing under
 | -------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `scripts/framework-release.json`, `package.json`, `package-lock.json`                                                                        | Exact five-package release set and release/test tools                                                 | `test/release/published-framework.test.mjs`                                                                                                      |
 | `scripts/prepare-framework.mjs`, `scripts/framework-integrity.mjs`, `scripts/build.mjs`                                                      | Separate local/published provenance, aliases and notices                                              | Existing build tests plus `test/release/published-framework.test.mjs` and `test/release/release-build.test.mjs`                                  |
-| `scripts/release/prepare-published-framework.mjs`                                                                                            | Public registry resolution, locks, CLI fixture generation and overlay audit                           | `test/release/published-framework.test.mjs`: absent/mixed/range/private-import/hash/export/lock/permission failures and guarded real JSR success |
+| `scripts/release/cli/package.json`, `scripts/release/cli/package-lock.json`                                                                  | Exact `@setu-ts/cli@0.10.0` install graph for fixture generation                                      | `test/release/published-framework.test.mjs`: the lock names exactly `0.10.0` with integrity                                                      |
+| `scripts/release/prepare-published-framework.mjs`                                                                                            | Public registry resolution, locks, CLI fixture generation and overlay audit                           | `test/release/published-framework.test.mjs`: absent/mixed/range/private-import/hash/export/lock/permission failures and guarded real npm success |
 | `scripts/release/package-vsix.mjs`                                                                                                           | Clean staging, VSCE invocation, canonical ZIP and reproducibility manifest                            | `test/release/package-vsix.test.mjs`: dirty/untracked tree, tool failure, timestamp/path variance and byte-identical success                     |
 | `scripts/release/audit-vsix.mjs`                                                                                                             | Independent exact-entry/XML/manifest/bundle/provenance auditor                                        | `test/release/audit-vsix.test.mjs`: traversal, duplicate, mode, missing/extra/map/source/fixture/path/import/credential and valid archives       |
 | `scripts/release/host-vsix.mjs`, `scripts/release/drive-editor.mjs`                                                                          | Install-only host orchestration and real native/webview UI driver                                     | `test/release/host-vsix.test.mjs`: arguments, product identity, digest/path, timeouts, evidence protocol and cleanup                             |
@@ -355,8 +356,8 @@ new script/test/evidence document explicitly.
 The existing `linux` job remains the source-pin regression job. A non-optional
 `release-static` job performs `npm ci`, published preparation, release-script
 coverage, normal coverage, release build, two-extraction reproducibility and
-archive audit. It fails while diagnostics-plugin 0.7.0 is unpublished; it is
-never conditionally skipped. The separately triggered
+archive audit. It fails while the pin, `framework-release.json` or a lock is out
+of step with `0.10.0`; it is never conditionally skipped. The separately triggered
 `release-qualification.yml` uses pinned actions and named self-hosted labels for
 Linux VS Code, Linux Code OSS, Linux Remote-SSH, Windows and macOS. Raw `.tmp`
 evidence is uploaded only after sanitization; the VSIX is retained as a CI
@@ -408,7 +409,7 @@ changes require installed re-exercise.
 | S01     | Installed trusted/restricted/virtual/web/Remote-SSH/Windows/macOS direct-command matrix. D04 supplies the missing editor/context evidence.                                                                                         |
 | S02–S07 | Re-run D01/D02 parser, preflight, credential, executable, readiness and signed-transport suites; installed standalone/workspace workflow confirms the release bundle. Carry prior independent findings only for unchanged sources. |
 | S08     | Installed proxy canary, `strace` target-host classification, browser-Origin framework regression and CSP fetch attempt.                                                                                                            |
-| S09     | Re-run neutral-error/deadline suite and inspect installed wording; no retry/renewal.                                                                                                                                               |
+| S09     | Re-run neutral-error/deadline suite and inspect installed wording; renewal behaves as D03b specifies, with no retry of a refused renewal.                                                                                          |
 | S10     | Installed normal Stop/reload/deactivation process trees in both Linux products plus D02 resistant/early-root regressions.                                                                                                          |
 | S11     | Re-run generation races and installed Clear/Stop/reload/relaunch sequence.                                                                                                                                                         |
 | S12–S13 | Re-run hostile renderer/CSP/IPC suites and repeat hostile labels, fixed documentation handler and rate refusal in the installed candidate.                                                                                         |
@@ -429,13 +430,14 @@ No blanket “all rows passed” statement is permitted.
 The final README is written for the installed VSIX and contains the exact
 installation command for each qualified editor, SHA-256 verification, supported
 matrix, Select → Launch → Inspect → Clear/Stop workflow, workspace all-member
-launch warning, 15-minute local limit, fixed documentation destinations and
+launch warning, the session lifetime (renewed by D03b up to the cap the generated
+entry sets), fixed documentation destinations and
 uninstall instructions. It names the extension version, framework release set,
 candidate digest and validation document.
 
 Known limitations remain explicit: local Linux/Deno only; one active application
-per window; no attach, automatic restart/renewal, persistence, export, log
-capture, source navigation, account, telemetry, billing or Pro feature; Clear is
+per window; no attach, automatic restart, persistence, export, log capture,
+source navigation, account, telemetry or billing; Clear is
 local and does not rewind the server cursor; streamed response completion is not
 timed; identities are instance-local; graph edges do not prove runtime calls;
 durations are inclusive elapsed time; workspace Launch starts every member; and
@@ -443,14 +445,27 @@ an editor/host crash may leave application processes that require manual cleanup
 Unsupported Windows/macOS, remote, web and virtual contexts are refusals, not
 partially working modes.
 
+## Order relative to D03b and D06
+
+D04 depends on D03b (ROADMAP milestone table): the preview must not ship with a
+fixed 15-minute session. D03b moves the contract pin to `v0.10.0`, regenerates the
+launcher's recipe catalog from `cli@0.10.0` and adds renewal; D04 then qualifies
+that build. Node applications are D06, which needs a framework release containing
+M126 (merged, not yet released). Whether the first preview waits for D06 is an
+open ROADMAP decision. If it does, this plan's support claim, release set and
+fixture commands move to that release and gain the Node rows in the same PR.
+
+The devtool is free and MIT-licensed (2026-10-29). Marketplace publication stays
+a separate, explicitly authorized action.
+
 ## Dependency order and release decision
 
 1. Commit this corrected plan. Implement importable deterministic package,
    audit, evidence-schema and unit-test infrastructure; keep product behavior
    unchanged.
 2. Implement explicit local/published build modes and public-CLI fixture
-   generation. The release lane remains red until diagnostics-plugin 0.7.0 is
-   actually published.
+   generation against `0.10.0`. The release lane stays red until the contract
+   pin has moved to `v0.10.0` and D03b has merged.
 3. Implement installed UI driving, refusal contexts, trace classification,
    stress and crash harnesses. First prove their failure branches with synthetic
    evidence, then run real products/environments.
@@ -463,7 +478,7 @@ partially working modes.
 6. Update user documentation only to the support claims the evidence proves.
    Publication remains a separate explicitly authorized action.
 
-D04 is complete only when the exact release set resolves from JSR; both clean
+D04 is complete only when the exact release set resolves from npm; both clean
 builds match; package audit passes; identified Linux VS Code and Code OSS
 installed workflows pass; every refusal context has real evidence; all required
 S01–S18 rows have a non-open disposition; normal/release coverage passes; and

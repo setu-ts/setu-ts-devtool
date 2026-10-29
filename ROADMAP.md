@@ -167,7 +167,7 @@ contexts must be refused explicitly.
 | D02  | Implemented; independently reviewed | Explicit launch, pairing, bounded reader, teardown             | D01 + M98a–c + local compatibility evidence                     | [D02 plan](plans/d02-connection.md) |
 | D03  | Implemented; independently reviewed | Composition graph, route/middleware views, request timeline    | D01 fixtures for parallel UI work; D02 for integration          | [D03 plan](plans/d03-inspection.md) |
 | D03b | Planned; M98o released in `v0.8.0`  | Session renewal without relaunch                               | D02; contract pin moved to `v0.10.0` (contains M98o)            | Pending: `plans/d03b-renewal.md`    |
-| D04  | Planned; draft plan on a branch     | Security/compatibility exercises, VSIX, free preview docs      | D01–D03b; framework `v0.10.0` on npm; pinned packages           | Pending: `plans/d04-release.md`     |
+| D04  | Planned                             | Security/compatibility exercises, VSIX, free preview docs      | D01–D03b; framework `v0.10.0` on npm; pinned packages           | [D04 plan](plans/d04-release.md)    |
 | D06  | Planned; framework M126 merged      | Node applications: npm project discovery, launch under `tsx`   | D02; framework M126 released; pin moved to that release         | Pending: `plans/d06-node.md`        |
 | D05  | Direction only                      | Health summary, generator/task UI                              | D04; separate plan                                              |                                     |
 | P01  | Direction only                      | Live analysis, multi-app workflows                             | D04; separate plan                                              |                                     |
@@ -298,10 +298,8 @@ credentials), so it needs an independent security review.
 
 Done: **session renewal (M98o)** and **publishing `diagnostics-plugin`** both
 shipped in `v0.8.0` (2026-10-03). **M101f** (the devtool lifecycle, framework
-PR #414) changed the generated `main.dev.ts` and shipped in `v0.9.0`. The D04
-draft plan (`feat/d04-release`, written 2026-09-28 against `0.8.0`) predates
-all of this and must be rebased: its version numbers become `0.10.0`, and its
-publishing references move from JSR to npm.
+PR #414) changed the generated `main.dev.ts` and shipped in `v0.9.0`. The
+[D04 plan](plans/d04-release.md) was rebased on 2026-10-29 onto `0.10.0` on npm.
 
 1. **Move the contract pin** to the `v0.10.0` release commit
    (`d7a04734be8a4658774c7fe5b5e30297d5103ef3`), not `v0.8.0`, and refresh the
