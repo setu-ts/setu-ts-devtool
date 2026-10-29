@@ -10,7 +10,7 @@ import {
 } from "node:fs/promises";
 import { join, resolve, dirname } from "node:path";
 import { discover } from "../../src/discovery/discover";
-import { prepareLaunch } from "../../src/launch/preflight";
+import { prepareLaunch, redirectsNpm } from "../../src/launch/preflight";
 import { resolveDeno, verifyDeno, inside } from "../../src/launch/executable";
 import {
   credentials,
@@ -176,6 +176,7 @@ test("a Node launch replaces every inherited npm setting with the fixed ones", (
     npm_config_update_notifier: "false",
     npm_config_fund: "false",
     npm_config_audit: "false",
+    npm_config_logs_max: "0",
   });
   // Deno honours an npm registry setting from the environment: kept.
   assert.equal(
@@ -305,4 +306,28 @@ test("recipe matchers cover the Node catalog", () => {
   assert.ok(scriptMatches("tsx dev.ts", false));
   assert.equal(scriptMatches("tsx main.dev.ts", false), false);
   assert.equal(scriptMatches(1, false), false);
+});
+test("npm settings that redirect which script runs are recognised in any spelling", () => {
+  for (const text of [
+    "workspace=apps/worker",
+    "  Workspace = apps/worker",
+    "workspaces=true",
+    "workspaces",
+    "include_workspace_root=true",
+    "include-workspace-root=true",
+    '"userconfig"=/tmp/other',
+    "globalconfig=/tmp/other",
+    "workspace[]=apps/worker",
+    "registry=https://r.example\r\nworkspace=b",
+  ])
+    assert.ok(redirectsNpm(text), text);
+  for (const text of [
+    "",
+    "# workspace=apps/worker",
+    "; workspaces=true",
+    "registry=https://r.example",
+    "//r.example/:_authToken=${TOKEN}",
+    "@scope:registry=https://r.example",
+  ])
+    assert.equal(redirectsNpm(text), false, text);
 });

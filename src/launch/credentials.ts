@@ -23,6 +23,8 @@ export const NPM_ENVIRONMENT: Readonly<Record<string, string>> = Object.freeze({
   npm_config_update_notifier: "false",
   npm_config_fund: "false",
   npm_config_audit: "false",
+  // No debug log file, wherever a project `.npmrc` points `logs-dir`.
+  npm_config_logs_max: "0",
 });
 export function applicationEnvironment(
   pathValue: string,

@@ -68,9 +68,7 @@ async function resolveExecutable(
       if (roots.some((root) => inside(path, root))) continue;
       const value = await identity(path);
       const npm =
-        name === "node"
-          ? await companionNpm(dirname(candidate), roots)
-          : undefined;
+        name === "node" ? await companionNpm(dirname(path), roots) : undefined;
       return Object.freeze({
         path,
         identity: value,
@@ -139,6 +137,8 @@ export async function verifyNode(
           {
             timeout: 5000,
             maxBuffer: 4096,
+            // Not the extension host's directory: npm reads a `.npmrc` there.
+            cwd: dirname(npm.path),
             env: { PATH: executable.pathValue, ...NPM_ENVIRONMENT },
           },
           (error, out) => (error ? reject(new Error()) : resolve(String(out))),

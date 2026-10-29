@@ -56,9 +56,14 @@ test("node resolves with the npm CLI beside it, outside every workspace root", a
       (await resolveNode(join(bin, "node"), [workspace], "")).npm?.path,
       found.npm?.path,
     );
-    // npm inside a workspace root is refused.
+    // npm resolving into a workspace root is refused, with node outside it.
+    const inside = join(workspace, "node_modules/npm/bin/npm-cli.js");
+    await mkdir(join(workspace, "node_modules/npm/bin"), { recursive: true });
+    await writeFile(inside, "");
+    await rm(join(bin, "npm"));
+    await symlink(inside, join(bin, "npm"));
     await assert.rejects(
-      resolveNode(undefined, [base], bin),
+      resolveNode(undefined, [workspace], bin),
       /EXECUTABLE_REFUSED/,
     );
   } finally {

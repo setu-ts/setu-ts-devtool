@@ -102,6 +102,9 @@ export function connectCommands(
         signal.throwIfAborted();
         if (guard() || selected()?.id !== generation) throw new Error();
         const descriptor = await prepareLaunch(project, port);
+        // The executable kind follows the selection; the start message follows
+        // fresh discovery. They must agree (D06 review F3).
+        if (descriptor.runtime !== project.runtime) throw new Error();
         const node = project.runtime === "node";
         const setting = vscode.workspace
           .getConfiguration("setuDevtool")
@@ -135,7 +138,11 @@ export function connectCommands(
         if (node) await verifyNode(executable);
         else await verifyDeno(executable);
         const fresh = await prepareLaunch(project, port);
-        if (fresh.fingerprint !== descriptor.fingerprint) throw new Error();
+        if (
+          fresh.fingerprint !== descriptor.fingerprint ||
+          fresh.runtime !== project.runtime
+        )
+          throw new Error();
         signal.throwIfAborted();
         if (guard() || selected()?.id !== generation) throw new Error();
         return { descriptor: fresh, executable };

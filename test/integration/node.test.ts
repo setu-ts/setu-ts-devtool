@@ -2,6 +2,9 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   access,
+  mkdir,
+  mkdtemp,
+  rename,
   readdir,
   readFile,
   readlink,
@@ -132,6 +135,75 @@ test(
       if (previous === undefined) delete process.env.PORT;
       else process.env.PORT = previous;
       await rm(fixture.root, { recursive: true, force: true });
+    }
+  },
+);
+
+test(
+  "a root .npmrc that picks another workspace's script is refused before launch",
+  { timeout: 60000 },
+  async () => {
+    const fixture = await preparedNodeProject(true);
+    try {
+      const worker = join(fixture.root, "apps/worker/package.json");
+      const manifest = JSON.parse(await readFile(worker, "utf8"));
+      manifest.scripts.dev = `node -e "require('fs').writeFileSync('${join(fixture.root, "marker")}', process.env.SETU_DEVTOOL_SESSION_KEY ?? '')"`;
+      await writeFile(worker, JSON.stringify(manifest));
+      const project = (await discover([fixture.root])).projects.find(
+        (p) => p.member === "api",
+      );
+      assert.ok(project);
+      await prepareLaunch(project, fixture.port);
+      for (const npmrc of ["workspace=apps/worker", "userconfig=/tmp/x"]) {
+        await writeFile(join(fixture.root, ".npmrc"), npmrc + "\n");
+        await assert.rejects(
+          prepareLaunch(project, fixture.port),
+          /PREPARATION_FAILED/,
+        );
+      }
+      assert.ok(await gone(join(fixture.root, "marker")));
+    } finally {
+      await rm(fixture.root, { recursive: true, force: true });
+    }
+  },
+);
+
+test(
+  "a parent npm workspace outside the project cannot redirect its dev script",
+  { timeout: 90000 },
+  async () => {
+    const fixture = await preparedNodeProject();
+    const parent = await mkdtemp(resolve(".tmp/parent-workspace-"));
+    const app = join(parent, "app");
+    await rename(fixture.root, app);
+    const previous = process.env.PORT;
+    process.env.PORT = String(fixture.appPort);
+    const marker = join(parent, "marker");
+    await writeFile(
+      join(parent, "package.json"),
+      JSON.stringify({ private: true, workspaces: ["app", "other"] }),
+    );
+    await writeFile(join(parent, ".npmrc"), "workspace=other\n");
+    await mkdir(join(parent, "other"));
+    await writeFile(
+      join(parent, "other/package.json"),
+      JSON.stringify({
+        name: "other",
+        scripts: {
+          dev: `node -e "require('fs').writeFileSync('${marker}', process.env.SETU_DEVTOOL_SESSION_KEY ?? '')"`,
+        },
+      }),
+    );
+    const session = await launch({ ...fixture, root: app });
+    try {
+      assert.equal(session.status().state, "Live");
+      await session.stop();
+      assert.ok(await gone(marker), "another package's script ran");
+    } finally {
+      await session.stop();
+      if (previous === undefined) delete process.env.PORT;
+      else process.env.PORT = previous;
+      await rm(parent, { recursive: true, force: true });
     }
   },
 );

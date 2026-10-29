@@ -140,7 +140,11 @@ process.on("message", (raw: unknown) => {
     clearTimeout(startupTimer);
     const child = spawn(
       value.executable,
-      typeof npm === "string" ? [npm, "run", "dev"] : ["task", "dev"],
+      // --no-workspaces: a config `workspace=` fails closed and `workspaces=true`
+      // is overridden, so npm runs this package's own `dev` (D06 review F1).
+      typeof npm === "string"
+        ? [npm, "--no-workspaces", "run", "dev"]
+        : ["task", "dev"],
       {
         cwd: value.cwd,
         env,

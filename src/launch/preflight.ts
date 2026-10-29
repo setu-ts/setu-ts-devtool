@@ -20,6 +20,34 @@ export interface LaunchDescriptor {
   readonly fingerprint: string;
   readonly runtime: "deno" | "node";
 }
+/**
+ * npm settings that choose which package's script runs. A project `.npmrc`
+ * carrying one, directly or through another config file, could hand the
+ * session to an unchecked `dev` script (D06 review F1). `--no-workspaces`
+ * covers the launch itself; the workspace runner's nested `npm` cannot take
+ * that flag, so these keys are refused wherever npm reads project config.
+ */
+const REDIRECTING_NPM_KEYS = new Set([
+  "workspace",
+  "workspaces",
+  "include-workspace-root",
+  "userconfig",
+  "globalconfig",
+]);
+export function redirectsNpm(npmrc: string): boolean {
+  return npmrc.split(/\r?\n/).some((raw) => {
+    const line = raw.trim();
+    if (line === "" || line.startsWith("#") || line.startsWith(";"))
+      return false;
+    const key = (line.includes("=") ? line.slice(0, line.indexOf("=")) : line)
+      .trim()
+      .replace(/^["']|["']$/g, "")
+      .replace(/\[\]$/, "")
+      .toLowerCase()
+      .replace(/_/g, "-");
+    return REDIRECTING_NPM_KEYS.has(key);
+  });
+}
 export async function prepareLaunch(
   project: Project,
   port: number,
@@ -60,6 +88,15 @@ export async function prepareLaunch(
     return object(readJson(await read(path), false).scripts);
   };
   if (runtime === "node") {
+    // Project config npm reads: the root, and each member for completeness.
+    for (const directory of [
+      project.root,
+      ...current.projects.map((p) => p.directory),
+    ]) {
+      const path = join(relative(project.root, directory), ".npmrc");
+      if ((await exists(project.root, path)) && redirectsNpm(await read(path)))
+        throw new Error("PREPARATION_FAILED");
+    }
     if (project.member !== null) {
       await read("setu.workspace.json");
       if (
