@@ -14,6 +14,42 @@ export async function freePort(): Promise<number> {
     });
   });
 }
+/**
+ * Maps every framework package to its prepared source, plus the bare npm
+ * specifiers that source imports (each package's own `imports`, test runner
+ * excluded). Two packages naming one specifier differently fail the fixture.
+ */
+export async function frameworkImports(): Promise<Record<string, string>> {
+  const imports: Record<string, string> = {};
+  const packages = resolve(".tmp/framework/packages");
+  for (const name of await readdir(packages)) {
+    let text: string;
+    try {
+      text = await readFile(join(packages, name, "deno.json"), "utf8");
+    } catch {
+      continue; // Non-package directories have no manifest.
+    }
+    const manifest = JSON.parse(text) as {
+      name: string;
+      exports: string | Record<string, string>;
+      imports?: Record<string, string>;
+    };
+    const exports =
+      typeof manifest.exports === "string"
+        ? { ".": manifest.exports }
+        : manifest.exports;
+    for (const [key, path] of Object.entries(exports))
+      imports[manifest.name + (key === "." ? "" : key.slice(1))] =
+        pathToFileURL(join(packages, name, path)).href;
+    for (const [key, target] of Object.entries(manifest.imports ?? {})) {
+      if (key === "vitest") continue;
+      if (imports[key] !== undefined && imports[key] !== target)
+        throw new Error(`Conflicting framework import for ${key}`);
+      imports[key] = target;
+    }
+  }
+  return imports;
+}
 export async function preparedProject(workspace = false): Promise<{
   root: string;
   port: number;
@@ -25,25 +61,7 @@ export async function preparedProject(workspace = false): Promise<{
   const port = await freePort(),
     appPort = await freePort(),
     siblingPort = await freePort();
-  const imports: Record<string, string> = {};
-  const packages = resolve(".tmp/framework/packages");
-  for (const name of await readdir(packages)) {
-    try {
-      const manifest = JSON.parse(
-        await readFile(join(packages, name, "deno.json"), "utf8"),
-      ) as { name: string; exports: string | Record<string, string> };
-      if (typeof manifest.exports === "string")
-        imports[manifest.name] = pathToFileURL(
-          join(packages, name, manifest.exports),
-        ).href;
-      else
-        for (const [key, path] of Object.entries(manifest.exports))
-          imports[manifest.name + (key === "." ? "" : key.slice(1))] =
-            pathToFileURL(join(packages, name, path)).href;
-    } catch {
-      /* Non-package directories have no manifest. */
-    }
-  }
+  const imports = await frameworkImports();
   const config = (
     applicationPort: number,
   ) => `import { createApplication } from '@setu-ts/kernel';

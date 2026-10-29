@@ -23,7 +23,7 @@ if (git("rev-parse", "HEAD") !== pin.commit || git("status", "--porcelain"))
   throw new Error("Framework must be clean at the pinned commit");
 const archive = execFileSync(
   "git",
-  ["archive", "HEAD", "packages", "deno.json", "deno.lock", "LICENSE"],
+  ["archive", "HEAD", "packages", "tsconfig.base.json", "LICENSE"],
   { cwd: source, maxBuffer: 128 * 1024 * 1024 },
 );
 const root = resolve(".tmp/framework");

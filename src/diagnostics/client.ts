@@ -1,8 +1,17 @@
 import { createDiagnosticsClient } from "@setu-ts/diagnostics-plugin";
+import type { DiagnosticsSessionLifetime } from "@setu-ts/diagnostics-plugin";
 import type { DiagnosticsSnapshot, DiagnosticsBatch } from "@setu-ts/common";
 import { loopbackTransport } from "./transport";
-import { snapshotProjection, batchProjection } from "./validate";
+import {
+  snapshotProjection,
+  batchProjection,
+  lifetimeProjection,
+} from "./validate";
 export interface CoreClient {
+  /** Pairs on first use; the authenticated remaining lifetime. */
+  session(): Promise<DiagnosticsSessionLifetime>;
+  /** Only after a paired status advertised renewal. */
+  renew(): Promise<DiagnosticsSessionLifetime>;
   snapshot(): Promise<DiagnosticsSnapshot>;
   read(after: number): Promise<DiagnosticsBatch>;
   close(): void;
@@ -28,6 +37,13 @@ export function coreClient(
   });
   let instance: string | null = null;
   return {
+    async session() {
+      return lifetimeProjection(await client.session());
+    },
+    async renew() {
+      if (instance === null) throw new Error("CONNECTION_FAILED");
+      return lifetimeProjection(await client.renew());
+    },
     async snapshot() {
       const result = snapshotProjection(await client.snapshot(), instance);
       instance = result.instanceId;

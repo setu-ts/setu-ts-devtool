@@ -30,9 +30,9 @@ qualification. D02/D03 local evidence remains useful regression evidence only.
 
 ## Verified prerequisites and release set
 
-The source contract pin moves to the framework `v0.10.0` release commit
-`d7a04734be8a4658774c7fe5b5e30297d5103ef3` (ROADMAP, framework work item 1). That
-move is D03b's prerequisite and lands before D04 implementation starts. Since
+The source contract pin is the framework `v0.10.0` release commit
+`d7a04734be8a4658774c7fe5b5e30297d5103ef3`, moved by D03b (merged as
+setu-ts-devtool#14). Since
 `v0.9.0` the framework publishes only to npm; JSR receives no further releases.
 On 2026-10-29 npm served every package below at `0.10.0`, each with a
 `sha512` integrity, and `@setu-ts/cli@0.10.0` declares a `setu` bin with
@@ -78,7 +78,7 @@ launch.
 | Class                                  | Work                                                                                                                                                                                           |
 | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Can start now                          | Deterministic staging/ZIP canonicalization, archive auditor, release-script unit tests, installed-host orchestration, fixture overlay, acceptance-ledger format, local D01–D03 regression lane |
-| Needs the pin move and D03b            | Published preparation, release build, reproducibility proof, exact VSIX digest, installed launch/pairing and S17 helper-provenance evidence (the packages are published)                       |
+| Unblocked by D03b (merged)             | Published preparation, release build, reproducibility proof, exact VSIX digest, installed launch/pairing and S17 helper-provenance evidence (the packages are published)                       |
 | Available locally after implementation | Linux Code OSS installed trusted/restricted/virtual workflow, Linux crash/stress/egress exercises                                                                                              |
 | Needs another installed product        | Microsoft VS Code Linux matrix; `/usr/bin/code` and `/usr/bin/code-oss` currently identify the same Code OSS build and count once                                                              |
 | Needs external environments            | Real Remote-SSH window; web extension host; Windows and macOS installed refusal runs                                                                                                           |
@@ -448,9 +448,9 @@ partially working modes.
 ## Order relative to D03b and D06
 
 D04 depends on D03b (ROADMAP milestone table): the preview must not ship with a
-fixed 15-minute session. D03b moves the contract pin to `v0.10.0`, regenerates the
-launcher's recipe catalog from `cli@0.10.0` and adds renewal; D04 then qualifies
-that build. Node applications are D06, which needs a framework release containing
+fixed 15-minute session. D03b (merged, setu-ts-devtool#14) moved the contract pin
+to `v0.10.0`, regenerated the launcher's recipe catalog from `cli@0.10.0` and
+added renewal; D04 qualifies that build. Node applications are D06, which needs a framework release containing
 M126 (merged, not yet released). Whether the first preview waits for D06 is an
 open ROADMAP decision. If it does, this plan's support claim, release set and
 fixture commands move to that release and gain the Node rows in the same PR.
@@ -464,8 +464,8 @@ a separate, explicitly authorized action.
    audit, evidence-schema and unit-test infrastructure; keep product behavior
    unchanged.
 2. Implement explicit local/published build modes and public-CLI fixture
-   generation against `0.10.0`. The release lane stays red until the contract
-   pin has moved to `v0.10.0` and D03b has merged.
+   generation against `0.10.0`. D03b has merged, so the release lane runs
+   against the `v0.10.0` pin from the start.
 3. Implement installed UI driving, refusal contexts, trace classification,
    stress and crash harnesses. First prove their failure branches with synthetic
    evidence, then run real products/environments.

@@ -6,6 +6,12 @@ import { listening, waitForListener } from "../launch/readiness";
 import { coreClient, type CoreClient } from "../diagnostics/client";
 import { Capture } from "../model/capture";
 import { schedule } from "./scheduler";
+import {
+  planLifetime,
+  viewLifetime,
+  type LifetimePlan,
+  type LifetimeView,
+} from "./lifetime";
 export type SessionState =
   | "Idle"
   | "Preparing"
@@ -25,6 +31,7 @@ export interface SessionPorts {
   ready: typeof waitForListener;
   client: typeof coreClient;
   schedule: typeof schedule;
+  plan: typeof planLifetime;
 }
 const defaults: SessionPorts = {
   launch: launchOwned,
@@ -32,7 +39,10 @@ const defaults: SessionPorts = {
   ready: waitForListener,
   client: coreClient,
   schedule,
+  plan: planLifetime,
 };
+/** A session cannot pair after its initial TTL, the generated default. */
+const STARTUP_LIMIT_MS = 900000;
 export class SessionController {
   private state: SessionState = "Idle";
   private abort = new AbortController();
@@ -45,6 +55,8 @@ export class SessionController {
   private capture = new Capture();
   private root: string | undefined;
   private exitCode: number | null = null;
+  private lifetime: LifetimePlan | undefined;
+  private ended: "deadline" | null = null;
   constructor(
     private readonly supervisor: string,
     private readonly changed: () => void,
@@ -68,6 +80,8 @@ export class SessionController {
     evicted: number;
     dropped: number;
     exitCode: number | null;
+    lifetime: LifetimeView | null;
+    ended: "deadline" | null;
   }> {
     return Object.freeze({
       state: this.state,
@@ -77,6 +91,11 @@ export class SessionController {
       evicted: this.capture.evicted,
       dropped: this.capture.snapshot?.droppedEvents ?? 0,
       exitCode: this.exitCode,
+      lifetime:
+        this.lifetime === undefined
+          ? null
+          : viewLifetime(this.lifetime, performance.now()),
+      ended: this.ended,
     });
   }
   private transition(state: SessionState): void {
@@ -90,6 +109,8 @@ export class SessionController {
     this.stopping = undefined;
     this.owned = undefined;
     this.exitCode = null;
+    this.ended = null;
+    this.lifetime = undefined;
     this.abort = new AbortController();
     const signal = this.abort.signal;
     this.transition("Preparing");
@@ -106,9 +127,7 @@ export class SessionController {
       try {
         this.transition("Starting");
         // Include supervisor startup so the local limit is conservative.
-        this.timer = setTimeout(() => {
-          void this.stop("Failed");
-        }, 900000);
+        this.arm(STARTUP_LIMIT_MS);
         try {
           this.owned = await this.ports.launch(
             descriptor,
@@ -139,11 +158,13 @@ export class SessionController {
           pair.key,
           signal,
         );
-        const snapshot = await this.client.snapshot();
+        const client = this.client;
+        // Pairing yields the authenticated lifetime, which replaces the bound.
+        this.adopt(performance.now(), await client.session(), signal);
+        const snapshot = await client.snapshot();
         this.checkContext(signal);
         this.capture.setSnapshot(snapshot);
         this.transition("Live");
-        const client = this.client;
         void this.ports
           .schedule(
             signal,
@@ -166,6 +187,20 @@ export class SessionController {
                 this.changed();
               }
             },
+            {
+              due: () =>
+                this.lifetime?.renewAt != null &&
+                performance.now() >= this.lifetime.renewAt,
+              run: async () => {
+                this.checkContext(signal);
+                const sentAt = performance.now();
+                // A failure rejects the scheduler and stops; never retried.
+                const renewed = await client.renew();
+                if (signal.aborted) return;
+                this.adopt(sentAt, renewed, signal);
+                this.changed();
+              },
+            },
           )
           .catch(() => {
             if (!signal.aborted) void this.stop("Failed");
@@ -184,6 +219,24 @@ export class SessionController {
       await this.stop("Failed");
     }
   }
+  /** One timer: the startup bound, then each authenticated deadline. */
+  private arm(ms: number): void {
+    if (this.timer) clearTimeout(this.timer);
+    this.timer = setTimeout(() => {
+      if (this.stopping) return;
+      this.ended = "deadline";
+      void this.stop("Failed");
+    }, ms);
+  }
+  private adopt(
+    sentAt: number,
+    lifetime: Parameters<typeof planLifetime>[1],
+    signal: AbortSignal,
+  ): void {
+    this.checkContext(signal);
+    this.lifetime = this.ports.plan(sentAt, lifetime);
+    this.arm(this.lifetime.deadline - performance.now());
+  }
   private checkContext(signal: AbortSignal): void {
     signal.throwIfAborted();
     if (!this.allowed()) throw new Error("CONTEXT_REFUSED");
@@ -195,6 +248,9 @@ export class SessionController {
   stop(destination: "Idle" | "Failed" = "Idle"): Promise<void> {
     if (this.state === "Cleanup required") return Promise.resolve();
     return (this.stopping ??= (async () => {
+      if (this.timer) clearTimeout(this.timer);
+      this.timer = undefined;
+      this.lifetime = undefined;
       this.abort.abort();
       this.client?.close();
       this.capture.reset();

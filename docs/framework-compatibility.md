@@ -1,23 +1,18 @@
 # Framework compatibility and contract register
 
 Source baseline: Setu-TS commit
-[`26aebd0e3fd16074d7b578623577fe87a1930e83`](https://github.com/setu-ts/setu-ts/commit/26aebd0e3fd16074d7b578623577fe87a1930e83),
-inspected 2026-09-27. M98a–g are implemented and merged. This commit is an
-integration reference, not a minimum supported release; manifest versions and
-`@since` comments do not establish availability.
+[`d7a04734be8a4658774c7fe5b5e30297d5103ef3`](https://github.com/setu-ts/setu-ts/commit/d7a04734be8a4658774c7fe5b5e30297d5103ef3),
+the `v0.10.0` release commit, inspected 2026-10-29 for D03b. The previous pin,
+`26aebd0e` (2026-09-27, M98a–g), qualified D01–D03; D03b requalified them here.
+This commit is an integration reference, not a minimum supported release;
+manifest versions and `@since` comments do not establish availability.
 
-**Publication (2026-10-03).** Framework `v0.8.0` published
-`@setu-ts/diagnostics-plugin@0.8.0` to JSR, the first release to contain it. It
-also carries M98h–n and M98o session renewal. This register has **not** been
-refreshed against it: every row below still describes the commit above. In
-particular, the session-lifecycle row's "no renewal operation" is true only at
-this pin. The supported launch path refuses a `cli@0.8.0` development entry
-during preflight, because the launcher's recipe catalog is built from the pinned
-CLI and no longer matches the entry's `maxSessionLifetimeMs` line. Separately,
-the pinned status parser refuses a status body carrying `renewal`. That is a
-wire-contract incompatibility, not a second refusal reached for that entry,
-since preflight stops it before it runs. Refreshing this register is
-[framework work item 1](../ROADMAP.md#framework-work-in-priority-order).
+**Publication.** `@setu-ts/diagnostics-plugin` first published in `v0.8.0`
+(JSR, 2026-10-03). Since `v0.9.0` the framework publishes to npm only;
+`@setu-ts/diagnostics-plugin@0.10.0` (2026-10-23) is built from this commit.
+Between `26aebd0e` and this commit the core DTOs below are unchanged apart from
+formatting; the additions are M98h–n observation families, M98o session renewal
+and the CLI's development-entry changes (M101f).
 
 This register replaces the earlier M98 proposal baseline. It records observed
 implementation behavior and extension requirements. D02 now has
@@ -36,13 +31,13 @@ private framework modules into the extension.
 
 | Source                                                                                                                                                                                                                                                                                                                      | Implemented surface                                                   | Consumer                  |
 | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | ------------------------- |
-| [Common diagnostics types](https://github.com/setu-ts/setu-ts/blob/26aebd0e3fd16074d7b578623577fe87a1930e83/packages/common/src/services/diagnostics.ts) and [application interface](https://github.com/setu-ts/setu-ts/blob/26aebd0e3fd16074d7b578623577fe87a1930e83/packages/common/src/plugin.ts)                        | Optional `IApplication.diagnostics`, snapshot and cursor-based reader | D02 adapter, D03 views    |
-| [Kernel collector](https://github.com/setu-ts/setu-ts/blob/26aebd0e3fd16074d7b578623577fe87a1930e83/packages/kernel/src/diagnostics/collector.ts) and [projection rules](https://github.com/setu-ts/setu-ts/blob/26aebd0e3fd16074d7b578623577fe87a1930e83/packages/kernel/src/diagnostics/projection.ts)                    | Opt-in collection, exact label approvals, bounded topology/events     | D03 interpretation        |
-| [Connector exports](https://github.com/setu-ts/setu-ts/blob/26aebd0e3fd16074d7b578623577fe87a1930e83/packages/diagnostics-plugin/src/index.ts) and [interfaces](https://github.com/setu-ts/setu-ts/blob/26aebd0e3fd16074d7b578623577fe87a1930e83/packages/diagnostics-plugin/src/interfaces/index.ts)                       | Plugin and injected native client                                     | D02 launch/client adapter |
-| [Client implementation](https://github.com/setu-ts/setu-ts/blob/26aebd0e3fd16074d7b578623577fe87a1930e83/packages/diagnostics-plugin/src/client/client.ts) and [protocol validation](https://github.com/setu-ts/setu-ts/blob/26aebd0e3fd16074d7b578623577fe87a1930e83/packages/diagnostics-plugin/src/protocol/protocol.ts) | Authenticated, serialized reads; limitations below                    | D02 connection policy     |
-| [Protocol v1](https://github.com/setu-ts/setu-ts/blob/26aebd0e3fd16074d7b578623577fe87a1930e83/docs/diagnostics-protocol.md) and [plugin lifecycle](https://github.com/setu-ts/setu-ts/blob/26aebd0e3fd16074d7b578623577fe87a1930e83/packages/diagnostics-plugin/src/plugin/diagnostics-plugin.ts)                          | Signed loopback HTTP, finite sessions, teardown                       | D02 trust boundary        |
-| [Development entry](https://github.com/setu-ts/setu-ts/blob/26aebd0e3fd16074d7b578623577fe87a1930e83/packages/cli/src/devtool/dev-entry.ts) and [enable planner](https://github.com/setu-ts/setu-ts/blob/26aebd0e3fd16074d7b578623577fe87a1930e83/packages/cli/src/devtool/planner.ts)                                      | M98c `main.dev.ts`, `dev` task and credential reads                   | D02 preflight/launch      |
-| [Workspace manifest](https://github.com/setu-ts/setu-ts/blob/26aebd0e3fd16074d7b578623577fe87a1930e83/packages/cli/src/workspace/manifest.ts) and [development runner](https://github.com/setu-ts/setu-ts/blob/26aebd0e3fd16074d7b578623577fe87a1930e83/packages/cli/src/workspace/dev-runner.ts)                           | Member `devtoolPort`, selection and credential isolation              | D01 discovery, D02 launch |
+| [Common diagnostics types](https://github.com/setu-ts/setu-ts/blob/d7a04734be8a4658774c7fe5b5e30297d5103ef3/packages/common/src/services/diagnostics.ts) and [application interface](https://github.com/setu-ts/setu-ts/blob/d7a04734be8a4658774c7fe5b5e30297d5103ef3/packages/common/src/plugin.ts)                        | Optional `IApplication.diagnostics`, snapshot and cursor-based reader | D02 adapter, D03 views    |
+| [Kernel collector](https://github.com/setu-ts/setu-ts/blob/d7a04734be8a4658774c7fe5b5e30297d5103ef3/packages/kernel/src/diagnostics/collector.ts) and [projection rules](https://github.com/setu-ts/setu-ts/blob/d7a04734be8a4658774c7fe5b5e30297d5103ef3/packages/kernel/src/diagnostics/projection.ts)                    | Opt-in collection, exact label approvals, bounded topology/events     | D03 interpretation        |
+| [Connector exports](https://github.com/setu-ts/setu-ts/blob/d7a04734be8a4658774c7fe5b5e30297d5103ef3/packages/diagnostics-plugin/src/index.ts) and [interfaces](https://github.com/setu-ts/setu-ts/blob/d7a04734be8a4658774c7fe5b5e30297d5103ef3/packages/diagnostics-plugin/src/interfaces/index.ts)                       | Plugin and injected native client                                     | D02 launch/client adapter |
+| [Client implementation](https://github.com/setu-ts/setu-ts/blob/d7a04734be8a4658774c7fe5b5e30297d5103ef3/packages/diagnostics-plugin/src/client/client.ts) and [protocol validation](https://github.com/setu-ts/setu-ts/blob/d7a04734be8a4658774c7fe5b5e30297d5103ef3/packages/diagnostics-plugin/src/protocol/protocol.ts) | Authenticated, serialized reads; limitations below                    | D02 connection policy     |
+| [Protocol v1](https://github.com/setu-ts/setu-ts/blob/d7a04734be8a4658774c7fe5b5e30297d5103ef3/docs/diagnostics-protocol.md) and [plugin lifecycle](https://github.com/setu-ts/setu-ts/blob/d7a04734be8a4658774c7fe5b5e30297d5103ef3/packages/diagnostics-plugin/src/plugin/diagnostics-plugin.ts)                          | Signed loopback HTTP, finite sessions, teardown                       | D02 trust boundary        |
+| [Development entry](https://github.com/setu-ts/setu-ts/blob/d7a04734be8a4658774c7fe5b5e30297d5103ef3/packages/cli/src/devtool/dev-entry.ts) and [enable planner](https://github.com/setu-ts/setu-ts/blob/d7a04734be8a4658774c7fe5b5e30297d5103ef3/packages/cli/src/devtool/planner.ts)                                      | M98c `main.dev.ts`, `dev` task and credential reads                   | D02 preflight/launch      |
+| [Workspace manifest](https://github.com/setu-ts/setu-ts/blob/d7a04734be8a4658774c7fe5b5e30297d5103ef3/packages/cli/src/workspace/manifest.ts) and [development runner](https://github.com/setu-ts/setu-ts/blob/d7a04734be8a4658774c7fe5b5e30297d5103ef3/packages/cli/src/workspace/dev-runner.ts)                           | Member `devtoolPort`, selection and credential isolation              | D01 discovery, D02 launch |
 
 ## M98a: data and interpretation
 
@@ -111,16 +106,20 @@ The plugin requires `enabled: true`, a loopback port from 1024–65535, a
 32-character lowercase hex session ID, and a 32-byte `Uint8Array` key. It also
 requires kernel diagnostics and the runtime's local diagnostics listener
 capability. Its optional `ttlMs` defaults to 900,000 ms and cannot exceed
-3,600,000 ms. It reads no environment variables itself. Application-side
+3,600,000 ms. Optional `maxSessionLifetimeMs` (M98o) opts into renewal; it must
+be at least `ttlMs` and at most 43,200,000 ms of awake time. Without it the
+status body and expiry behave exactly as before M98o. It reads no environment variables itself. Application-side
 `revoke()` closes the connector independently; stopping/closing the app also
 revokes it.
 
 The native client takes `endpoint`, `sessionId`, `sessionKey`, injected Web
 Crypto `subtle`, `fetch`, and `timing` with `setTimeout`/`clearTimeout`. It
-has the following core subset (D02 consumes only these methods):
+has the following core subset (D02 and D03b consume only these methods):
 
 ```typescript
 interface IDiagnosticsClient {
+  session(): Promise<DiagnosticsSessionLifetime>;
+  renew(): Promise<DiagnosticsSessionLifetime>;
   snapshot(): Promise<DiagnosticsSnapshot>;
   read(after: number, limit?: number): Promise<DiagnosticsBatch>;
   close(): void;
@@ -128,8 +127,9 @@ interface IDiagnosticsClient {
 ```
 
 The endpoint must be exactly `http://127.0.0.1:<port>` without credentials,
-trailing slash, query or fragment. D02 uses three core signed GET operations:
-`/v1/status`, `/v1/snapshot`, and `/v1/events?after=N&limit=N`. Requests with an
+trailing slash, query or fragment. The extension uses four core signed GET
+operations: `/v1/status`, `/v1/snapshot`, `/v1/events?after=N&limit=N` and
+(D03b) `/v1/renew`; its transport refuses every other target. Requests with an
 `Origin` header are rejected. Use the native extension host, never
 browser/webview fetch. HMAC authenticates traffic; HTTP does not encrypt it or
 make remote access supported. Use the helper rather than implementing another
@@ -141,16 +141,31 @@ applies a five-second abort deadline across response headers and body.
 Successful responses are authenticated before JSON parsing. Request sequences
 are independent of diagnostic event cursors.
 
-### M98d–g additions at this revision
+### Session renewal (M98o)
 
-The helper also exposes `health()`, `configuration()`, `queues(after, limit?)`
-and `traces(after, limit?)`. Its authenticated status parser accepts both the
-legacy three-field form and the current form with eleven fixed boolean inspector
-keys. Health, configuration, queues and traces are currently advertised true;
-authorization, cache, events, scheduler, realtime, storage and outboundHttp are
-reserved false. Legacy status resolves all addon support to false. The helper
-returns typed unsupported addon DTOs without probing unsupported routes.
-D02 does not call these methods or expose their data.
+`DiagnosticsSessionLifetime` is `{ expiresInMs, renewal }`, where `renewal` is
+`{ maxRemainingMs }` or `null` when the application did not opt in.
+`session()` is one signed status exchange; the first call pairs, and its
+failure is terminal like any initial pairing failure. A later status whose
+renewal support differs from the pairing status is refused. `renew()` throws
+locally, sending nothing, when the paired status did not advertise renewal;
+otherwise it sends `GET /v1/renew` and validates a signed four-field body
+naming the paired instance. The server sets expiry to
+`max(current, min(now + ttlMs, activation + maxSessionLifetimeMs))`: renewal
+never revives or shortens a session, and stops extending it once
+`expiresInMs` equals `maxRemainingMs`. Renewal failures are plain errors with no
+typed code. The paired session's rate bucket (20 requests/second, burst 40) has
+no total budget.
+
+### Inspector additions at this revision
+
+The helper also exposes `health()`, `configuration()`, `queues()`, `traces()`,
+`authorization()`, `cache()`, `events()`, `scheduler()`, `realtime()`,
+`storage()` and `outboundHttp()`. The status body's eleven-key `inspectors`
+manifest advertises all of them as implemented. Legacy status resolves all addon
+support to false, and the helper returns typed unsupported DTOs without probing
+unsupported routes. The extension does not call these methods or expose their
+data; P03 plans inspectors for them.
 
 The [D02 audit](d02-contract-audit.md) preserves the earlier failing probes and
 records requalification after framework PR #370. The identity, core validation
@@ -165,7 +180,7 @@ completed security audit.
 | Observation                                                                                    | Required D02 treatment                                                                                                                                                                                |
 | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Any failed initial status exchange makes the client terminal                                   | Validate a bounded startup strategy; never retry initial pairing with the same credentials, even through a newly constructed client. Fresh launch means fresh credentials                             |
-| No public status/expiry accessor, renewal operation or typed error-code API                    | Display a conservative launcher deadline, not an exact authenticated countdown. Use fixed user messages; do not classify failures by private error strings                                            |
+| `session()`/`renew()` expose the authenticated lifetime, but there is no typed error-code API  | Derive a local deadline from the send time and `expiresInMs`; renew only while advertised and extendable; use fixed user messages; do not classify failures by private error strings                  |
 | Non-200 responses become a generic connection failure before their signed error body is parsed | Do not claim the helper distinguishes expiry, revocation, rate limiting, authorization or network failures                                                                                            |
 | Serialization uses an uncapped promise queue                                                   | Keep at most one outstanding extension read and schedule the next after completion; bound retention and avoid timer-created backlogs                                                                  |
 | Core snapshot/batch validation enforces exact shapes and cursor invariants                     | Consume the public helper; own bounded allowlisted copies without private-validator imports                                                                                                           |
@@ -174,10 +189,12 @@ completed security audit.
 | Key import is lazy and clears an internal copy, not the caller's original bytes                | Preserve supplied bytes until import has occurred; define launcher-owned buffer cleanup and release references on teardown. Do not promise erasure of environment strings or garbage-collected memory |
 | `close()` aborts client reads but does not revoke the application connector                    | Stop the owned launch on disconnect/expiry and exercise complete child cleanup; client close alone is not server revocation                                                                           |
 
-The generated entry uses the default 15-minute TTL. A custom entry can choose a
-different permitted TTL, so custom launch recipes require an explicit matching
-lifetime policy. Expired or revoked sessions require relaunch; the extension
-must not silently extend their lifetime.
+The generated entry uses the default 15-minute TTL and opts into renewal with
+`maxSessionLifetimeMs: 28_800_000` (8 hours). The extension renews such a
+session at half of its remaining window and re-arms its local deadline from
+each renewal. Expired, revoked, capped or failed-renewal sessions require an
+explicit relaunch; the extension never extends a session beyond the
+application's maximum.
 
 ## M98c: scaffolding and launcher handoff
 
@@ -223,6 +240,9 @@ automatically restrict arbitrary existing application permissions.
 
 The entry reads the first two variables directly through **`Deno.env.get`**,
 validates them and exits with a value-free message when missing/malformed. It
+passes `maxSessionLifetimeMs: 28_800_000` to the plugin, and a composition probe
+plugin makes it exit when `setu.config.ts` did not pass the devtool composition
+through (M101f); that message names `npm:@setu-ts/cli@0.10.0`. It
 never generates credentials, writes an env file, or prints their values. The
 plugin itself remains explicitly configured. The launcher must generate
 credentials with a cryptographic RNG and pass them only in the owned child
@@ -277,7 +297,7 @@ does not mean one launched application process.
 D01 and local D02 integration can proceed before publication. Record the source
 hash and resolve common, kernel, runtime, CLI and diagnostics-plugin
 consistently to that revision through reviewed local mappings/artifacts. The CLI
-emits version-based JSR imports; running it from source does not automatically
+emits version-based npm imports; running it from source does not automatically
 make generated projects use local packages. Do not silently mix a local helper
 with older registry packages or commit machine-specific paths.
 
@@ -299,7 +319,7 @@ dependencies and repeatable installation evidence.
 | Instance binding     | Signed mismatched status/header/DTO instances rejected; retain the fixed helper contract with framework and devtool regression tests                                          | Framework + D02              |
 | Credential handoff   | Real standalone/multi-member launches, fresh credentials, sibling isolation, no credential output/storage/webview transfer                                                    | D02 using M98c               |
 | Startup pairing      | Bounded readiness strategy, terminal initial failure and fresh-launch recovery exercised against the actual helper                                                            | D02                          |
-| Session lifecycle    | App exit, expiry, disconnect and activation disposal stop reads and owned processes; late responses cannot repopulate cleared state                                           | D02                          |
+| Session lifecycle    | App exit, expiry, disconnect and activation disposal stop reads and owned processes; late responses cannot repopulate cleared state; renewal, cap and deadline stop exercised | D02; D03b for renewal        |
 | Capture quality      | Truncation, ring loss, collector drops, late parents, null timing and closed reader represented honestly                                                                      | D03 implemented locally      |
 | Compatibility matrix | Exact source/artifact versions, protocol, editor/host versions, OS and app runtime; local evidence distinct from released support                                             | D04                          |
 

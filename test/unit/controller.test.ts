@@ -1,6 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import type { DiagnosticsSnapshot, DiagnosticsBatch } from "@setu-ts/common";
+import type { DiagnosticsSessionLifetime } from "@setu-ts/diagnostics-plugin";
+import type { Renewal } from "../../src/session/scheduler";
+import { planLifetime } from "../../src/session/lifetime";
 import {
   SessionController,
   type Prepared,
@@ -27,13 +30,21 @@ const prepared: Prepared = {
   },
   executable: { path: "/deno", identity: "x", pathValue: "/bin" },
 };
+const renewable: DiagnosticsSessionLifetime = {
+  expiresInMs: 900000,
+  renewal: { maxRemainingMs: 28800000 },
+};
 function harness() {
+  let lifetime: DiagnosticsSessionLifetime = renewable;
   let clean = true,
     closed = 0,
     stops = 0,
     exit: (n: number) => void = () => {};
   let tick: () => Promise<void> = async () => {},
-    refresh: () => Promise<void> = async () => {};
+    refresh: () => Promise<void> = async () => {},
+    renewal: Renewal | undefined,
+    renewals = 0,
+    renew: () => Promise<DiagnosticsSessionLifetime> = async () => renewable;
   const exited = new Promise<number>((resolve) => {
     exit = resolve;
   });
@@ -57,16 +68,23 @@ function harness() {
     listening: async () => false,
     ready: async () => {},
     client: () => ({
+      session: async () => lifetime,
+      renew: async () => {
+        renewals++;
+        return renew();
+      },
       snapshot: async () => snap,
       read: async () => batch,
       close() {
         closed++;
       },
     }),
-    schedule: async (_signal, read, snapshot) => {
+    schedule: async (_signal, read, snapshot, renewing) => {
       tick = read;
       refresh = snapshot;
+      renewal = renewing;
     },
+    plan: planLifetime,
   };
   const controller = new SessionController("/supervisor", () => {}, ports);
   return {
@@ -79,6 +97,14 @@ function harness() {
       batch = v;
     },
     tick: () => tick(),
+    renewal: () => renewal!,
+    renewals: () => renewals,
+    setLifetime: (v: DiagnosticsSessionLifetime) => {
+      lifetime = v;
+    },
+    setRenew: (v: () => Promise<DiagnosticsSessionLifetime>) => {
+      renew = v;
+    },
     refresh: () => refresh(),
     exit: (code: number) => exit(code),
     counts: () => ({ stops, closed }),
@@ -177,6 +203,12 @@ test("root exit, closed reader and scheduler error share the cleanup path", asyn
 test("pairing failure closes client; a launch reporting uncertain ownership is retained for cleanup", async () => {
   const h = harness();
   h.ports.client = () => ({
+    session: async () => {
+      throw new Error();
+    },
+    renew: async () => {
+      throw new Error();
+    },
     snapshot: async () => {
       throw new Error();
     },
@@ -202,16 +234,127 @@ test("pairing failure closes client; a launch reporting uncertain ownership is r
   assert.equal(unknown.controller.status().state, "Cleanup required");
 });
 
-test("local deadline stops the owned application without renewal", async (t) => {
+test("the startup bound stops a launch that never pairs", async (t) => {
   t.mock.timers.enable({ apis: ["setTimeout"] });
   const h = harness();
-  await h.controller.start(async () => prepared);
+  // Like the real wait, it ends only when the session is aborted.
+  h.ports.ready = (_port, signal) =>
+    new Promise((_resolve, reject) =>
+      signal.addEventListener("abort", () => reject(new Error())),
+    );
+  const start = h.controller.start(async () => prepared);
+  await new Promise((resolve) => setImmediate(resolve));
   t.mock.timers.tick(899999);
-  assert.equal(h.controller.status().state, "Live");
+  assert.equal(h.controller.status().state, "Starting");
   t.mock.timers.tick(1);
+  await start;
+  assert.equal(h.controller.status().state, "Failed");
+  assert.equal(h.controller.status().ended, "deadline");
+  assert.equal(h.counts().stops, 1);
+});
+
+const due = (sentAt: number, value: DiagnosticsSessionLifetime) => ({
+  ...planLifetime(sentAt, value),
+  renewAt: value.renewal ? 0 : null,
+});
+
+test("the authenticated deadline replaces the startup bound; a fixed one is never renewed", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const h = harness();
+  h.setLifetime({ expiresInMs: 2000, renewal: null });
+  h.ports.plan = due;
+  await h.controller.start(async () => prepared);
+  assert.equal(h.controller.status().lifetime?.renewable, false);
+  assert.equal(h.renewal().due(), false);
+  t.mock.timers.tick(1000);
+  assert.equal(h.controller.status().state, "Live");
+  t.mock.timers.tick(1000);
   await new Promise((resolve) => setImmediate(resolve));
   assert.equal(h.controller.status().state, "Failed");
+  assert.equal(h.controller.status().ended, "deadline");
+  assert.equal(h.controller.status().lifetime, null);
+  assert.equal(h.renewals(), 0);
   assert.equal(h.counts().stops, 1);
+  h.setLifetime(renewable);
+  await h.controller.start(async () => prepared);
+  assert.equal(h.controller.status().ended, null);
+  await h.controller.stop();
+});
+
+test("a renewal re-arms the deadline from its own send time", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const h = harness();
+  h.setLifetime({ expiresInMs: 2000, renewal: { maxRemainingMs: 10000 } });
+  h.setRenew(async () => ({
+    expiresInMs: 2000,
+    renewal: { maxRemainingMs: 8500 },
+  }));
+  h.ports.plan = due;
+  let changes = 0;
+  const controller = new SessionController(
+    "/supervisor",
+    () => changes++,
+    h.ports,
+  );
+  await controller.start(async () => prepared);
+  assert.equal(controller.status().lifetime?.renewable, true);
+  t.mock.timers.tick(1500);
+  const before = changes;
+  await h.renewal().run();
+  assert.equal(h.renewals(), 1);
+  assert.ok(changes > before);
+  // Counted down on the real clock from the renewal's send time.
+  const left = controller.status().lifetime?.maxRemainingMs ?? 0;
+  assert.ok(left <= 8500 && left > 8000);
+  t.mock.timers.tick(1500);
+  assert.equal(controller.status().state, "Live");
+  t.mock.timers.tick(500);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(controller.status().state, "Failed");
+  assert.equal(controller.status().ended, "deadline");
+});
+
+test("a failed renewal stops the launch once, without a retry", async () => {
+  const h = harness();
+  h.ports.plan = due;
+  h.setRenew(async () => {
+    throw new Error("refused");
+  });
+  h.ports.schedule = async (_signal, _read, _snapshot, renewing) => {
+    assert.ok(renewing.due());
+    await renewing.run();
+  };
+  await h.controller.start(async () => prepared);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(h.controller.status().state, "Failed");
+  assert.equal(h.controller.status().ended, null);
+  assert.equal(h.renewals(), 1);
+  assert.equal(h.counts().stops, 1);
+});
+
+test("a renewal answered after Stop cannot re-arm or repopulate the session", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const h = harness();
+  h.ports.plan = due;
+  let answer: (v: DiagnosticsSessionLifetime) => void = () => {};
+  h.setRenew(
+    () =>
+      new Promise((resolve) => {
+        answer = resolve;
+      }),
+  );
+  await h.controller.start(async () => prepared);
+  const pending = h.renewal().run();
+  await h.controller.stop();
+  answer(renewable);
+  await pending;
+  assert.equal(h.controller.status().state, "Idle");
+  assert.equal(h.controller.status().lifetime, null);
+  t.mock.timers.tick(900000);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(h.controller.status().state, "Idle");
+  assert.equal(h.controller.status().ended, null);
+  await assert.rejects(h.renewal().run());
 });
 
 test("overlapping cleanup rechecks cannot erase a replacement session's ownership", async () => {
@@ -283,4 +426,32 @@ test("failed cleanup rechecks coalesce, keep launch blocked, and allow a later r
   await h.controller.recheck();
   assert.equal(checks, 2);
   assert.equal(h.controller.status().state, "Idle");
+});
+
+test("deadlines are measured from the send time, so a slow answer shortens them", async () => {
+  const h = harness();
+  const slow = <T>(value: T) =>
+    new Promise<T>((resolve) => setTimeout(() => resolve(value), 120));
+  h.ports.client = () => ({
+    session: () => slow(renewable),
+    renew: () => slow(renewable),
+    snapshot: async () => snap,
+    read: async () => ({
+      version: 1,
+      instanceId: "id",
+      events: [],
+      next: 0,
+      lost: 0,
+      closed: false,
+    }),
+    close() {},
+  });
+  await h.controller.start(async () => prepared);
+  try {
+    assert.ok(h.controller.status().lifetime!.remainingMs <= 900000 - 100);
+    await h.renewal().run();
+    assert.ok(h.controller.status().lifetime!.remainingMs <= 900000 - 100);
+  } finally {
+    await h.controller.stop();
+  }
 });

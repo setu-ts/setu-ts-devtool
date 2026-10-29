@@ -49,13 +49,24 @@ test("fixed loopback transport refuses escape paths/headers and bypasses proxy s
       await (await transport.fetch(url, { method: "GET" })).text(),
       "ok",
     );
+    assert.equal(
+      await (
+        await transport.fetch(`http://127.0.0.1:${target.port}/v1/renew`, {
+          method: "GET",
+        })
+      ).text(),
+      "ok",
+    );
     assert.equal(proxyCalls, 0);
-    assert.equal(calls, 1);
+    assert.equal(calls, 2);
     for (const path of [
       "http://localhost:" + target.port + "/v1/snapshot",
       url + "/extra",
       url + "?redirect=1",
       `http://127.0.0.1:${target.port}/v1/events?after=0&limit=129`,
+      `http://127.0.0.1:${target.port}/v1/renew?extend=1`,
+      `http://127.0.0.1:${target.port}/v1/renew/`,
+      `http://127.0.0.1:${target.port}/v1/renewal`,
     ])
       await assert.rejects(transport.fetch(path, { method: "GET" }));
     await assert.rejects(transport.fetch(url, { method: "POST" }));
@@ -225,4 +236,122 @@ test("readiness waits for a delayed listener and respects a hard deadline", asyn
     performance.now() - before < 200,
     "deadline must interrupt the 250ms backoff",
   );
+});
+
+test("session lifetimes and renewal pass through the public helper and the extension's own bounds", async () => {
+  const a = "3f2504e0-4f89-41d3-9a0c-0305e82c3301",
+    b = "3f2504e0-4f89-41d3-9a0c-0305e82c3302";
+  const key = new Uint8Array(32).fill(23),
+    id = "b".repeat(32);
+  const inspectors = Object.fromEntries(
+    [
+      "health",
+      "configuration",
+      "queues",
+      "traces",
+      "authorization",
+      "cache",
+      "events",
+      "scheduler",
+      "realtime",
+      "storage",
+      "outboundHttp",
+    ].map((name) => [name, false]),
+  );
+  for (const mode of [
+    "renewable",
+    "fixed",
+    "oversized",
+    "renew-instance",
+  ] as const) {
+    let renewals = 0;
+    const source = await server((req, res) => {
+      const value =
+        req.url === "/v1/status"
+          ? mode === "renewable" || mode === "renew-instance"
+            ? {
+                version: 1,
+                instanceId: a,
+                expiresInMs: 899000,
+                inspectors,
+                renewal: { maxRemainingMs: 28_799_000 },
+              }
+            : {
+                version: 1,
+                instanceId: a,
+                expiresInMs: mode === "fixed" ? 900000.75 : 3_600_001,
+              }
+          : req.url === "/v1/renew"
+            ? (renewals++,
+              {
+                version: 1,
+                instanceId: mode === "renew-instance" ? b : a,
+                expiresInMs: 900000,
+                maxRemainingMs: 28_798_000,
+              })
+            : {
+                version: 1,
+                instanceId: a,
+                state: "running",
+                failureCode: null,
+                nodes: [],
+                edges: [],
+                truncated: false,
+                droppedEvents: 0,
+              };
+      const text = JSON.stringify(value);
+      const fields = [
+        "setu-diagnostics-v1",
+        "response",
+        id,
+        a,
+        String(req.headers["x-setu-sequence"]),
+        req.url!,
+        "200",
+        createHash("sha256").update(text).digest("hex"),
+      ];
+      res.setHeader("x-setu-instance", a);
+      res.setHeader(
+        "x-setu-mac",
+        createHmac("sha256", key).update(fields.join("\n")).digest("hex"),
+      );
+      res.end(text);
+    });
+    const client = coreClient(
+      source.port,
+      id,
+      key.slice(),
+      new AbortController().signal,
+    );
+    try {
+      // Renewal never precedes the paired snapshot binding.
+      await assert.rejects(client.renew(), /^Error: CONNECTION_FAILED$/);
+      if (mode === "oversized") {
+        await assert.rejects(client.session(), /^Error: CONNECTION_FAILED$/);
+        continue;
+      }
+      const lifetime = await client.session();
+      assert.ok(Object.isFrozen(lifetime));
+      await client.snapshot();
+      if (mode === "fixed") {
+        assert.deepEqual(lifetime, { expiresInMs: 900000, renewal: null });
+        await assert.rejects(client.renew());
+      } else {
+        assert.deepEqual(lifetime, {
+          expiresInMs: 899000,
+          renewal: { maxRemainingMs: 28_799_000 },
+        });
+        if (mode === "renew-instance") await assert.rejects(client.renew());
+        else
+          assert.deepEqual(await client.renew(), {
+            expiresInMs: 900000,
+            renewal: { maxRemainingMs: 28_798_000 },
+          });
+      }
+      assert.equal(renewals, mode === "fixed" ? 0 : 1);
+    } finally {
+      client.close();
+      await source.close();
+    }
+  }
 });

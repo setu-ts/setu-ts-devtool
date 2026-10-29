@@ -116,10 +116,17 @@ additional resource/session checks; it never imports private helper state or
 implements a second signing protocol. Generic failures and terminal initial
 pairing remain contract constraints.
 
-Use a conservative local 15-minute deadline starting before supervisor launch. On any helper or
-validation failure, stop reads, clear the view/model and stop owned processes.
-Do not report the exact server expiry or infer a detailed failure class from an
-internal error string. Client `close()` alone does not revoke the server.
+Bound startup with a local 15-minute limit starting before supervisor launch.
+After pairing, the local deadline is the authenticated lifetime measured from
+the request's send time, so it is never later than the server's. Renew only
+through the public helper's `renew()`, only while the paired status advertised
+renewal and renewing can still extend the window, at most once per half
+window, and never beyond the application's maximum lifetime. Decide
+renewability from the authenticated `renewal` value, never from an error. On
+any helper, renewal or validation failure, stop reads, clear the view/model and
+stop owned processes; never retry a renewal. Do not infer a detailed failure
+class from an internal error string. Client `close()` alone does not revoke the
+server.
 
 ## Data minimization, display and persistence
 
@@ -220,26 +227,26 @@ below identify the exercised portions; remaining cases retain their milestone ga
 must map each ID to named tests or a repeatable manual exercise. A mocked unit
 pass cannot substitute for rows that require an actual editor or process tree.
 
-| ID  | Threat or failure                                   | Required evidence                                                                                                                                                                               | Owner                  |
-| --- | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
-| S01 | Untrusted or unsupported context launches code      | Restricted Mode, direct command invocation, web/remote/virtual contexts and unsupported OS refuse without process/network activity                                                              | D01; D04 editor matrix |
-| S02 | Crafted workspace escapes discovery bounds          | Malformed/duplicate-key/deep/oversized JSON and JSONC, path traversal, symlink escape, duplicate roots, invalid members and file changes during preflight fail without evaluation               | D01/D02                |
-| S03 | Selection/refresh starts unexpected services        | No auto-launch; native launch identifies all workspace members and the one instrumented target; selection/refresh/invalid root spawn nothing                                                    | D02                    |
-| S04 | Credentials leak or get reused                      | Real standalone and multi-member launches verify fresh values, exact encoding, sibling blanks and absence from arguments, IPC and extension persistence/output                                  | D02                    |
-| S05 | Wrong executable/task or shell interpolation        | Workspace executable overrides and path tricks refused; explicit user executable validated; fixed argument vector used; unsupported recipes fail                                                | D02                    |
-| S06 | Wrong listener wins readiness race                  | Occupied port, delayed listener, listener replacement and wrong signing key never yield live data; failed pairing requires fresh launch; probes/timers close                                    | D02                    |
-| S07 | Signed/unsigned malicious transport data reaches UI | Bad MAC/replay/redirect, body overrun/stall, unsupported version, malformed fields/enums/numbers, instance/header/DTO mismatch and cursor inconsistency rejected before display                 | Framework + D02        |
-| S08 | Proxy or browser exposes diagnostic traffic         | Instrumented supported-host fetch uses only selected IPv4 loopback even with proxy variables configured; browser-Origin requests rejected; webview has no fetch route                           | D02/D04                |
-| S09 | Error handling misstates identity or expiry         | Non-200/timeout/invalid DTO use fixed neutral failure; local deadline is labeled correctly; no private error-string matching or automatic retry/renewal                                         | D02                    |
-| S10 | Close leaves owned children alive                   | Real standalone/workspace tree, early root exit, SIGTERM-resistant child, startup cancellation and forced cleanup exercise group disappearance and incomplete-cleanup state                     | D02; D04 editor matrix |
-| S11 | Late callbacks resurrect records                    | Races between Stop/Clear, polling, pairing, project change, panel reload and new session cannot restore old generations or undo clear                                                           | D02/D03                |
-| S12 | Labels/links execute or exfiltrate                  | HTML/SVG/script, command/file/data/http URLs and control characters stay inert; actual packaged webview CSP blocks connections/resources; only fixed documentation topic destinations open      | D03                    |
-| S13 | Compromised renderer gains host authority           | Unknown/oversized/deep/flooded/stale IPC and arbitrary path/URL/command requests rejected; protocol provides no launch/file/network primitive                                                   | D03                    |
-| S14 | Bounded arrays hide unbounded work/memory           | Flood events, snapshots, watchers, filters and unacknowledged frames; prove scheduler/queue/index limits, explicit loss counters and responsive editor                                          | D01–D03; D04 stress    |
-| S15 | Clear/Stop/reload retains sensitive data            | Inspect host store, rendered DOM, pending frames and extension storage; Stop removes all capture, Clear does not rewind cursor, no panel/session restoration after reload                       | D02/D03                |
-| S16 | Crash creates misleading cleanup claims             | Force host termination; document surviving process behavior and TTL, verify no silent reconnect or persisted-PID kill, then clean test processes externally                                     | D04                    |
-| S17 | Packaging changes trust assumptions                 | Install the VSIX in VS Code and Code OSS; verify bundled helper provenance, no workspace module resolution, no Deno globals in host, no unexpected egress, and package contents/dependency pins | D04                    |
-| S18 | Loss/partial data presented as complete             | Late/missing parents, null timings, truncation, ring gaps, collector drops, host evictions and page clipping have distinct visible treatment                                                    | D03                    |
+| ID  | Threat or failure                                   | Required evidence                                                                                                                                                                                     | Owner                  |
+| --- | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| S01 | Untrusted or unsupported context launches code      | Restricted Mode, direct command invocation, web/remote/virtual contexts and unsupported OS refuse without process/network activity                                                                    | D01; D04 editor matrix |
+| S02 | Crafted workspace escapes discovery bounds          | Malformed/duplicate-key/deep/oversized JSON and JSONC, path traversal, symlink escape, duplicate roots, invalid members and file changes during preflight fail without evaluation                     | D01/D02                |
+| S03 | Selection/refresh starts unexpected services        | No auto-launch; native launch identifies all workspace members and the one instrumented target; selection/refresh/invalid root spawn nothing                                                          | D02                    |
+| S04 | Credentials leak or get reused                      | Real standalone and multi-member launches verify fresh values, exact encoding, sibling blanks and absence from arguments, IPC and extension persistence/output                                        | D02                    |
+| S05 | Wrong executable/task or shell interpolation        | Workspace executable overrides and path tricks refused; explicit user executable validated; fixed argument vector used; unsupported recipes fail                                                      | D02                    |
+| S06 | Wrong listener wins readiness race                  | Occupied port, delayed listener, listener replacement and wrong signing key never yield live data; failed pairing requires fresh launch; probes/timers close                                          | D02                    |
+| S07 | Signed/unsigned malicious transport data reaches UI | Bad MAC/replay/redirect, body overrun/stall, unsupported version, malformed fields/enums/numbers, instance/header/DTO mismatch and cursor inconsistency rejected before display                       | Framework + D02        |
+| S08 | Proxy or browser exposes diagnostic traffic         | Instrumented supported-host fetch uses only selected IPv4 loopback even with proxy variables configured; browser-Origin requests rejected; webview has no fetch route                                 | D02/D04                |
+| S09 | Error handling misstates identity or expiry         | Non-200/timeout/invalid DTO use fixed neutral failure; local deadline is never later than the server's; renewal only while advertised and extendable, never retried; no private error-string matching | D02; renewal in D03b   |
+| S10 | Close leaves owned children alive                   | Real standalone/workspace tree, early root exit, SIGTERM-resistant child, startup cancellation and forced cleanup exercise group disappearance and incomplete-cleanup state                           | D02; D04 editor matrix |
+| S11 | Late callbacks resurrect records                    | Races between Stop/Clear, polling, pairing, project change, panel reload and new session cannot restore old generations or undo clear                                                                 | D02/D03                |
+| S12 | Labels/links execute or exfiltrate                  | HTML/SVG/script, command/file/data/http URLs and control characters stay inert; actual packaged webview CSP blocks connections/resources; only fixed documentation topic destinations open            | D03                    |
+| S13 | Compromised renderer gains host authority           | Unknown/oversized/deep/flooded/stale IPC and arbitrary path/URL/command requests rejected; protocol provides no launch/file/network primitive                                                         | D03                    |
+| S14 | Bounded arrays hide unbounded work/memory           | Flood events, snapshots, watchers, filters and unacknowledged frames; prove scheduler/queue/index limits, explicit loss counters and responsive editor                                                | D01–D03; D04 stress    |
+| S15 | Clear/Stop/reload retains sensitive data            | Inspect host store, rendered DOM, pending frames and extension storage; Stop removes all capture, Clear does not rewind cursor, no panel/session restoration after reload                             | D02/D03                |
+| S16 | Crash creates misleading cleanup claims             | Force host termination; document surviving process behavior and TTL, verify no silent reconnect or persisted-PID kill, then clean test processes externally                                           | D04                    |
+| S17 | Packaging changes trust assumptions                 | Install the VSIX in VS Code and Code OSS; verify bundled helper provenance, no workspace module resolution, no Deno globals in host, no unexpected egress, and package contents/dependency pins       | D04                    |
+| S18 | Loss/partial data presented as complete             | Late/missing parents, null timings, truncation, ring gaps, collector drops, host evictions and page clipping have distinct visible treatment                                                          | D03                    |
 
 ## Completion and changes to this model
 

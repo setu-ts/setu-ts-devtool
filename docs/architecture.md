@@ -180,11 +180,16 @@ launch and discard credentials. Retry means a new explicit launch, never a new
 client using the failed pair. D02 must exercise delayed startup and
 wrong-process port races before this strategy is accepted.
 
-Start the extension's 15-minute host timer before supervisor launch, including
-startup in the local limit; this can end before the server's TTL. Call it a local session limit, not
-server expiry. Support the default M98c TTL only in the preview. No
-auto-renewal, automatic restart, attach-to-existing-process, URL setting or port
-scanning.
+Start a 15-minute startup bound before supervisor launch; a session cannot pair
+after the generated entry's initial TTL. Pairing reads the authenticated
+lifetime through the helper's `session()`, and the bound is replaced by a local
+deadline of the request's send time plus `expiresInMs`, so it never falls after
+the server's. While the status advertised renewal and renewing can still extend
+the window, the scheduler calls `renew()` at half of the remaining window, in
+place of a read, and the deadline is re-armed from that call's send time. A
+non-renewable or capped session stops at its deadline. A failed renewal stops
+the session like a failed read; it is never retried. No automatic restart,
+attach-to-existing-process, URL setting or port scanning.
 
 ## Session state and teardown
 
@@ -192,9 +197,9 @@ scanning.
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | Idle             | No process/client/records. Discovery and selection are allowed                                                                       |
 | Preparing        | Check trust, platform, recipe, launch scope and occupied port; no credentials before launch is chosen                                |
-| Starting         | Spawn owned process group, start lifetime timer and bounded TCP wait                                                                 |
-| Pairing          | One helper snapshot call; no UI diagnostics before validation                                                                        |
-| Live             | One scheduler for snapshots/events; display application state independently                                                          |
+| Starting         | Spawn owned process group, start the startup bound and bounded TCP wait                                                              |
+| Pairing          | Helper `session()` then snapshot; the authenticated deadline replaces the startup bound; no UI diagnostics before validation         |
+| Live             | One scheduler for snapshots, events and due renewals; display application state and remaining lifetime independently                 |
 | Stopping         | Invalidate callbacks, close client, cancel timers/probes, erase capture/view, terminate owned group                                  |
 | Failed           | Cleanup completed; retain only fixed reason and exit code, never diagnostic records. Explicit launch may start again                 |
 | Cleanup required | Group cleanup could not be confirmed; retain only cleanup ownership metadata, block another launch and show manual recovery guidance |
