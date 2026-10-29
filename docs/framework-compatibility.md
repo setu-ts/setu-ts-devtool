@@ -314,13 +314,14 @@ full-stack template. It sets the three session variables to empty strings for
 siblings and detaches no child while a member is selected. It spawns the bare
 name `npm`, so the launch `PATH` leads with the verified Node directory.
 
-| Observation                                                                                         | Devtool treatment                                                                                                                          |
-| --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| npm runs the script through a shell and reads `.npmrc`                                              | Fixed npm environment: no pre/post scripts, `/bin/sh`, `node_options` a single space, no update/fund/audit; inherited npm settings removed |
-| An empty `npm_config_node_options` does not override a project `.npmrc` (measured, npm 11.19.1)     | A single space, which does                                                                                                                 |
-| Process chain: npm → `tsx` CLI → application `node`, one group (`/bin/sh` execs the single command) | Existing supervisor group teardown; exercised with an externally killed npm                                                                |
-| The devtool never installs packages                                                                 | Preflight requires `node_modules/tsx` in the project or workspace root                                                                     |
-| Bun: no listener                                                                                    | Discovery reports Bun projects and workspaces as unsupported                                                                               |
+| Observation                                                                                                     | Devtool treatment                                                                                                                          |
+| --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| npm runs the script through a shell and reads `.npmrc`                                                          | Fixed npm environment: no pre/post scripts, `/bin/sh`, `node_options` a single space, no update/fund/audit; inherited npm settings removed |
+| An empty `npm_config_node_options` does not override a project `.npmrc` (measured, npm 11.19.1)                 | A single space, which does                                                                                                                 |
+| Process chain: npm → `tsx` CLI → application `node`, one group (`/bin/sh` execs the single command)             | Existing supervisor group teardown; exercised with an externally killed npm                                                                |
+| `.npmrc` `workspace`/`workspaces` (directly or through another config file) selects which package's script runs | `npm --no-workspaces run dev`; preflight refuses those keys and any key npm reads differently from its text                                |
+| The devtool never installs packages                                                                             | Preflight requires `node_modules/tsx` in the project or workspace root                                                                     |
+| Bun: no listener                                                                                                | Discovery reports Bun projects and workspaces as unsupported                                                                               |
 
 Node is qualified on 24.22.1 with npm 11.19.1. The launcher accepts Node 24 from
 24.22.1 with npm 11 from the same directory.

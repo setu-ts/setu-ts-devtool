@@ -72,7 +72,14 @@ workspace's `deno task dev` or `npm run dev` safe: the task or script is
 executable project content. For Node, a project `.npmrc` is also project
 content that could choose the shell, preload code into every `node` or run
 `predev`/`postdev`; the launch environment overrides those settings (D06) and a
-real exercise with a hostile `.npmrc` proves none takes effect.
+real exercise with a hostile `.npmrc` proves none takes effect. A `.npmrc` can
+also choose which package's script npm runs (`workspace`, `workspaces`,
+`include-workspace-root`, or through `userconfig`/`globalconfig`), which would
+hand the session to an unchecked script. The launch runs
+`npm --no-workspaces run dev`, and preflight refuses those keys and any key
+npm could read differently from its text (`${…}`, quotes, backslashes,
+sections), because the workspace runner's nested `npm` cannot take the flag
+([D06 security review](d06-security-review.md), F1).
 
 The native Launch action identifies the working directory, selected member and
 all members that the root runner will start. No auto-launch, task installation,

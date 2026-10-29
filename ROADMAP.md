@@ -2,8 +2,9 @@
 
 Status, updated 2026-10-29: D01–D03 are implemented and locally verified. D03b
 (the contract pin moved to framework `v0.10.0`, and session renewal) is
-implemented and independently reviewed. D06 (Node applications) comes next and
-D04 (the preview release) after it, by the maintainer's decision of 2026-10-29. Framework
+implemented and independently reviewed. D06 (Node applications) is implemented
+and independently reviewed against framework `develop`, and merges once the
+framework release containing M126 exists. D04 (the preview release) follows, by the maintainer's decision of 2026-10-29. Framework
 M126 (a Node diagnostics listener) merged on 2026-10-29 and ships in the next
 framework release; D06 consumes it. The [milestone table](#milestones) is the status record; per-milestone evidence is linked from it.
 
@@ -171,7 +172,7 @@ contexts must be refused explicitly.
 | D03  | Implemented; independently reviewed | Composition graph, route/middleware views, request timeline    | D01 fixtures for parallel UI work; D02 for integration          | [D03 plan](plans/d03-inspection.md) |
 | D03b | Implemented; independently reviewed | Session renewal without relaunch                               | D02; contract pin moved to `v0.10.0` (contains M98o)            | [D03b plan](plans/d03b-renewal.md)  |
 | D04  | Planned                             | Security/compatibility exercises, VSIX, free preview docs      | D01–D03b, D06; framework release with M126; pinned packages     | [D04 plan](plans/d04-release.md)    |
-| D06  | Planned; plan written               | Node applications: npm project discovery, launch under `tsx`   | D02; framework M126 released; pin moved to that release         | [D06 plan](plans/d06-node.md)       |
+| D06  | Implemented; independently reviewed | Node applications: npm project discovery, launch under `tsx`   | D02; framework M126 released; pin moved to that release         | [D06 plan](plans/d06-node.md)       |
 | D05  | Direction only                      | Health summary, generator/task UI                              | D04; separate plan                                              |                                     |
 | P01  | Direction only                      | Live analysis, multi-app workflows                             | D04; separate plan                                              |                                     |
 | P02  | Direction only                      | Retained investigations and comparisons                        | Persistence/export threat review; separate plan                 |                                     |
@@ -180,7 +181,8 @@ contexts must be refused explicitly.
 Evidence: [D01](docs/d01-validation.md), [D02](docs/d02-validation.md) and its
 [security review](docs/d02-security-review.md), [D03](docs/d03-validation.md)
 and its [security review](docs/d03-security-review.md), [D03b](docs/d03b-validation.md)
-and its [security review](docs/d03b-security-review.md).
+and its [security review](docs/d03b-security-review.md), [D06](docs/d06-validation.md)
+and its [security review](docs/d06-security-review.md).
 
 ### D03b — session renewal before D04
 

@@ -1,6 +1,9 @@
 # D06 — Node applications
 
-Status: planned. D01–D03b are merged to `main`. Framework M126 (setu-ts#521,
+Status: implemented and independently reviewed against framework `develop`
+`4e26f834` ([validation](../docs/d06-validation.md),
+[security review](../docs/d06-security-review.md)); merges after the framework
+release that contains M126. D01–D03b are merged to `main`. Framework M126 (setu-ts#521,
 merge commit `4e26f834`) makes the diagnostics listener bind on Node and lets
 the CLI emit `--devtool` for Node projects and workspace members. It is merged
 to framework `develop` and not yet released. D04 runs after this milestone.

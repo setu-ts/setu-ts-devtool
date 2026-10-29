@@ -1,0 +1,74 @@
+# D06 local validation — 2026-10-29
+
+D06 is qualified on `feat/d06-node` against framework `develop` commit
+`4e26f834` (the M126 merge). The framework release that contains M126 does not
+exist yet. Before merging, D06 moves the pin to that release commit and repeats
+this record's commands with the published CLI. No VSIX was built, installed or
+published; that is D04.
+
+## Environment and commands
+
+- Linux x64; Node 24.22.1 with npm 11.19.1; Deno 2.9.6.
+- Code - OSS 1.138.0, embedded Node 24.19.0 and Electron 42.11.10.
+- Framework pin `4e26f834c8fe6280e28fab355fa5d5a771cf72d9`, prepared from a clean
+  checkout with `npm run prepare:framework`. Preparation bundles the CLI from
+  that commit and reads the Node recipes from the files it writes, formatted
+  with Prettier 3.9.10, the version the framework locks. It installs the
+  fixtures' `hono@4.13.14`, `@hono/node-server@2.1.5` and `tsx@4.23.15`, the
+  versions in the framework lock.
+
+```sh
+npm run check
+npm run format:check
+npm run test:coverage
+npm run build:dev && npm run test:host
+npm run build
+npm run test:host -- --production
+npm run test:host -- --restricted
+```
+
+All commands exited zero. The coverage command ran **105 tests** with no
+failures or skips, and every `src` and `webview` file is at or above 90% for
+lines, branches and functions. The development and production-bundle host runs
+made a live connection; the restricted run correctly made none.
+
+## Behavioural evidence
+
+| Exercise                                  | Result                                                                                                                                                                                                                                                                                                                  |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Deno on the new pin, before any Node code | The existing Deno exercises passed unchanged (80 tests) with the regenerated, now runtime-neutral, Deno entries                                                                                                                                                                                                         |
+| Catalog against real scaffolds            | The Node entries, runner and root script in the catalog equal, byte for byte, what the commit's CLI wrote for `setu new --devtool` and for a workspace member generated with `--devtool`                                                                                                                                |
+| Real Node standalone and workspace        | Launch, pair, capture, Clear and Stop. In the workspace the sibling reports no session key in its own environment, and no listener survives Stop                                                                                                                                                                        |
+| Renewal and deadline on Node              | Renewal through the generated entry kept the session Live. A 3 s window capped at 7 s renewed and stopped at its deadline (about 7.8 s); a fixed 3 s session stopped at about 3.7 s                                                                                                                                     |
+| Hostile npm configuration                 | A `.npmrc` with `script-shell=/nonexistent/shell` and `node-options=--require=<marker script>`, plus `predev`/`postdev` scripts, in the project and in the workspace root and member: the launch paired and nothing wrote the marker                                                                                    |
+| npm killed from outside                   | Killing the `npm run dev` process with SIGKILL moved the session to Failed and left no member in its process group and no listener                                                                                                                                                                                      |
+| Executables on this machine               | `node` from nvm 24.22.1 with its npm 11.19.1 resolved and verified; with `/usr/bin` first, `/usr/bin/node` 26.10.0 was refused                                                                                                                                                                                          |
+| Redirected npm script                     | A root `.npmrc` with `workspace=apps/worker`, `userconfig=`, `${npm_package_name}=worker` (root package named `workspace`), a quoted key or a lone-CR line is refused by preflight. A project inside a parent npm workspace whose `.npmrc` selects another package pairs normally, and that package's script never runs |
+| Unmodified CLI scaffold                   | A project written by the commit's CLI (`setu new demo --devtool`), with the framework sources mapped in and `tsx` installed, was discovered, accepted by preflight with its entry unchanged, launched, paired, renewed three times on a 2 s schedule and stopped with no listener left                                  |
+
+## Negative controls
+
+Each mutation was applied, tested and reverted:
+
+| Mutation                                                                                             | Failing tests                                                                                                                                                                              |
+| ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Fixed npm environment not applied                                                                    | Both hostile-`.npmrc` exercises and the npm environment unit test                                                                                                                          |
+| Only lowercase `npm_config_` removed                                                                 | The npm environment unit test                                                                                                                                                              |
+| Bun workspace runtime not refused                                                                    | The Bun discovery test                                                                                                                                                                     |
+| Sibling `start:dev` scripts not checked                                                              | The Node preflight test and the matcher test                                                                                                                                               |
+| Any `npm` beside node accepted                                                                       | The npm-location test                                                                                                                                                                      |
+| Any Node version accepted                                                                            | The version-gate test                                                                                                                                                                      |
+| Launch without `--no-workspaces`                                                                     | The parent-npm-workspace exercise                                                                                                                                                          |
+| `.npmrc` redirecting keys not checked, or keys with `${…}`/quotes allowed, or LF-only line splitting | The root-`.npmrc` refusal exercise and the spelling unit test                                                                                                                              |
+| npm resolving inside a workspace root accepted                                                       | The npm-location test                                                                                                                                                                      |
+| Prepared runtime may differ from the selection                                                       | The editor runtime-mismatch test                                                                                                                                                           |
+| Supervisor accepts any npm script path                                                               | "supervisor runs node only with npm's CLI script, never another script" (added after the first form of this control went undetected: a refused message and a failed spawn looked the same) |
+
+The independent review ([D06 security review](d06-security-review.md)) found
+that a project `.npmrc` could redirect `npm run dev` to an unchecked script
+(F1), and five smaller findings; all are fixed and re-reviewed.
+
+## Not covered
+
+The published CLI and packages with M126, until the release exists. Also
+Bun, Windows and macOS, which are refused, and an installed VSIX, which is D04.

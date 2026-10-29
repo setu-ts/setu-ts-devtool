@@ -134,7 +134,7 @@ exclude relative/PATH-current-directory resolution and anything inside a
 workspace root. For Node, npm is the `npm` entry in the same directory, which
 must resolve to npm's own `node_modules/npm/bin/npm-cli.js`; Node must be 24 from
 24.22.1 and npm 11. Deno runs `spawn(deno, ['task', 'dev'], ...)`; Node runs
-`spawn(node, [npm-cli.js, 'run', 'dev'], ...)`, so the verified `node` runs npm.
+`spawn(node, [npm-cli.js, '--no-workspaces', 'run', 'dev'], ...)`, so the verified `node` runs npm.
 Both use `shell: false` and the validated root as `cwd`. This avoids constructing a shell command, but
 the Deno task itself executes workspace code with the application's permissions.
 Trust and explicit launch remain required. Bundled extension code never imports

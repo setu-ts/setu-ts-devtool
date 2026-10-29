@@ -100,7 +100,8 @@ Only qualified CLI-generated Deno and Node recipes are accepted. A Node project
 runs its `dev` script through `npm run dev`; its dependencies must already be
 installed, because the extension never runs `npm install`. A project's
 `.npmrc` cannot change the shell, preload code or run `predev`/`postdev`
-scripts during a launch. The extension does not
+scripts during a launch, and a `.npmrc` that selects another package's script
+(`workspace`, `workspaces` and similar) is refused. The extension does not
 enable or migrate projects automatically, capture application output, or attach
 to an existing process. Optional `setuDevtool.denoPath` and `setuDevtool.nodePath` are absolute
 user-level settings. Node must be 24.22.1 or later on the 24 line, with npm 11 in
