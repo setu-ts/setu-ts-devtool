@@ -7,12 +7,12 @@ Linux scope; no release has been published. The
 [roadmap milestone table](ROADMAP.md#milestones) is the status record and links
 each milestone's evidence.
 
-The extension discovers prepared projects, explicitly launches a local Deno
-application, pairs, captures bounded diagnostics and stops its owned processes.
+The extension discovers prepared projects, explicitly launches a local Deno or
+Node application, pairs, captures bounded diagnostics and stops its owned processes.
 The inspection panel presents a bounded composition graph and request timeline.
 
 The first release is a free desktop extension for VS Code and Code OSS. Its main
-workflow is: select a local project, explicitly launch an instrumented Deno
+workflow is: select a local project, explicitly launch an instrumented Deno or Node
 application, inspect plugins and routes, and follow request execution through
 middleware and handlers. Diagnostic data stays local and in memory. No account
 is required.
@@ -77,8 +77,11 @@ tests and per-file 90% branch/function/line coverage gate.
 Press F5 to start the development extension host. Open **Setu-TS Projects** in
 Explorer or run **Setu-TS: Refresh Projects**, then select a discovered project.
 Selection does not execute application code. Discovery accepts standalone Deno
-configs importing Setu packages and v1 `setu.workspace.json` manifests with
-members under `apps/<name>`. A discovered `dev` task is only a launch candidate.
+configs importing Setu packages, standalone Node projects whose `package.json`
+depends on a Setu package, and v1 `setu.workspace.json` manifests for Deno or
+Node with members under `apps/<name>`. A folder with a Deno config is a Deno
+project even when it also has a `package.json`. Bun projects are reported as
+unsupported. A discovered `dev` task is only a launch candidate.
 
 For a synthetic preview, the development host's Debug Console can invoke
 `vscode.commands.executeCommand("setuDevtool.sample")` while paused in extension
@@ -93,10 +96,15 @@ launch. **Setu-TS: Clear Capture** drops retained events without rewinding the
 cursor. Native status separates connection and application state; the inspection
 panel persists no state and is rebuilt from the bounded host capture.
 
-Only qualified CLI-generated Deno recipes are accepted. The extension does not
+Only qualified CLI-generated Deno and Node recipes are accepted. A Node project
+runs its `dev` script through `npm run dev`; its dependencies must already be
+installed, because the extension never runs `npm install`. A project's
+`.npmrc` cannot change the shell, preload code or run `predev`/`postdev`
+scripts during a launch. The extension does not
 enable or migrate projects automatically, capture application output, or attach
-to an existing process. Optional `setuDevtool.denoPath` is an absolute user-level
-setting; workspace overrides are ignored. A session renews itself at half of its remaining window while the
+to an existing process. Optional `setuDevtool.denoPath` and `setuDevtool.nodePath` are absolute
+user-level settings. Node must be 24.22.1 or later on the 24 line, with npm 11 in
+the same directory; workspace overrides are ignored. A session renews itself at half of its remaining window while the
 application allows it: generated entries allow 8 hours of awake time. The status
 bar shows how much of that is left. A session that cannot be renewed, or has
 reached its maximum, stops at its deadline; launch again to continue. A failed
