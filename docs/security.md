@@ -3,8 +3,9 @@
 Design baseline, 2026-09-22, for the D01–D04 free preview. These controls are
 requirements to implement and test, not claims that the extension is already
 secure. Read alongside the [architecture](architecture.md) and pinned
-[framework contract register](framework-compatibility.md). Product tier does not
-change authentication, resource bounds or data protections.
+[framework contract register](framework-compatibility.md). The devtool is free,
+with no tiers; every feature carries the same authentication, resource bounds and
+data protections.
 
 ## Assets, actors and trust boundaries
 
@@ -250,11 +251,10 @@ additional editor/OS compatibility evidence to the acceptance matrix. No row is
 marked passed by this documentation update.
 
 Recording, export/import, remote access, arbitrary attachment, custom TTLs,
-application log viewing, health/config/job introspection and Pro licensing each
-require an explicit extension of this model before implementation. Any later
-entitlement service receives no diagnostic data or session credentials;
-licensing cannot authorize application access or weaken the free connection
-protections.
+application log viewing and health/config/job introspection each require an
+explicit extension of this model before implementation. The devtool has no
+licensing or entitlement service; adding one would itself need an extension of
+this model.
 
 The [addon assessment](framework-addons.md) gives each of the five inspection
 areas its own source findings and proposed acceptance evidence. That evidence is

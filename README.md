@@ -19,7 +19,7 @@ is required.
 
 ## Planning documents
 
-- [Product roadmap and Free/Pro boundary](ROADMAP.md)
+- [Product roadmap](ROADMAP.md)
 - [Framework contracts and compatibility gates](docs/framework-compatibility.md)
 - [Extension architecture](docs/architecture.md)
 - [Security model and acceptance matrix](docs/security.md)
@@ -115,3 +115,7 @@ Diagnostics stay in bounded host memory and are cleared on Stop. Credentials
 reach the launched application through its environment, so this is not a
 sandbox against the selected application or other privileged local software.
 No account, billing client, diagnostic upload or VSIX release is included.
+
+## License
+
+MIT — see [LICENSE](LICENSE). Free to use, with no paid tier.

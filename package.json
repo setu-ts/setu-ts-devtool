@@ -5,7 +5,7 @@
   "publisher": "setu-ts",
   "version": "0.0.1",
   "private": true,
-  "license": "UNLICENSED",
+  "license": "MIT",
   "preview": true,
   "engines": {
     "vscode": "^1.138.0",
