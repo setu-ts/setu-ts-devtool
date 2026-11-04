@@ -3,10 +3,10 @@
 Status, updated 2026-10-29: D01–D03 are implemented and locally verified. D03b
 (the contract pin moved to framework `v0.10.0`, and session renewal) is
 implemented and independently reviewed. D06 (Node applications) is implemented
-and independently reviewed against framework `develop`, and merges once the
-framework release containing M126 exists. D04 (the preview release) follows, by the maintainer's decision of 2026-10-29. Framework
-M126 (a Node diagnostics listener) merged on 2026-10-29 and ships in the next
-framework release; D06 consumes it. The [milestone table](#milestones) is the status record; per-milestone evidence is linked from it.
+and independently reviewed, and its contract pin moved to the framework
+`v0.11.0` release (2026-10-30), the first that contains M126 (a Node diagnostics
+listener). D04 (the preview release) follows, by the maintainer's decision of
+2026-10-29. The [milestone table](#milestones) is the status record; per-milestone evidence is linked from it.
 
 P01–P03 describe product direction, not approved implementation plans. Write a
 canonical plan with acceptance tests before starting each. They were first
@@ -34,22 +34,26 @@ to an application.
 The devtool consumes the framework's authenticated local diagnostics connector
 (M98b) and its native client. Two framework revisions matter:
 
-- **Contract pin** — the framework `v0.10.0` release commit
-  `d7a04734be8a4658774c7fe5b5e30297d5103ef3`, recorded in
-  `scripts/framework-pin.json` since D03b. D01–D03 were qualified against the
-  earlier pin `26aebd0e` (2026-09-27, M98a–g) and requalified on this one by
-  D03b's exercises.
+- **Contract pin** — the framework `v0.11.0` release commit
+  `446d94723cbb0a853dd303022d6c9896ac17bdcd`, recorded in
+  `scripts/framework-pin.json` since D06. D01–D03 were qualified against
+  `26aebd0e` (2026-09-27, M98a–g), D03b against `v0.10.0`, and D06 reran every
+  exercise on this pin.
 - **Framework release `v0.8.0`** — tag at merge commit
   `6520e12e03118a9fc96f893a907aa7f6e3751e59` (2026-10-03). It contains the
   M98h–n observation families and M98o session renewal. D03b consumes M98o;
   the M98h–n families are inside the pin but have no inspector yet (P03).
 - **Framework release `v0.10.0`** — tag at merge commit
-  `d7a04734be8a4658774c7fe5b5e30297d5103ef3` (2026-10-23), the current release
-  and the contract pin. It serves the same connector routes as
+  `d7a04734be8a4658774c7fe5b5e30297d5103ef3` (2026-10-23), D03b's pin. It serves the same connector routes as
   `v0.8.0`. The diagnostics changes between the two releases are in the CLI's
   devtool lifecycle (M101f, M113i), not the wire protocol. One later commit on
   framework `develop` (`d409fec8`, unreleased) changes only how connector rate
   buckets are swept internally.
+- **Framework release `v0.11.0`** — tag at commit
+  `446d94723cbb0a853dd303022d6c9896ac17bdcd` (2026-10-30), the current release
+  and the contract pin. It contains M126 (the Node listener and the CLI's Node
+  `--devtool` arm). The only other diagnostics change is a `redis` trace
+  instrumentation kind (M117).
 
 **Distribution moved to npm.** Starting with `v0.9.0` (2026-10-14), the
 framework publishes to npm under `@setu-ts`, and JSR gets no further releases
@@ -61,15 +65,16 @@ pinned source, never from JSR.
 `setu new` project targets Node and runs TypeScript under `tsx`. The
 diagnostics listener still binds only on Deno, and the CLI refuses
 `--devtool` on any other target. As a result, the devtool cannot inspect a
-project created with the defaults. Framework M126 (setu-ts#521, merged
-2026-10-29, not yet released) removes both refusals for Node; D06 consumes it.
+project created with the defaults. Framework M126 (setu-ts#521, released in
+`v0.11.0`) removes both refusals for Node; D06 consumes it.
 
 `v0.8.0` was the first published framework release containing
 `@setu-ts/diagnostics-plugin` (on JSR, 2026-10-03). npm has
 `@setu-ts/diagnostics-plugin@0.9.0` (2026-10-14) and
 `@setu-ts/diagnostics-plugin@0.10.0` (2026-10-23). D04's
-dependency on a published release is therefore met, and D03b moved the
-contract pin to the `v0.10.0` release commit.
+dependency on a published release is therefore met. D03b moved the
+contract pin to the `v0.10.0` release commit, and D06 moved it to `v0.11.0`
+(`@setu-ts/diagnostics-plugin@0.11.0` on npm, 2026-10-30).
 See [framework work](#framework-work-in-priority-order).
 
 Operations the connector serves as of `v0.8.0`:
@@ -144,20 +149,18 @@ the selected one; disclose this launch scope and clean up every owned process.
 Show a fixture-backed preview only through an explicit development/test command,
 always marked as sample data.
 
-Supported target: desktop VS Code and Code OSS, local file workspaces, local
-Deno application. Start qualification on Linux, the current development
-platform. Add Windows/macOS only after their process cleanup and
-packaged-extension matrix passes. Node is the extension host; Deno is the
-inspected application runtime.
+Supported target: desktop VS Code and Code OSS, local file workspaces, and a
+local Deno or Node application. Start qualification on Linux, the current
+development platform. Add Windows/macOS only after their process cleanup and
+packaged-extension matrix passes. Node is the extension host; Deno or Node
+(under `tsx`) is the inspected application runtime.
 
-Node and Bun applications are not supported in the D04 preview. The framework's
-local diagnostics listener is Deno-only and rejects every `listen` on other
-platforms before binding. Node is now the framework's default target, so this is
-the preview's largest limitation, and the preview docs must state it. Framework
-M126 adds a Node listener and the CLI's Node devtool arm. D06 adds Node support
-here. Whether the preview waits for D06 is an
-[open decision](#open-decisions). Bun stays unsupported until the framework takes
-it.
+Node applications are supported through D06, which the preview waits for
+(decided 2026-10-29): Node is the framework's default target, and framework
+M126 (in `v0.11.0`) added its listener and the CLI's Node devtool arm. Bun
+applications are not supported, because the framework's listener does not bind
+on Bun; the preview docs must state it. Bun stays unsupported until the
+framework takes it.
 
 Browser editors, SSH/WSL/containers/Codespaces sessions, remote connections, and
 production access are outside the first support matrix. Unsupported execution
@@ -311,14 +314,14 @@ PR #414) changed the generated `main.dev.ts` and shipped in `v0.9.0`. The
    commit (`d7a04734`), the [contract register](docs/framework-compatibility.md)
    is refreshed, the recipe catalog is regenerated from the pinned CLI, and
    D02/D03's real exercises pass on it. It remains a P03 prerequisite met.
-2. **Node diagnostics listener — framework M126, merged 2026-10-29
-   (setu-ts#521), unreleased.** It adds a Node `ILocalDiagnosticsListenerFactory`
+2. **Node diagnostics listener — framework M126 (setu-ts#521), released in
+   `v0.11.0` on 2026-10-30.** It adds a Node `ILocalDiagnosticsListenerFactory`
    and the CLI's `--devtool` arm for Node targets. For every request that reaches
    the protocol, the Node listener answers exactly as the Deno one does. Each
    runtime's HTTP parser refuses some malformed requests itself with a bare
    `400`, and the two draw that line in different places; the framework records
-   both in a two-runtime conformance table. The pin moves again to the release
-   that contains M126, and D06 consumes it. Three consequences for the devtool:
+   both in a two-runtime conformance table. D06 moved the pin to `v0.11.0`
+   and consumes it. Three consequences for the devtool:
    - The generated `main.dev.ts` is now runtime-neutral on Deno too (it reads the
      pair through `runtime.env`). The CLI still recognizes the 0.8–0.10
      renderings, but the launcher's byte-identical recipe catalog
@@ -347,11 +350,9 @@ authorization reviews. Resending a request is not deterministic replay.
 
 ## Open decisions
 
-- **Does the first preview wait for D06?** Node is the framework's default
-  target, so a Deno-only preview cannot inspect a project created with the
-  defaults. Shipping D04 first gets real feedback sooner. Waiting for D06 makes
-  the preview cover the common case. M126 has merged; decide once the framework
-  release that contains it has a date.
+- **Does the first preview wait for D06?** Decided on 2026-10-29: yes. Node is
+  the framework's default target, so a Deno-only preview could not inspect a
+  project created with the defaults. D04 follows D06. No other decision is open.
 
 ## No accounts, billing or licensing
 

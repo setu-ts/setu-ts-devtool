@@ -1,10 +1,32 @@
 # D06 local validation — 2026-10-29
 
-D06 is qualified on `feat/d06-node` against framework `develop` commit
-`4e26f834` (the M126 merge). The framework release that contains M126 does not
-exist yet. Before merging, D06 moves the pin to that release commit and repeats
-this record's commands with the published CLI. No VSIX was built, installed or
+D06 was qualified on `feat/d06-node` against framework `develop` commit
+`4e26f834` (the M126 merge), then moved to the `v0.11.0` release commit and
+requalified with the published CLI ([pin move](#pin-move-to-v0110--2026-11-04)).
+The record below the pin-move section is the original `4e26f834` qualification. No VSIX was built, installed or
 published; that is D04.
+
+## Pin move to v0.11.0 — 2026-11-04
+
+- Framework pin `446d94723cbb0a853dd303022d6c9896ac17bdcd` (tag `v0.11.0`,
+  2026-10-30), prepared from a clean checkout. Against `4e26f834` the
+  development entry, the workspace runner, the npm `dev` script and the
+  connector are unchanged; the trace protocol gains a `redis` instrumentation
+  kind. The framework lock still names `hono@4.13.14`,
+  `@hono/node-server@2.1.5`, `tsx@4.23.15` and Prettier 3.9.10. The regenerated
+  catalog names `npm:@setu-ts/cli@0.11.0`, so entries written by `cli@0.10.0`
+  are now refused as stale.
+- Linux x64; Node 24.22.1 with npm 11.19.1; Deno 2.9.6; Code - OSS 1.138.0,
+  embedded Node 24.19.0 and Electron 42.11.18.
+- The gates below exited zero: **105 tests**, no failures or skips, every `src`
+  and `webview` file at or above 90% for lines, branches and functions. The
+  development and production-bundle host runs made a live connection; the
+  restricted run made none.
+
+| Exercise                      | Result                                                                                                                                                                                                                                                                                                       |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Published standalone scaffold | `npx @setu-ts/cli@0.11.0 new demo --devtool`, then `npm install --ignore-scripts` (all `@setu-ts/*` at 0.11.0, `tsx` 4.23.15). Discovered, accepted by preflight unchanged, launched, paired, renewed three times on a 2 s schedule, stopped with no listener left                                           |
+| Published workspace member    | `new ws --workspace`, `g app api --devtool`, `g app worker`, then `npm install --ignore-scripts`. Member `api` discovered, accepted with its sibling's `start:dev` checked, launched, paired, renewed three times and stopped; no listener on the member, sibling or devtool ports and no `tsx` process left |
 
 ## Environment and commands
 
@@ -70,5 +92,4 @@ that a project `.npmrc` could redirect `npm run dev` to an unchecked script
 
 ## Not covered
 
-The published CLI and packages with M126, until the release exists. Also
 Bun, Windows and macOS, which are refused, and an installed VSIX, which is D04.

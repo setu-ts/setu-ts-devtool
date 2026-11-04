@@ -1,12 +1,12 @@
 # D06 — Node applications
 
 Status: implemented and independently reviewed against framework `develop`
-`4e26f834` ([validation](../docs/d06-validation.md),
-[security review](../docs/d06-security-review.md)); merges after the framework
-release that contains M126. D01–D03b are merged to `main`. Framework M126 (setu-ts#521,
+`4e26f834`, then moved to the `v0.11.0` release commit `446d9472` and
+requalified on 2026-11-04 ([validation](../docs/d06-validation.md),
+[security review](../docs/d06-security-review.md)). D01–D03b are merged to `main`. Framework M126 (setu-ts#521,
 merge commit `4e26f834`) makes the diagnostics listener bind on Node and lets
-the CLI emit `--devtool` for Node projects and workspace members. It is merged
-to framework `develop` and not yet released. D04 runs after this milestone.
+the CLI emit `--devtool` for Node projects and workspace members. It shipped
+in framework `v0.11.0` (2026-10-30). D04 runs after this milestone.
 
 ## Outcome and exclusions
 
@@ -226,7 +226,8 @@ Real exercises, in `test/integration/`:
    skill. It covers process ownership, the npm configuration boundary and
    credential exposure along the Node chain.
 10. When the framework releases M126: move the pin to the release commit,
-    re-run steps 6–7 with the published CLI, and only then merge.
+    re-run steps 6–7 with the published CLI, and only then merge. Done on
+    2026-11-04 against `v0.11.0`.
 
 Claude implements (maintainer decision for this session); D04 follows this
 milestone.

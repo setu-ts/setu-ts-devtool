@@ -40,12 +40,12 @@ the framework repository and its own milestone branch. Each devtool
 implementation milestone gets its own branch and keeps its follow-up fixes there
 until merge.
 
-The contract register is pinned to the framework `v0.10.0` release commit
-`d7a04734be8a4658774c7fe5b5e30297d5103ef3`. It covers the core M98a–c
-contracts, M98o session renewal, generated development entries and credential
-handoff. Local builds use that exact revision; released-package and VSIX
+The contract register is pinned to the framework `v0.11.0` release commit
+`446d94723cbb0a853dd303022d6c9896ac17bdcd`. It covers the core M98a–c
+contracts, M98o session renewal, the M126 Node listener, generated development
+entries and credential handoff. Local builds use that exact revision; released-package and VSIX
 compatibility still need separate evidence (D04). The devtool accepts the
-development entry `cli@0.10.0` generates for a Deno project. See the
+development entry and scripts `cli@0.11.0` generates for a Deno or Node project. See the
 [roadmap's framework baseline](ROADMAP.md#framework-baseline).
 
 ## Develop and verify
