@@ -79,7 +79,10 @@ hand the session to an unchecked script. The launch runs
 `npm --no-workspaces run dev`, and preflight refuses those keys and any key
 npm could read differently from its text (`${…}`, quotes, backslashes,
 sections), because the workspace runner's nested `npm` cannot take the flag
-([D06 security review](d06-security-review.md), F1).
+([D06 security review](d06-security-review.md), F1). User and global npm
+configuration could do the same for the nested `npm` (`workspace=<name>` in
+`~/.npmrc`), so a Node launch points both at unreadable paths below
+`/dev/null`, which npm loads as empty.
 
 Directories above the launch root are outside the project but still reach the
 Node chain. `npm run` searches `node_modules/.bin` of every directory up to `/`

@@ -185,6 +185,18 @@ test("Bun is refused by name, by lock file or by workspace runtime", async () =>
       assert.deepEqual(result.issues, [
         "A Bun project was found. Only Deno and Node projects are supported.",
       ]);
+      // The lock file decides beside a Deno manifest and a workspace too.
+      await rm(join(root, "package.json"));
+      await writeFile(
+        join(root, "deno.json"),
+        JSON.stringify({ imports: { "@setu-ts/kernel": "npm:x" } }),
+      );
+      assert.match((await discover([root])).issues[0] ?? "", /Bun project/);
+      await writeFile(
+        join(root, "setu.workspace.json"),
+        JSON.stringify({ version: 1, basePort: 3000, members: [] }),
+      );
+      assert.match((await discover([root])).issues[0] ?? "", /Bun project/);
     } finally {
       await rm(root, { recursive: true });
     }

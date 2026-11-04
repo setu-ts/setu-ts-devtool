@@ -176,6 +176,8 @@ test("a Node launch replaces every inherited npm setting with the fixed ones", (
     npm_config_ignore_scripts: "true",
     npm_config_script_shell: "/bin/sh",
     npm_config_node_options: " ",
+    npm_config_userconfig: "/dev/null/user-npmrc",
+    npm_config_globalconfig: "/dev/null/global-npmrc",
     npm_config_update_notifier: "false",
     npm_config_fund: "false",
     npm_config_audit: "false",

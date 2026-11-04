@@ -260,6 +260,25 @@ no way for the walk to end below the root other than the refused
 - **Accepted.** Anyone who can write a shared directory above a project can
   block its workspace launches, without reaching its credentials.
 
+## Automated PR review — 2026-11-05
+
+CodeRabbit raised two findings on the pull request, outside the diff range.
+
+- **User and global npm configuration (major, S05/S04): fixed.** A
+  `workspace=worker` in `~/.npmrc` made the runner's nested `npm run dev`
+  run the sibling's unchecked `dev` script, which received the session key
+  (reproduced on the published workspace). The suggested fix, both paths set to
+  `/dev/null`, makes npm refuse every launch ("double-loading config"), so the
+  launch environment sets them to two distinct paths below `/dev/null`, which
+  npm reads as empty. The hostile-configuration exercise now writes a user
+  `.npmrc`; without the setting both launches end Failed instead of Live.
+- **Bun lock file beside other manifests (major, plan conformance): fixed.**
+  Discovery refused `bun.lock`/`bun.lockb` only for a standalone Node root; the
+  plan refuses any root that has one. It now does, for Deno and workspace
+  roots too.
+
+These fixes were made in the authoring session; see the PR for their review.
+
 ## Verdict
 
 Passed, including the pin move to `v0.11.0` and the F7, A, A1, A2 and C1

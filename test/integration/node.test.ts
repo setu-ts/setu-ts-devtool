@@ -72,7 +72,25 @@ for (const workspace of [false, true])
       manifest.scripts.predev = `node -e "require('fs').appendFileSync('${marker}','pre\\n')"`;
       manifest.scripts.postdev = manifest.scripts.predev.replace("pre", "post");
       await writeFile(manifestPath, JSON.stringify(manifest));
-      const session = await launch(fixture);
+      // A user .npmrc could pick the sibling's unchecked `dev` for the
+      // runner's nested npm; the launch ignores user and global config.
+      const home = join(fixture.root, "home");
+      await mkdir(home);
+      await writeFile(
+        join(home, ".npmrc"),
+        `workspace=worker\nnode-options=--require=${preload}\n`,
+      );
+      const previousHome = process.env.HOME;
+      process.env.HOME = home;
+      if (workspace) {
+        const sibling = join(fixture.root, "apps/worker/package.json");
+        const value = JSON.parse(await readFile(sibling, "utf8"));
+        value.scripts.dev = `node -e "require('fs').appendFileSync('${marker}','sibling '+Boolean(process.env.SETU_DEVTOOL_SESSION_KEY)+'\\n')"`;
+        await writeFile(sibling, JSON.stringify(value));
+      }
+      const session = await launch(fixture).finally(() => {
+        process.env.HOME = previousHome;
+      });
       try {
         assert.equal(session.status().state, "Live");
         await session.stop();

@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { devNull } from "node:os";
 export function credentials(): {
   id: string;
   key: Uint8Array;
@@ -20,6 +21,12 @@ export const NPM_ENVIRONMENT: Readonly<Record<string, string>> = Object.freeze({
   npm_config_ignore_scripts: "true",
   npm_config_script_shell: "/bin/sh",
   npm_config_node_options: " ",
+  // User and global config could select another workspace's `dev` for the
+  // runner's nested npm (`workspace=<name>`), which preflight cannot see.
+  // npm loads an unreadable file as empty but refuses one path twice, and
+  // nothing can exist below /dev/null.
+  npm_config_userconfig: `${devNull}/user-npmrc`,
+  npm_config_globalconfig: `${devNull}/global-npmrc`,
   npm_config_update_notifier: "false",
   npm_config_fund: "false",
   npm_config_audit: "false",

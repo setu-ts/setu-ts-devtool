@@ -49,6 +49,10 @@ async function packageJson(
 }
 /** Bun runs neither listener nor launcher; refuse it by name. */
 class Unsupported extends Error {}
+/** A Bun lock file marks a Bun root, whatever its manifests say. */
+async function bunLock(root: string): Promise<boolean> {
+  return (await exists(root, "bun.lock")) || (await exists(root, "bun.lockb"));
+}
 function task(
   value: Record<string, unknown>,
   key: "tasks" | "scripts" = "tasks",
@@ -81,7 +85,8 @@ export async function discover(roots: readonly string[]): Promise<Discovery> {
         directories: string[] = [];
       if (text !== undefined) {
         const manifest = readJson(text, false);
-        if (manifest.runtime === "bun") throw new Unsupported();
+        if (manifest.runtime === "bun" || (await bunLock(root)))
+          throw new Unsupported();
         const runtime = manifest.runtime === "node" ? "node" : "deno";
         if (
           manifest.version !== 1 ||
@@ -177,12 +182,7 @@ export async function discover(roots: readonly string[]): Promise<Discovery> {
                 Object.keys(cfg[key] === undefined ? {} : object(cfg[key])),
               );
         if (!names.some((name) => name.startsWith("@setu-ts/"))) continue;
-        if (
-          runtime === "node" &&
-          ((await exists(root, "bun.lock")) ||
-            (await exists(root, "bun.lockb")))
-        )
-          throw new Unsupported();
+        if (await bunLock(root)) throw new Unsupported();
         found.push(
           Object.freeze({
             id: randomUUID(),
