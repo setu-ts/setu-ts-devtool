@@ -81,13 +81,15 @@ process.on("message", (raw: unknown) => {
       throw new Error();
     // Node runs `node <npm-cli.js> run dev`: the verified node runs npm.
     const npm = value.npm;
-    if (!(
-      (value.runtime === "deno" && npm === null) ||
-      (value.runtime === "node" &&
-        typeof npm === "string" &&
-        isAbsolute(npm) &&
-        npm.endsWith("/node_modules/npm/bin/npm-cli.js"))
-    ))
+    if (
+      !(
+        (value.runtime === "deno" && npm === null) ||
+        (value.runtime === "node" &&
+          typeof npm === "string" &&
+          isAbsolute(npm) &&
+          npm.endsWith("/node_modules/npm/bin/npm-cli.js"))
+      )
+    )
       throw new Error();
     if (
       typeof value.executable !== "string" ||
