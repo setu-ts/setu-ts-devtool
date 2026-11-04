@@ -82,15 +82,19 @@ ownership, cleanup, trust gates, or diagnostic data boundaries.
 ## Pull requests and review
 
 - Do not push, open a PR, or merge unless the user has authorized that action.
-- Every PR carries the `maintainer-review` label.
+- Every PR from a `feat/` or `fix/` branch carries the `maintainer-review`
+  label. That label makes the PR eligible for a CodeRabbit review.
+- A documentation-only PR, from a `docs/` branch, does not carry the label, and
+  no assistant requests a review of it: no CodeRabbit request and no review
+  agent. A `docs/` branch changes no source, test, script or workflow.
 - Reply to each automated review finding in its own thread and resolve it only
   after verification and correction or a documented refutation.
 - Do not merge with `gh pr merge` or the GitHub web UI. Use the guarded local
   command `git pr-merge <number>` after the user authorizes merge. It requires an
-  open PR targeting `main`, the maintainer label, a clean merge state, successful
-  `linux` checks, and zero unresolved review threads. The alias and executable
-  live in Git's shared common directory, so the command is available from every
-  properly provisioned linked worktree.
+  open PR targeting `main`, the maintainer label (except from a `docs/` branch),
+  a clean merge state, successful `linux` checks, and zero unresolved review
+  threads. The alias and executable live in Git's shared common directory, so
+  the command is available from every properly provisioned linked worktree.
 
 The repository is public, and GitHub enforces a "protect main" ruleset on
 `main`: changes arrive only through a pull request merged with a merge commit,
@@ -98,4 +102,4 @@ the `linux` check must pass, every review thread must be resolved, and
 force-pushes and deletion are refused. Secret scanning and push protection are
 enabled. The shared local hooks and the guarded merge command remain part of
 the workflow: they check the same conditions locally, plus the maintainer
-label, which the ruleset does not.
+label on non-documentation PRs, which the ruleset does not.
