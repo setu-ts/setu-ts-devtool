@@ -7,6 +7,8 @@ import {
   chmod,
   symlink,
   mkdir,
+  mkdtemp,
+  rename,
 } from "node:fs/promises";
 import { join, resolve, dirname } from "node:path";
 import { discover } from "../../src/discovery/discover";
@@ -287,6 +289,63 @@ test("Node preflight compares the scripts, entry and runner, and requires an ins
         /PREPARATION_FAILED/,
       );
     } finally {
+      await rm(fixture.root, { recursive: true, force: true });
+    }
+  }
+});
+test("Node preflight refuses node or npm above the root and needs tsx inside it", async () => {
+  for (const workspace of [false, true]) {
+    const fixture = await preparedNodeProject(workspace);
+    const above = await mkdtemp(resolve(".tmp/above-"));
+    const root = join(above, "app");
+    try {
+      await rename(fixture.root, root);
+      const project = (await discover([root])).projects.find(
+        (p) => p.member === null || p.member === "api",
+      );
+      assert.ok(project);
+      await prepareLaunch(project, fixture.port);
+      const bin = join(above, "node_modules", ".bin");
+      for (const name of ["node", "npm"]) {
+        await mkdir(bin, { recursive: true });
+        await writeFile(join(bin, name), "#!/bin/sh\n");
+        await assert.rejects(
+          prepareLaunch(project, fixture.port),
+          /PREPARATION_FAILED/,
+          name,
+        );
+        await rm(join(above, "node_modules"), { recursive: true });
+      }
+      // A dangling link still shadows nothing, but is refused all the same.
+      await mkdir(bin, { recursive: true });
+      await symlink(join(above, "missing"), join(bin, "node"));
+      await assert.rejects(
+        prepareLaunch(project, fixture.port),
+        /PREPARATION_FAILED/,
+      );
+      await rm(join(above, "node_modules"), { recursive: true });
+      // A file where the directory would be cannot hold a .bin.
+      await writeFile(join(above, "node_modules"), "");
+      await prepareLaunch(project, fixture.port);
+      await rm(join(above, "node_modules"));
+      // An unreadable directory above the root cannot be ruled out.
+      await mkdir(bin, { recursive: true });
+      await chmod(join(above, "node_modules"), 0o000);
+      await assert.rejects(
+        prepareLaunch(project, fixture.port),
+        /PREPARATION_FAILED/,
+      );
+      await chmod(join(above, "node_modules"), 0o755);
+      await rm(join(above, "node_modules"), { recursive: true });
+      // Without the root's own tsx link, PATH would search above the root.
+      await rm(join(root, "node_modules", ".bin", "tsx"));
+      await assert.rejects(
+        prepareLaunch(project, fixture.port),
+        /PREPARATION_FAILED/,
+      );
+    } finally {
+      await chmod(join(above, "node_modules"), 0o755).catch(() => {});
+      await rm(above, { recursive: true, force: true });
       await rm(fixture.root, { recursive: true, force: true });
     }
   }

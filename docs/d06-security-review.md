@@ -94,6 +94,10 @@ S01, S04, S05, S10 and S17 preconditions for the Node path:
   check could not fire alone: a runtime change changes the files preflight
   reads, so the fingerprint comparison already refuses it.
 
+- **F7 (medium, S05/S04): fixed; see [ancestor lookup](#ancestor-path-lookup-f7--2026-11-04).**
+  `npm run` searches `node_modules/.bin` of every directory above the launch
+  root before the verified node, so a `node` there ran with the session key.
+
 ## Limits
 
 The reviewer did not exercise a real Code OSS host, an installed VSIX, the
@@ -137,6 +141,33 @@ Limits: the reviewer read the published-scaffold logs but did not rerun them or
 the host runs, and did not audit the M117 Redis adapter or M122 deploy code,
 which the devtool does not load. Credentials, transport, process lifecycle and
 data minimisation are untouched by this range.
+
+## Ancestor PATH lookup (F7) — 2026-11-04
+
+Found by a code review in the session that moved the pin, which did not write
+the D06 code but is not independent of this fix.
+
+`npm run` puts `node_modules/.bin` of the package directory and of every
+directory above it, up to `/`, ahead of the verified node on `PATH`. The chain
+looks up `node` (the workspace root script and `tsx`'s `#!/usr/bin/env node`),
+`npm` (the workspace runner) and `tsx` by name. A `node` wrapper placed above
+both published `cli@0.11.0` scaffolds ran with `SETU_DEVTOOL_SESSION_KEY` while
+the launch paired normally and the confirmation named the verified node.
+Another local user who can write to a directory above a project (for example
+under `/tmp`) could take the session that way.
+
+Fix: Node preflight requires an executable `node_modules/.bin/tsx` in the
+launch root, so every `tsx` lookup ends inside it, and refuses when
+`node_modules/.bin/node` or `node_modules/.bin/npm` exists, in any form, in any
+directory above the root. An unreadable directory on that path is refused too.
+Both preparations run the check, the second immediately before launch. Evidence
+and the negative control are in the [validation record](d06-validation.md).
+Projects inside a JavaScript repository whose `node_modules/.bin` has neither
+`node` nor `npm` are unaffected. A directory above the root that gains one
+between the second preparation and the spawn is outside the guarantee, like the
+same-user races below.
+
+Independent re-review: pending.
 
 ## Verdict
 

@@ -1,5 +1,7 @@
 import { createHash } from "node:crypto";
-import { relative, join } from "node:path";
+import { constants } from "node:fs";
+import { access, lstat } from "node:fs/promises";
+import { relative, join, dirname } from "node:path";
 import { discover, type Project } from "../discovery/discover";
 import { exists, readFile } from "../discovery/files";
 import { readJson, object } from "../discovery/json";
@@ -52,6 +54,34 @@ export function redirectsNpm(npmrc: string): boolean {
     if (!PLAIN_KEY.test(key)) return true;
     return REDIRECTING_NPM_KEYS.has(key.toLowerCase().replace(/_/g, "-"));
   });
+}
+/**
+ * `npm run` puts `node_modules/.bin` of the package directory and of every
+ * directory above it, up to `/`, ahead of the verified node on `PATH`. The
+ * chain looks up `node` (root script, tsx's `env node`), `npm` (the workspace
+ * runner) and `tsx` by name, so a directory above the launch root could
+ * supply an unverified one that receives the session key (D06 review F7).
+ * `tsx` must resolve inside the root; `node` and `npm` must not exist above it.
+ */
+async function shadowedAboveRoot(root: string): Promise<boolean> {
+  try {
+    await access(join(root, "node_modules", ".bin", "tsx"), constants.X_OK);
+  } catch {
+    return true;
+  }
+  let directory = root;
+  do {
+    directory = dirname(directory);
+    for (const name of ["node", "npm"])
+      try {
+        await lstat(join(directory, "node_modules", ".bin", name));
+        return true;
+      } catch (error) {
+        const code = (error as NodeJS.ErrnoException).code;
+        if (code !== "ENOENT" && code !== "ENOTDIR") return true;
+      }
+  } while (dirname(directory) !== directory);
+  return false;
 }
 export async function prepareLaunch(
   project: Project,
@@ -114,11 +144,12 @@ export async function prepareLaunch(
     // script is compared. The devtool never installs: tsx must be present.
     const tsx = join("node_modules", "tsx", "package.json");
     if (
-      !(await exists(project.root, tsx)) &&
-      !(await exists(
-        project.root,
-        join(relative(project.root, selected.directory), tsx),
-      ))
+      (!(await exists(project.root, tsx)) &&
+        !(await exists(
+          project.root,
+          join(relative(project.root, selected.directory), tsx),
+        ))) ||
+      (await shadowedAboveRoot(project.root))
     )
       throw new Error("PREPARATION_FAILED");
   } else if (project.member !== null) {
