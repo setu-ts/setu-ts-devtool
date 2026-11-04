@@ -249,8 +249,9 @@ validates them and exits with a value-free message when missing/malformed. It
 passes `maxSessionLifetimeMs: 28_800_000` to the plugin, and a composition probe
 plugin makes it exit when `setu.config.ts` did not pass the devtool composition
 through (M101f); that message names the CLI at the pin,
-`npm:@setu-ts/cli@0.11.0`. An entry written by an earlier CLI therefore differs
-from the catalog, and preflight refuses it as a stale scaffold. It
+`npm:@setu-ts/cli@0.11.0`. An entry or workspace runner written by an earlier CLI
+therefore differs from the catalog, and preflight refuses it as a stale
+scaffold. It
 never generates credentials, writes an env file, or prints their values. The
 plugin itself remains explicitly configured. The launcher must generate
 credentials with a cryptographic RNG and pass them only in the owned child

@@ -14,8 +14,8 @@ published; that is D04.
   connector are unchanged; the trace protocol gains a `redis` instrumentation
   kind. The framework lock still names `hono@4.13.14`,
   `@hono/node-server@2.1.5`, `tsx@4.23.15` and Prettier 3.9.10. The regenerated
-  catalog names `npm:@setu-ts/cli@0.11.0`, so entries written by `cli@0.10.0`
-  are now refused as stale.
+  catalog names `npm:@setu-ts/cli@0.11.0`, so a Deno entry or workspace runner
+  written by `cli@0.10.0` is now refused as stale.
 - Linux x64; Node 24.22.1 with npm 11.19.1; Deno 2.9.6; Code - OSS 1.138.0,
   embedded Node 24.19.0 and Electron 42.11.18.
 - The gates below exited zero: **105 tests**, no failures or skips, every `src`

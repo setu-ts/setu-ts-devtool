@@ -104,6 +104,40 @@ between verification and spawn remain outside the guarantee, as for Deno.
 Workspace `node_modules` content (`tsx`, `.bin`) is application code that the
 launch confirmation authorizes.
 
+## Pin move to v0.11.0 — 2026-11-04
+
+A fresh review agent, not the author of the change, assessed
+`abceda2..8f30803`, which moves the pin from `4e26f834` to the `v0.11.0`
+release commit `446d9472`. **Decision: approve.**
+
+- **Framework diff.** `4e26f834` is an ancestor of `446d9472`, and the remote
+  tag `v0.11.0` resolves to it. On the diagnostics surface, the only change is
+  `redis` added to the trace instrumentation kinds (diagnostics plugin and
+  `common`); the kernel collector has no diff. The CLI's devtool sources, the
+  workspace runner and the runtime package are unchanged apart from versions.
+  Generator inputs that did change (new runtime-profile test fields, the flat
+  module layout, new root `test`/`build`/`deploy` scripts) weaken no gate:
+  preflight compares only the root `dev` script, pre/post scripts stay
+  disabled, and sibling `start:dev` scripts are regenerated from the pinned CLI.
+  The locked `hono`, `@hono/node-server`, `tsx` and Prettier versions are
+  identical.
+- **Provenance.** The prepare step and `build.mjs` refuse a different or dirty
+  commit and the wrong Deno version. The reviewer recomputed the archive,
+  prepared-tree, `client.cjs` and `recipes.json` hashes and found them equal to
+  `provenance.json`, which names `446d9472`.
+- **Documents.** The `redis`, release-date, "unchanged" and lock claims hold.
+  One informational finding: the documents said only "entries" from
+  `cli@0.10.0` are refused, but a Deno workspace runner is refused too, because
+  it names the CLI version. Corrected in the validation record and the contract
+  register. No extension release has shipped, so no user is affected.
+- **Gates rerun by the reviewer at `8f30803`:** `check`, `test:coverage` (105
+  tests) and `build` exited zero.
+
+Limits: the reviewer read the published-scaffold logs but did not rerun them or
+the host runs, and did not audit the M117 Redis adapter or M122 deploy code,
+which the devtool does not load. Credentials, transport, process lifecycle and
+data minimisation are untouched by this range.
+
 ## Verdict
 
-Passed.
+Passed, including the pin move to `v0.11.0`.
