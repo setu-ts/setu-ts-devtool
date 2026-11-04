@@ -1,12 +1,13 @@
 # Devtool roadmap
 
-Status, updated 2026-10-29: D01–D03 are implemented and locally verified. D03b
+Status, updated 2026-11-05: D01–D03 are implemented and locally verified. D03b
 (the contract pin moved to framework `v0.10.0`, and session renewal) is
 implemented and independently reviewed. D06 (Node applications) is implemented
 and independently reviewed, and its contract pin moved to the framework
 `v0.11.0` release (2026-10-30), the first that contains M126 (a Node diagnostics
-listener). D04 (the preview release) follows, by the maintainer's decision of
-2026-10-29. The [milestone table](#milestones) is the status record; per-milestone evidence is linked from it.
+listener); it merged on 2026-11-04. D04 (the preview release) is next, by the
+maintainer's decision of 2026-10-29; its plan is rebased onto framework
+`0.12.0`, expected on 2026-11-06. The [milestone table](#milestones) is the status record; per-milestone evidence is linked from it.
 
 P01–P03 describe product direction, not approved implementation plans. Write a
 canonical plan with acceptance tests before starting each. They were first
@@ -174,7 +175,7 @@ contexts must be refused explicitly.
 | D02  | Implemented; independently reviewed | Explicit launch, pairing, bounded reader, teardown             | D01 + M98a–c + local compatibility evidence                     | [D02 plan](plans/d02-connection.md) |
 | D03  | Implemented; independently reviewed | Composition graph, route/middleware views, request timeline    | D01 fixtures for parallel UI work; D02 for integration          | [D03 plan](plans/d03-inspection.md) |
 | D03b | Implemented; independently reviewed | Session renewal without relaunch                               | D02; contract pin moved to `v0.10.0` (contains M98o)            | [D03b plan](plans/d03b-renewal.md)  |
-| D04  | Planned                             | Security/compatibility exercises, VSIX, free preview docs      | D01–D03b, D06; framework release with M126; pinned packages     | [D04 plan](plans/d04-release.md)    |
+| D04  | Planned                             | Security/compatibility exercises, VSIX, free preview docs      | D01–D03b, D06; framework `0.12.0` released; pinned packages     | [D04 plan](plans/d04-release.md)    |
 | D06  | Implemented; independently reviewed | Node applications: npm project discovery, launch under `tsx`   | D02; framework M126 released; pin moved to that release         | [D06 plan](plans/d06-node.md)       |
 | D05  | Direction only                      | Health summary, generator/task UI                              | D04; separate plan                                              |                                     |
 | P01  | Direction only                      | Live analysis, multi-app workflows                             | D04; separate plan                                              |                                     |
