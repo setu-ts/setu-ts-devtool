@@ -122,7 +122,7 @@ export function activate(context: vscode.ExtensionContext): {
         const watcher = vscode.workspace.createFileSystemWatcher(
           new vscode.RelativePattern(
             directory,
-            "{setu.workspace.json,deno.json,deno.jsonc,package.json,.npmrc}",
+            "{setu.workspace.json,deno.json,deno.jsonc,package.json,.npmrc,bun.lock,bun.lockb}",
           ),
         );
         const schedule = () => {

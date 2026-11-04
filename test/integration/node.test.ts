@@ -89,7 +89,8 @@ for (const workspace of [false, true])
         await writeFile(sibling, JSON.stringify(value));
       }
       const session = await launch(fixture).finally(() => {
-        process.env.HOME = previousHome;
+        if (previousHome === undefined) delete process.env.HOME;
+        else process.env.HOME = previousHome;
       });
       try {
         assert.equal(session.status().state, "Live");
