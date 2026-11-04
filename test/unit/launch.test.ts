@@ -339,6 +339,33 @@ test("Node preflight refuses node or npm above the root and needs tsx inside it"
       );
       assert.ok(project);
       await prepareLaunch(project, fixture.port);
+      // A workspace launch's nested npm could adopt a workspace root above the
+      // project (re-review C1); a standalone launch runs --no-workspaces only.
+      const manifest = join(above, "package.json");
+      for (const [contents, refused] of [
+        ['{"name":"top"}', false],
+        ['{"workspaces":["app/apps/api"]}', workspace],
+        ["{", workspace],
+        ["x".repeat(256 * 1024 + 1), workspace],
+      ] as const) {
+        await writeFile(manifest, contents);
+        if (refused)
+          await assert.rejects(
+            prepareLaunch(project, fixture.port),
+            /PREPARATION_FAILED/,
+            contents.slice(0, 40),
+          );
+        else await prepareLaunch(project, fixture.port);
+        await rm(manifest);
+      }
+      await mkdir(manifest);
+      if (workspace)
+        await assert.rejects(
+          prepareLaunch(project, fixture.port),
+          /PREPARATION_FAILED/,
+        );
+      else await prepareLaunch(project, fixture.port);
+      await rm(manifest, { recursive: true });
       const bin = join(above, "node_modules", ".bin");
       for (const name of ["node", "npm"]) {
         await mkdir(bin, { recursive: true });

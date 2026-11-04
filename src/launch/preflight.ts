@@ -1,10 +1,10 @@
 import { createHash } from "node:crypto";
 import { constants } from "node:fs";
-import { access, lstat } from "node:fs/promises";
+import { access, lstat, open } from "node:fs/promises";
 import { relative, join, dirname } from "node:path";
 import { discover, type Project } from "../discovery/discover";
 import { exists, readFile } from "../discovery/files";
-import { readJson, object } from "../discovery/json";
+import { readJson, object, MAX_BYTES } from "../discovery/json";
 import {
   entryMatches,
   runnerMatches,
@@ -83,6 +83,42 @@ async function shadowedAboveRoot(root: string): Promise<boolean> {
   } while (dirname(directory) !== directory);
   return false;
 }
+/**
+ * The workspace runner's nested `npm` keeps walking up past the root whenever
+ * the root's own workspace map misses the member, and a quirk of that map
+ * (an unreadable `apps/`, D06 re-review C1) can make it miss. The walk can only
+ * move to a directory whose package.json declares `workspaces`, so none may
+ * exist above the root. Anything unreadable or unparsable there is refused.
+ */
+async function workspaceAboveRoot(root: string): Promise<boolean> {
+  let directory = root;
+  do {
+    directory = dirname(directory);
+    let text: string;
+    try {
+      const file = await open(join(directory, "package.json"), "r");
+      try {
+        if ((await file.stat()).size > MAX_BYTES) return true;
+        text = await file.readFile("utf8");
+      } finally {
+        await file.close();
+      }
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code === "ENOENT" || code === "ENOTDIR") continue;
+      return true;
+    }
+    try {
+      if (
+        (JSON.parse(text) as { workspaces?: unknown })?.workspaces !== undefined
+      )
+        return true;
+    } catch {
+      return true;
+    }
+  } while (dirname(directory) !== directory);
+  return false;
+}
 export async function prepareLaunch(
   project: Project,
   port: number,
@@ -149,6 +185,7 @@ export async function prepareLaunch(
         workspaces.some((e) => typeof e !== "string" || e.includes("!")) ||
         (await exists(project.root, join("apps", "package.json"))) ||
         (await exists(project.root, join("apps", ".npmrc"))) ||
+        (await workspaceAboveRoot(project.root)) ||
         !runnerMatches(await read("scripts/dev.mjs"), "node")
       )
         throw new Error("PREPARATION_FAILED");

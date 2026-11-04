@@ -216,10 +216,32 @@ Preflight now also refuses a non-string or `!`-containing `workspaces` entry and
 any `apps/package.json` or `apps/.npmrc`. The object form `{ packages: […] }` is
 refused, which the CLI never writes. The re-review found B correct and confirmed
 the `sh` and limits statements; other edge cases it checked (duplicate package
-names, unreadable or symlinked members, member names with glob characters, a
-member declaring `workspaces`) make npm fail closed or cannot occur.
+names, an unreadable member manifest, symlinked members, member names with
+glob characters, a member declaring `workspaces`) make npm fail closed or
+cannot occur.
 
-Independent review of the A1/A2 fix: pending.
+### Review of the A1/A2 fix
+
+A separate agent assessed `95b52e8..21f47c8`. **Decision: changes needed.**
+It confirmed the A1/A2 fix and that the walk starts at the member's physical
+directory, and found:
+
+- **C1 (medium, S05/S04): fixed.** With `apps/` searchable but not readable
+  (mode 0311, which an archive can carry), npm's workspace glob at the root
+  fails silently and returns no members, so the walk continues to an ancestor
+  whose `workspaces` name the member literally; its `.npmrc` `workspace=` ran
+  another package's `dev` with the session key (reproduced end to end).
+  Preflight never lists `apps/`, so it could not see this. Rather than chase
+  each way npm's map can miss a member, preflight now refuses a workspace
+  launch when any directory above the root has a `package.json` that declares
+  `workspaces`, or one it cannot read or parse. A, A1 and C1 all depend on such
+  a directory. The cost is that a Setu-TS workspace nested inside another npm
+  workspace is refused.
+- **Low: accepted.** A harmless user-added `!libs/…` entry is refused.
+- **Informational.** The `apps/.npmrc` refusal is redundant once
+  `apps/package.json` is refused, and kept.
+
+Independent review of the C1 fix: pending.
 
 ## Verdict
 
