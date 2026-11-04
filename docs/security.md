@@ -86,8 +86,10 @@ Node chain. `npm run` searches `node_modules/.bin` of every directory up to `/`
 before the verified node, so preflight requires an executable
 `node_modules/.bin/tsx` in the root and refuses a `node` or `npm` there above it
 (F7). The nested `npm` looks for a workspace root by walking up from the member,
-so preflight requires the root's `workspaces` to contain `apps/*`, which stops
-that walk at the root. npm's default script shell is the bare name `sh`, which
+and stops at the first `package.json` whose `workspaces` include it. Preflight
+makes that the root: its `workspaces` must list `apps/*` with no `!` negation
+that could drop a member, and `apps/` must hold no `package.json` or `.npmrc`
+that could end the walk earlier. npm's default script shell is the bare name `sh`, which
 the same lookup would resolve; the fixed `npm_config_script_shell=/bin/sh` is
 what prevents that, and must stay. These are checks, not locks: another user
 who can write above the root can still plant a file between the last preflight

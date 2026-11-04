@@ -179,8 +179,9 @@ shell `sh`. It ran the reproduction, its positive control and the full suite.
   `--no-workspaces`. npm walks up from the member to the first `package.json`
   whose `workspaces` include it; a root whose `workspaces` missed the member let
   that walk reach an ancestor, whose `.npmrc` `workspace=` ran another package's
-  `dev` with the session key (reproduced on the published workspace). Preflight
-  now requires the root `workspaces` to be an array containing `apps/*`.
+  `dev` with the session key (reproduced on the published workspace). First
+  fixed by requiring the root `workspaces` to contain `apps/*`; see the
+  follow-up for two bypasses of that fix.
 - **B (low, false refusal): fixed.** A `tsx` installed only in the member still
   passed the package check but failed the root `.bin` check. The member clause
   is removed: a sibling's lookup would not reach the member's `.bin`, so the
@@ -198,6 +199,27 @@ shell `sh`. It ran the reproduction, its positive control and the full suite.
 
 A and B were fixed in the authoring session after this re-review; see the
 follow-up below.
+
+### Follow-up re-review of the A and B fixes
+
+A separate agent assessed `b446685..95b52e8`. **Decision: changes needed**,
+for two bypasses of the A fix, both reproduced on the published workspace:
+
+- **A1 (medium, S05/S04): fixed.** A `!apps/api` entry, in any position,
+  removes the member from npm's map of the root's workspaces even with `apps/*`
+  listed, so the walk continues to an ancestor `.npmrc`.
+- **A2 (medium, S05/S04): fixed.** An `apps/package.json` whose `workspaces`
+  include the member ends the walk inside the project, and npm then loads
+  `apps/.npmrc`, which preflight never read.
+
+Preflight now also refuses a non-string or `!`-containing `workspaces` entry and
+any `apps/package.json` or `apps/.npmrc`. The object form `{ packages: […] }` is
+refused, which the CLI never writes. The re-review found B correct and confirmed
+the `sh` and limits statements; other edge cases it checked (duplicate package
+names, unreadable or symlinked members, member names with glob characters, a
+member declaring `workspaces`) make npm fail closed or cannot occur.
+
+Independent review of the A1/A2 fix: pending.
 
 ## Verdict
 

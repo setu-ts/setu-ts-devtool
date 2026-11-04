@@ -137,12 +137,18 @@ export async function prepareLaunch(
       const manifest = readJson(await read("package.json"), false);
       // The runner's nested `npm run dev` has no --no-workspaces: npm walks up
       // from the member to the first package.json whose workspaces include
-      // it, and past the root would load that directory's .npmrc (D06
-      // re-review A). Members live in apps/<name>.
+      // it and loads that directory's .npmrc (D06 re-review A). Members live
+      // in apps/<name>, so the walk must end at the root: `apps/*` listed, no
+      // `!` negation that could drop a member (A1), and no package.json in
+      // apps/ to end it early (A2).
+      const workspaces = manifest.workspaces;
       if (
         object(manifest.scripts).dev !== rootScript ||
-        !Array.isArray(manifest.workspaces) ||
-        !manifest.workspaces.includes("apps/*") ||
+        !Array.isArray(workspaces) ||
+        !workspaces.includes("apps/*") ||
+        workspaces.some((e) => typeof e !== "string" || e.includes("!")) ||
+        (await exists(project.root, join("apps", "package.json"))) ||
+        (await exists(project.root, join("apps", ".npmrc"))) ||
         !runnerMatches(await read("scripts/dev.mjs"), "node")
       )
         throw new Error("PREPARATION_FAILED");

@@ -271,6 +271,15 @@ test("Node preflight compares the scripts, entry and runner, and requires an ins
                     '"workspaces":"apps/*"',
                   ),
               ],
+              // A negation drops the member from the root's map (A1).
+              [
+                join(fixture.root, "package.json"),
+                (t: string) => t.replace('"apps/*"', '"apps/*","!apps/api"'),
+              ],
+              [
+                join(fixture.root, "package.json"),
+                (t: string) => t.replace('"apps/*"', '"apps/*",1'),
+              ],
               [
                 join(fixture.root, "apps/worker/package.json"),
                 (t: string) => t.replace("tsx watch main.ts", "tsx main.ts"),
@@ -288,6 +297,18 @@ test("Node preflight compares the scripts, entry and runner, and requires an ins
         );
         await writeFile(path, text);
       }
+      // A package.json in apps/ would end npm's walk inside the root (A2).
+      if (workspace)
+        for (const name of ["package.json", ".npmrc"]) {
+          const path = join(fixture.root, "apps", name);
+          await writeFile(path, "{}\n");
+          await assert.rejects(
+            prepareLaunch(project, fixture.port),
+            /PREPARATION_FAILED/,
+            path,
+          );
+          await rm(path);
+        }
       // ignore_scripts stops these, so they are not refused.
       const manifest = join(dir, "package.json");
       const original = await readFile(manifest, "utf8");
