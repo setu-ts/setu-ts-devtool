@@ -82,7 +82,10 @@ sections), because the workspace runner's nested `npm` cannot take the flag
 ([D06 security review](d06-security-review.md), F1). User and global npm
 configuration could do the same for the nested `npm` (`workspace=<name>` in
 `~/.npmrc`), so a Node launch points both at unreadable paths below
-`/dev/null`, which npm loads as empty.
+`/dev/null`, which npm loads as empty. npm's builtin `npmrc` in its own
+installation directory is still read and cannot be overridden from the
+environment; it belongs to the verified npm, outside every workspace root, and
+is trusted like the npm executable.
 
 Directories above the launch root are outside the project but still reach the
 Node chain. `npm run` searches `node_modules/.bin` of every directory up to `/`

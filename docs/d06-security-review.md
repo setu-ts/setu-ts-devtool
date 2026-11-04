@@ -277,7 +277,16 @@ CodeRabbit raised two findings on the pull request, outside the diff range.
   plan refuses any root that has one. It now does, for Deno and workspace
   roots too.
 
-These fixes were made in the authoring session; see the PR for their review.
+A separate agent reviewed `826b9d5..2121255`. **Decision: approve.** It
+confirmed by running that the environment values outrank user and global
+configuration for both the outer and nested npm (also with `PREFIX` pointing
+at a global `npmrc`), that real launches of both published scaffolds still
+pair, and that the Bun change matches the plan. One low residual is accepted:
+npm's builtin `npmrc` in its installation directory can still set
+`workspace`, and nothing in the environment overrides it. It is part of the
+verified npm, which is refused inside a workspace root; nvm installs ship none
+and `npm config set` never writes it. Global configuration is covered by the
+unit assertion and the reviewer's probes, not by an integration exercise.
 
 ## Verdict
 
