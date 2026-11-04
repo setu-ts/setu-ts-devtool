@@ -96,10 +96,22 @@ async function workspaceAboveRoot(root: string): Promise<boolean> {
     directory = dirname(directory);
     let text: string;
     try {
-      const file = await open(join(directory, "package.json"), "r");
+      // Non-blocking and bounded, as discovery reads: a FIFO or device there
+      // must not hang or flood the extension host (re-review L1).
+      const file = await open(
+        join(directory, "package.json"),
+        constants.O_RDONLY | constants.O_NONBLOCK,
+      );
       try {
-        if ((await file.stat()).size > MAX_BYTES) return true;
-        text = await file.readFile("utf8");
+        const stat = await file.stat();
+        if (!stat.isFile() || stat.size > MAX_BYTES) return true;
+        const buffer = Buffer.alloc(MAX_BYTES + 1);
+        let size = 0;
+        for (let read = 1; read > 0 && size <= MAX_BYTES; size += read)
+          read = (await file.read(buffer, size, buffer.length - size, null))
+            .bytesRead;
+        if (size > MAX_BYTES) return true;
+        text = buffer.subarray(0, size).toString("utf8");
       } finally {
         await file.close();
       }

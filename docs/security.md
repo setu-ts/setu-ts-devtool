@@ -92,7 +92,8 @@ that could drop a member, and `apps/` must hold no `package.json` or `.npmrc`
 that could end the walk earlier. Because npm's workspace map can still miss a
 member in ways a check cannot enumerate (an unreadable `apps/` yields an empty
 map without an error), no directory above the root may have a `package.json`
-that declares `workspaces`, or one that cannot be read or parsed. A Setu-TS
+that declares `workspaces`, or one that is not a regular file within the size
+bound or cannot be parsed. A Setu-TS
 workspace nested inside another npm workspace is therefore refused. npm's default script shell is the bare name `sh`, which
 the same lookup would resolve; the fixed `npm_config_script_shell=/bin/sh` is
 what prevents that, and must stay. These are checks, not locks: another user

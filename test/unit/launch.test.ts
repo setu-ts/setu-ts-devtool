@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import {
   rm,
   writeFile,
@@ -366,6 +367,20 @@ test("Node preflight refuses node or npm above the root and needs tsx inside it"
         );
       else await prepareLaunch(project, fixture.port);
       await rm(manifest, { recursive: true });
+      // A FIFO or device must be refused without blocking or reading it (L1).
+      for (const plant of [
+        () => execFileSync("mkfifo", [manifest]),
+        () => symlink("/dev/zero", manifest),
+      ]) {
+        await plant();
+        if (workspace)
+          await assert.rejects(
+            prepareLaunch(project, fixture.port),
+            /PREPARATION_FAILED/,
+          );
+        else await prepareLaunch(project, fixture.port);
+        await rm(manifest);
+      }
       const bin = join(above, "node_modules", ".bin");
       for (const name of ["node", "npm"]) {
         await mkdir(bin, { recursive: true });

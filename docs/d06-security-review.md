@@ -241,8 +241,27 @@ directory, and found:
 - **Informational.** The `apps/.npmrc` refusal is redundant once
   `apps/package.json` is refused, and kept.
 
-Independent review of the C1 fix: pending.
+### Review of the C1 fix
+
+A separate agent assessed `21f47c8..af2a1db`. **Decision: approve.** It
+compared npm 11's walk condition (`isFile()`, `normalize`, a truthy
+`workspaces`) with the new check and found preflight stricter on every point,
+the visited directories identical (both physical paths, both including `/`), and
+no way for the walk to end below the root other than the refused
+`apps/package.json`. It reran the C1 reproduction and the unmodified workspace.
+
+- **L1 (low, availability): fixed.** The ancestor `package.json` was opened
+  blocking and read without a bound: a FIFO there hung preflight, and a link to
+  `/dev/zero` read hundreds of megabytes before failing. It is now opened
+  non-blocking, refused unless it is a regular file within the size bound, and
+  read with a bounded buffer, as discovery reads. A test plants both; with the
+  old read, the FIFO case hangs. This fix follows the reviewer's suggestion and
+  was not reviewed again.
+- **Accepted.** Anyone who can write a shared directory above a project can
+  block its workspace launches, without reaching its credentials.
 
 ## Verdict
 
-Passed, including the pin move to `v0.11.0`.
+Passed, including the pin move to `v0.11.0` and the F7, A, A1, A2 and C1
+fixes. The L1 hardening follows the last review's suggested fix and was not
+reviewed again.
