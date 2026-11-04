@@ -128,10 +128,14 @@ existing prepared tasks; it does not run `setu devtool enable` or edit files.
 
 ## Launch, pairing and ownership
 
-Resolve a real Deno executable from the host PATH or a user-level absolute-path
-setting; ignore workspace overrides and exclude relative/PATH-current-directory
-resolution. Use `spawn(executable, ['task', 'dev'], ...)` with `shell: false`
-and the validated root as `cwd`. This avoids constructing a shell command, but
+Resolve a real Deno or Node executable from the host PATH or a user-level
+absolute-path setting (`denoPath`, `nodePath`); ignore workspace overrides and
+exclude relative/PATH-current-directory resolution and anything inside a
+workspace root. For Node, npm is the `npm` entry in the same directory, which
+must resolve to npm's own `node_modules/npm/bin/npm-cli.js`; Node must be 24 from
+24.22.1 and npm 11. Deno runs `spawn(deno, ['task', 'dev'], ...)`; Node runs
+`spawn(node, [npm-cli.js, '--no-workspaces', 'run', 'dev'], ...)`, so the verified `node` runs npm.
+Both use `shell: false` and the validated root as `cwd`. This avoids constructing a shell command, but
 the Deno task itself executes workspace code with the application's permissions.
 Trust and explicit launch remain required. Bundled extension code never imports
 the application's packages into the extension host.
@@ -139,7 +143,13 @@ the application's packages into the extension host.
 For each launch generate a fresh 16-byte session ID and 32-byte key with host
 cryptographic randomness. Copy the ordinary host environment, remove inherited
 `SETU_DEVTOOL_*` handoff variables, then set the fresh ID/key and, only for a
-workspace, its validated member selector. Do not load project env files into the
+workspace, its validated member selector. For Node, also remove every inherited
+npm configuration variable (either case) and set fixed ones:
+`ignore_scripts=true` (no `predev`/`postdev`), `script_shell=/bin/sh`,
+`node_options` set to a single space (an empty value does not override a project
+`.npmrc`; measured), and update notifier, fund and audit off. Environment
+settings outrank a project `.npmrc`, and the workspace runner's nested `npm`
+inherits them. Do not load project env files into the
 extension. The M98c runner forwards credentials only to the selected member. The
 application still controls its own environment loading after launch.
 
@@ -151,8 +161,11 @@ JavaScript strings, child environments and framework copies cannot be promised
 erased.
 
 D02's [connection plan](../plans/d02-connection.md) refines the Linux launcher:
-a packaged supervisor is the detached process-group leader and starts Deno in
-that group. It remains alive after the application root exits and signals only
+a packaged supervisor is the detached process-group leader and starts Deno, or
+npm for a Node project, in that group. Under npm the chain is npm → `tsx` → the
+application's `node`; a Node workspace adds `node scripts/dev.mjs` and one
+`npm run` per member. The framework runner detaches nothing while a member is
+selected (M126), so the group teardown reaches every process. It remains alive after the application root exits and signals only
 its own current group; the parent never escalates against a remembered PID.
 The launcher retains its handle and does not call `unref()`.
 Ignore stdin/stdout/stderr for the preview:

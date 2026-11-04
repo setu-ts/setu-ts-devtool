@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdir, mkdtemp, rm, writeFile, symlink } from "node:fs/promises";
 import { resolve, join } from "node:path";
 import { readJson, MAX_BYTES } from "../../src/discovery/json";
-import { readFile } from "../../src/discovery/files";
+import { exists, readFile } from "../../src/discovery/files";
 import { discover } from "../../src/discovery/discover";
 async function fixture(): Promise<string> {
   await mkdir(".tmp", { recursive: true });
@@ -136,6 +136,137 @@ test("empty local root has no candidate and no error", async () => {
     const found = await discover([root]);
     assert.equal(found.projects.length, 0);
     assert.equal(found.issues.length, 0);
+  } finally {
+    await rm(root, { recursive: true });
+  }
+});
+const pkg = JSON.stringify({
+  name: "app",
+  scripts: { dev: "tsx main.dev.ts" },
+  dependencies: { "@setu-ts/kernel": "^0.10.0" },
+});
+test("Node projects are found from package.json; a Deno manifest beside one still decides", async () => {
+  const root = await fixture();
+  try {
+    await writeFile(join(root, "package.json"), pkg);
+    let found = (await discover([root])).projects;
+    assert.equal(found.length, 1);
+    assert.equal(found[0]?.runtime, "node");
+    assert.equal(found[0]?.task, "candidate");
+    await writeFile(
+      join(root, "package.json"),
+      JSON.stringify({ devDependencies: { "@setu-ts/cli": "^0.10.0" } }),
+    );
+    found = (await discover([root])).projects;
+    assert.equal(found[0]?.task, "missing");
+    await writeFile(
+      join(root, "package.json"),
+      JSON.stringify({ dependencies: { left: "1" }, scripts: { dev: "x" } }),
+    );
+    assert.equal((await discover([root])).projects.length, 0);
+    // The Deno full-stack scaffold writes both manifests.
+    await writeFile(join(root, "package.json"), pkg);
+    await writeFile(join(root, "deno.json"), cfg);
+    found = (await discover([root])).projects;
+    assert.equal(found.length, 1);
+    assert.equal(found[0]?.runtime, "deno");
+  } finally {
+    await rm(root, { recursive: true });
+  }
+});
+test("Bun is refused by name, by lock file or by workspace runtime", async () => {
+  for (const lock of ["bun.lock", "bun.lockb"]) {
+    const root = await fixture();
+    try {
+      await writeFile(join(root, "package.json"), pkg);
+      await writeFile(join(root, lock), Buffer.alloc(MAX_BYTES + 10));
+      const result = await discover([root]);
+      assert.equal(result.projects.length, 0);
+      assert.deepEqual(result.issues, [
+        "A Bun project was found. Only Deno and Node projects are supported.",
+      ]);
+      // The lock file decides beside a Deno manifest and a workspace too.
+      await rm(join(root, "package.json"));
+      await writeFile(
+        join(root, "deno.json"),
+        JSON.stringify({ imports: { "@setu-ts/kernel": "npm:x" } }),
+      );
+      assert.match((await discover([root])).issues[0] ?? "", /Bun project/);
+      await writeFile(
+        join(root, "setu.workspace.json"),
+        JSON.stringify({ version: 1, basePort: 3000, members: [] }),
+      );
+      assert.match((await discover([root])).issues[0] ?? "", /Bun project/);
+    } finally {
+      await rm(root, { recursive: true });
+    }
+  }
+  const root = await fixture();
+  try {
+    await writeFile(
+      join(root, "setu.workspace.json"),
+      JSON.stringify({
+        version: 1,
+        basePort: 3000,
+        runtime: "bun",
+        members: [],
+      }),
+    );
+    assert.match((await discover([root])).issues[0] ?? "", /Bun project/);
+    await writeFile(
+      join(root, "setu.workspace.json"),
+      JSON.stringify({
+        version: 1,
+        basePort: 3000,
+        runtime: "go",
+        members: [],
+      }),
+    );
+    assert.match((await discover([root])).issues[0] ?? "", /could not be/);
+    // A linked path on the way to a lock file is an issue, not "absent".
+    await rm(join(root, "setu.workspace.json"));
+    await writeFile(join(root, "package.json"), pkg);
+    await mkdir(join(root, "real"));
+    await symlink(join(root, "real"), join(root, "linked"));
+    await assert.rejects(exists(root, "linked/bun.lock"), /INVALID_PROJECT/);
+  } finally {
+    await rm(root, { recursive: true });
+  }
+});
+test("Node workspace members are read from their package.json", async () => {
+  const root = await fixture();
+  try {
+    await mkdir(join(root, "apps/api"), { recursive: true });
+    await mkdir(join(root, "apps/worker"), { recursive: true });
+    await writeFile(join(root, "apps/api/package.json"), pkg);
+    await writeFile(
+      join(root, "apps/worker/package.json"),
+      JSON.stringify({ scripts: { "start:dev": "tsx watch main.ts" } }),
+    );
+    await writeFile(
+      join(root, "setu.workspace.json"),
+      JSON.stringify({
+        version: 1,
+        basePort: 3000,
+        runtime: "node",
+        members: [
+          { name: "api", port: 3000, devtoolPort: 4000 },
+          { name: "worker", port: 3001 },
+        ],
+      }),
+    );
+    const found = (await discover([root])).projects;
+    assert.deepEqual(
+      found.map((p) => [p.label, p.runtime, p.task, p.diagnosticsPort]),
+      [
+        ["api", "node", "candidate", 4000],
+        ["worker", "node", "missing", null],
+      ],
+    );
+    // A Deno-only member manifest does not satisfy a Node workspace.
+    await rm(join(root, "apps/worker/package.json"));
+    await writeFile(join(root, "apps/worker/deno.json"), cfg);
+    assert.equal((await discover([root])).issues.length, 1);
   } finally {
     await rm(root, { recursive: true });
   }

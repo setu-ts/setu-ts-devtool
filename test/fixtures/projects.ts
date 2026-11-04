@@ -1,4 +1,11 @@
-import { mkdir, mkdtemp, readFile, readdir, writeFile } from "node:fs/promises";
+import {
+  cp,
+  mkdir,
+  mkdtemp,
+  readFile,
+  readdir,
+  writeFile,
+} from "node:fs/promises";
 import { createServer } from "node:net";
 import { resolve, join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -138,6 +145,147 @@ export async function createApp(_env, options = {}) {
       join(root, "main.dev.ts"),
       recipes.standalone[0]!.replace("port: 49191,", `port: ${port},`),
     );
+  }
+  return { root, port, appPort, siblingPort };
+}
+const FRAMEWORK_PACKAGES = [
+  "common",
+  "kernel",
+  "runtime",
+  "diagnostics-plugin",
+];
+/**
+ * A Node project built from catalog text, as `preparedProject` builds a Deno
+ * one. The prepared framework sources are copied under the fixture, because
+ * Node resolves their bare imports (`hono`) from the importing file's
+ * directory; `tsconfig.json` paths, which tsx honours, point at them.
+ */
+export async function preparedNodeProject(
+  workspace = false,
+  options: { entry?: (text: string) => string } = {},
+): Promise<{
+  root: string;
+  port: number;
+  appPort: number;
+  siblingPort: number;
+}> {
+  await mkdir(".tmp", { recursive: true });
+  const root = await mkdtemp(resolve(".tmp/node-application-"));
+  const port = await freePort(),
+    appPort = await freePort(),
+    siblingPort = await freePort();
+  const node = recipes.node;
+  await cp(
+    resolve(".tmp/node-fixture-deps/node_modules"),
+    join(root, "node_modules"),
+    {
+      recursive: true,
+      verbatimSymlinks: true,
+    },
+  );
+  for (const name of FRAMEWORK_PACKAGES)
+    await cp(
+      resolve(".tmp/framework/packages", name, "src"),
+      join(root, "vendor", name, "src"),
+      { recursive: true },
+    );
+  const tsconfig = (prefix: string) =>
+    JSON.stringify({
+      compilerOptions: {
+        target: "ES2022",
+        module: "ESNext",
+        moduleResolution: "Bundler",
+        paths: Object.fromEntries(
+          FRAMEWORK_PACKAGES.map((name) => [
+            `@setu-ts/${name}`,
+            [`${prefix}vendor/${name}/src/index.ts`],
+          ]),
+        ),
+      },
+    });
+  const config = (
+    applicationPort: number,
+  ) => `import { createApplication } from '@setu-ts/kernel';
+import { RuntimePlugin } from '@setu-ts/runtime';
+export async function createApp(_env, options = {}) {
+ const app = createApplication({plugins:[RuntimePlugin(), ...(options.plugins ?? [])], ...(options.diagnostics ? {diagnostics:options.diagnostics} : {})});
+ app.router.get('/ready', c => c.response.json({ready:true, credentialPresent: Boolean(process.env.SETU_DEVTOOL_SESSION_KEY)}));
+ app.router.get('/items', c => c.response.json({items:[1]}));
+ return app;
+}
+// Fixture application port: ${applicationPort}
+`;
+  const main = (number: number) =>
+    `import { createApp } from './setu.config.ts';const app=await createApp();await app.start({port:${number}});process.on('SIGTERM',()=>{void app.stop().then(()=>process.exit());});`;
+  const entry = (text: string) =>
+    (options.entry ?? ((value: string) => value))(
+      text.replace("port: 49191,", `port: ${port},`),
+    );
+  if (workspace) {
+    await mkdir(join(root, "scripts"), { recursive: true });
+    await writeFile(join(root, "scripts/dev.mjs"), node.runner[0]!);
+    await writeFile(
+      join(root, "setu.workspace.json"),
+      JSON.stringify({
+        version: 1,
+        basePort: appPort,
+        runtime: "node",
+        transport: "http",
+        members: [
+          { name: "api", port: appPort, devtoolPort: port },
+          { name: "worker", port: siblingPort, dependsOn: ["api"] },
+        ],
+      }),
+    );
+    await writeFile(
+      join(root, "package.json"),
+      JSON.stringify({
+        name: "fixture",
+        private: true,
+        workspaces: ["apps/*"],
+        scripts: { dev: node.rootScript },
+      }),
+    );
+    for (const [name, number] of [
+      ["api", appPort],
+      ["worker", siblingPort],
+    ] as const) {
+      const dir = join(root, "apps", name);
+      await mkdir(join(dir, "src/discovery"), { recursive: true });
+      await writeFile(
+        join(dir, "src/discovery/services.ts"),
+        `export const SERVICE_PORT = ${number};\n`,
+      );
+      await writeFile(
+        join(dir, "package.json"),
+        JSON.stringify({
+          name,
+          type: "module",
+          scripts: {
+            "start:dev": "tsx watch main.ts",
+            ...(name === "api" ? { dev: node.devScript } : {}),
+          },
+        }),
+      );
+      await writeFile(join(dir, "tsconfig.json"), tsconfig("../../"));
+      await writeFile(join(dir, "setu.config.ts"), config(number));
+      await writeFile(join(dir, "main.ts"), main(number));
+      if (name === "api")
+        await writeFile(join(dir, "main.dev.ts"), entry(node.member[0]!));
+    }
+  } else {
+    await writeFile(
+      join(root, "package.json"),
+      JSON.stringify({
+        name: "fixture",
+        type: "module",
+        scripts: { dev: node.devScript, "start:dev": "tsx watch main.ts" },
+        dependencies: { "@setu-ts/kernel": "0.0.0-fixture" },
+      }),
+    );
+    await writeFile(join(root, "tsconfig.json"), tsconfig("./"));
+    await writeFile(join(root, "setu.config.ts"), config(appPort));
+    await writeFile(join(root, "main.dev.ts"), entry(node.standalone[0]!));
   }
   return { root, port, appPort, siblingPort };
 }

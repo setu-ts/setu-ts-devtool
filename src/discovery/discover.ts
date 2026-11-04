@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { basename, join } from "node:path";
-import { canonicalRoot, readFile, safePath } from "./files";
+import { canonicalRoot, exists, readFile, safePath } from "./files";
 import { object, readJson } from "./json";
 export interface Project {
   readonly id: string;
@@ -11,6 +11,7 @@ export interface Project {
   readonly port: number | null;
   readonly diagnosticsPort: number | null;
   readonly task: "candidate" | "missing";
+  readonly runtime: "deno" | "node";
 }
 export interface Discovery {
   readonly projects: readonly Project[];
@@ -39,9 +40,25 @@ async function config(
   const text = json ?? jsonc;
   return text === undefined ? undefined : readJson(text, true);
 }
-function task(value: Record<string, unknown>): "candidate" | "missing" {
-  if (value.tasks === undefined) return "missing";
-  const tasks = object(value.tasks);
+async function packageJson(
+  root: string,
+  directory: string,
+): Promise<Record<string, unknown> | undefined> {
+  const text = await readFile(root, join(directory, "package.json"));
+  return text === undefined ? undefined : readJson(text, false);
+}
+/** Bun runs neither listener nor launcher; refuse it by name. */
+class Unsupported extends Error {}
+/** A Bun lock file marks a Bun root, whatever its manifests say. */
+async function bunLock(root: string): Promise<boolean> {
+  return (await exists(root, "bun.lock")) || (await exists(root, "bun.lockb"));
+}
+function task(
+  value: Record<string, unknown>,
+  key: "tasks" | "scripts" = "tasks",
+): "candidate" | "missing" {
+  if (value[key] === undefined) return "missing";
+  const tasks = object(value[key]);
   return typeof tasks.dev === "string" && tasks.dev.length > 0
     ? "candidate"
     : "missing";
@@ -68,9 +85,14 @@ export async function discover(roots: readonly string[]): Promise<Discovery> {
         directories: string[] = [];
       if (text !== undefined) {
         const manifest = readJson(text, false);
+        if (manifest.runtime === "bun" || (await bunLock(root)))
+          throw new Unsupported();
+        const runtime = manifest.runtime === "node" ? "node" : "deno";
         if (
           manifest.version !== 1 ||
-          (manifest.runtime !== undefined && manifest.runtime !== "deno") ||
+          (manifest.runtime !== undefined &&
+            manifest.runtime !== "deno" &&
+            manifest.runtime !== "node") ||
           !Array.isArray(manifest.members) ||
           manifest.members.length > 64
         )
@@ -121,7 +143,10 @@ export async function discover(roots: readonly string[]): Promise<Discovery> {
         for (const m of members) {
           const relative = join("apps", m.name),
             directory = await safePath(root, relative);
-          const cfg = await config(root, relative);
+          const cfg =
+            runtime === "node"
+              ? await packageJson(root, relative)
+              : await config(root, relative);
           if (!cfg) throw new Error("INVALID_PROJECT");
           directories.push(directory);
           found.push(
@@ -133,22 +158,31 @@ export async function discover(roots: readonly string[]): Promise<Discovery> {
               member: m.name,
               port: m.appPort,
               diagnosticsPort: m.diagnostic,
-              task: task(cfg),
+              task: task(cfg, runtime === "node" ? "scripts" : "tasks"),
+              runtime,
             }),
           );
         }
       } else {
-        const cfg = await config(root, ".");
+        // A Deno manifest decides, even beside a package.json: the Deno
+        // full-stack scaffold writes both.
+        const deno = await config(root, ".");
+        const cfg = deno ?? (await packageJson(root, "."));
         if (!cfg) continue;
-        const imports = cfg.imports === undefined ? {} : object(cfg.imports);
-        if (
-          !Object.entries(imports).some(
-            ([key, value]) =>
-              key.startsWith("@setu-ts/") ||
-              (typeof value === "string" && value.startsWith("jsr:@setu-ts/")),
-          )
-        )
-          continue;
+        const runtime = deno ? "deno" : "node";
+        const names =
+          runtime === "deno"
+            ? Object.entries(
+                cfg.imports === undefined ? {} : object(cfg.imports),
+              ).flatMap(([key, value]) => [
+                key,
+                typeof value === "string" ? value.replace(/^jsr:/, "") : "",
+              ])
+            : ["dependencies", "devDependencies"].flatMap((key) =>
+                Object.keys(cfg[key] === undefined ? {} : object(cfg[key])),
+              );
+        if (!names.some((name) => name.startsWith("@setu-ts/"))) continue;
+        if (await bunLock(root)) throw new Unsupported();
         found.push(
           Object.freeze({
             id: randomUUID(),
@@ -161,15 +195,18 @@ export async function discover(roots: readonly string[]): Promise<Discovery> {
             member: null,
             port: null,
             diagnosticsPort: null,
-            task: task(cfg),
+            task: task(cfg, runtime === "node" ? "scripts" : "tasks"),
+            runtime,
           }),
         );
       }
       projects.push(...found);
       for (const directory of directories) watch.add(directory);
-    } catch {
+    } catch (error) {
       issues.push(
-        "A project could not be discovered. Check its local manifest, paths and limits.",
+        error instanceof Unsupported
+          ? "A Bun project was found. Only Deno and Node projects are supported."
+          : "A project could not be discovered. Check its local manifest, paths and limits.",
       );
     }
   }

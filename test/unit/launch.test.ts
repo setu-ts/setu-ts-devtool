@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import {
   rm,
   writeFile,
@@ -7,10 +8,12 @@ import {
   chmod,
   symlink,
   mkdir,
+  mkdtemp,
+  rename,
 } from "node:fs/promises";
 import { join, resolve, dirname } from "node:path";
 import { discover } from "../../src/discovery/discover";
-import { prepareLaunch } from "../../src/launch/preflight";
+import { prepareLaunch, redirectsNpm } from "../../src/launch/preflight";
 import { resolveDeno, verifyDeno, inside } from "../../src/launch/executable";
 import {
   credentials,
@@ -20,6 +23,7 @@ import {
   entryMatches,
   taskMatches,
   runnerMatches,
+  scriptMatches,
 } from "../../src/launch/recipes";
 import {
   parseStat,
@@ -28,7 +32,7 @@ import {
   terminateUnknownGroup,
   liveMembers,
 } from "../../src/launch/process-group";
-import { preparedProject } from "../fixtures/projects";
+import { preparedNodeProject, preparedProject } from "../fixtures/projects";
 import recipes from "../../.tmp/artifacts/recipes.json";
 test("preflight validates the entire scope and detects changed or custom recipes", async () => {
   const f = await preparedProject(true);
@@ -157,6 +161,34 @@ test("credentials are fresh; inherited handoff and runtime injection are removed
   a.key.fill(0);
   b.key.fill(0);
 });
+test("a Node launch replaces every inherited npm setting with the fixed ones", () => {
+  const source = {
+    PATH: ".",
+    npm_config_script_shell: "/evil",
+    NPM_CONFIG_NODE_OPTIONS: "--require=/evil.js",
+    Npm_Config_Userconfig: "/evil/npmrc",
+    npm_config_registry: "https://registry.example",
+    NORMAL: "keep",
+  };
+  assert.deepEqual(applicationEnvironment("/safe", source, "node"), {
+    PATH: "/safe",
+    NORMAL: "keep",
+    npm_config_ignore_scripts: "true",
+    npm_config_script_shell: "/bin/sh",
+    npm_config_node_options: " ",
+    npm_config_userconfig: "/dev/null/user-npmrc",
+    npm_config_globalconfig: "/dev/null/global-npmrc",
+    npm_config_update_notifier: "false",
+    npm_config_fund: "false",
+    npm_config_audit: "false",
+    npm_config_logs_max: "0",
+  });
+  // Deno honours an npm registry setting from the environment: kept.
+  assert.equal(
+    applicationEnvironment("/safe", source).npm_config_registry,
+    "https://registry.example",
+  );
+});
 test("Linux identity handles parentheses and zero system groups without losing identity", async () => {
   const record = await processIdentity(process.pid);
   assert.equal(record.pid, process.pid);
@@ -203,4 +235,241 @@ test("Linux cleanup classifies vanished processes and escalates unknown groups",
     /EXIT/,
   );
   assert.equal(calls.at(-1), "failed-signal-exit:1");
+});
+test("Node preflight compares the scripts, entry and runner, and requires an installed tsx", async () => {
+  for (const workspace of [false, true]) {
+    const fixture = await preparedNodeProject(workspace);
+    try {
+      const project = (await discover([fixture.root])).projects.find(
+        (p) => p.member === null || p.member === "api",
+      );
+      assert.ok(project);
+      assert.equal(project.runtime, "node");
+      const ready = await prepareLaunch(project, fixture.port);
+      assert.equal(ready.runtime, "node");
+      const dir = workspace ? join(fixture.root, "apps/api") : fixture.root;
+      const edits: [string, (text: string) => string][] = [
+        [join(dir, "main.dev.ts"), (t) => t.replace("4919", "4918") + " "],
+        [
+          join(dir, "package.json"),
+          (t) => t.replace('"tsx main.dev.ts"', '"tsx watch main.dev.ts"'),
+        ],
+        ...(workspace
+          ? ([
+              [join(fixture.root, "scripts/dev.mjs"), (t: string) => t + "\n"],
+              [
+                join(fixture.root, "package.json"),
+                (t: string) => t.replace("node scripts/dev.mjs", "node x.mjs"),
+              ],
+              // npm would walk past a root whose workspaces miss the member.
+              [
+                join(fixture.root, "package.json"),
+                (t: string) => t.replace('"apps/*"', '"libs/*"'),
+              ],
+              [
+                join(fixture.root, "package.json"),
+                (t: string) =>
+                  t.replace(
+                    /"workspaces":\s*\[[^\]]*\]/,
+                    '"workspaces":"apps/*"',
+                  ),
+              ],
+              // A negation drops the member from the root's map (A1).
+              [
+                join(fixture.root, "package.json"),
+                (t: string) => t.replace('"apps/*"', '"apps/*","!apps/api"'),
+              ],
+              [
+                join(fixture.root, "package.json"),
+                (t: string) => t.replace('"apps/*"', '"apps/*",1'),
+              ],
+              [
+                join(fixture.root, "apps/worker/package.json"),
+                (t: string) => t.replace("tsx watch main.ts", "tsx main.ts"),
+              ],
+            ] as [string, (text: string) => string][])
+          : []),
+      ];
+      for (const [path, edit] of edits) {
+        const text = await readFile(path, "utf8");
+        await writeFile(path, edit(text));
+        await assert.rejects(
+          prepareLaunch(project, fixture.port),
+          /PREPARATION_FAILED/,
+          path,
+        );
+        await writeFile(path, text);
+      }
+      // A package.json in apps/ would end npm's walk inside the root (A2).
+      if (workspace)
+        for (const name of ["package.json", ".npmrc"]) {
+          const path = join(fixture.root, "apps", name);
+          await writeFile(path, "{}\n");
+          await assert.rejects(
+            prepareLaunch(project, fixture.port),
+            /PREPARATION_FAILED/,
+            path,
+          );
+          await rm(path);
+        }
+      // ignore_scripts stops these, so they are not refused.
+      const manifest = join(dir, "package.json");
+      const original = await readFile(manifest, "utf8");
+      const withHooks = JSON.parse(original);
+      withHooks.scripts.predev = "echo pre";
+      await writeFile(manifest, JSON.stringify(withHooks));
+      await prepareLaunch(project, fixture.port);
+      await writeFile(manifest, original);
+      await rm(join(fixture.root, "node_modules/tsx"), { recursive: true });
+      await assert.rejects(
+        prepareLaunch(project, fixture.port),
+        /PREPARATION_FAILED/,
+      );
+    } finally {
+      await rm(fixture.root, { recursive: true, force: true });
+    }
+  }
+});
+test("Node preflight refuses node or npm above the root and needs tsx inside it", async () => {
+  for (const workspace of [false, true]) {
+    const fixture = await preparedNodeProject(workspace);
+    const above = await mkdtemp(resolve(".tmp/above-"));
+    const root = join(above, "app");
+    try {
+      await rename(fixture.root, root);
+      const project = (await discover([root])).projects.find(
+        (p) => p.member === null || p.member === "api",
+      );
+      assert.ok(project);
+      await prepareLaunch(project, fixture.port);
+      // A workspace launch's nested npm could adopt a workspace root above the
+      // project (re-review C1); a standalone launch runs --no-workspaces only.
+      const manifest = join(above, "package.json");
+      for (const [contents, refused] of [
+        ['{"name":"top"}', false],
+        ['{"workspaces":["app/apps/api"]}', workspace],
+        ["{", workspace],
+        ["x".repeat(256 * 1024 + 1), workspace],
+      ] as const) {
+        await writeFile(manifest, contents);
+        if (refused)
+          await assert.rejects(
+            prepareLaunch(project, fixture.port),
+            /PREPARATION_FAILED/,
+            contents.slice(0, 40),
+          );
+        else await prepareLaunch(project, fixture.port);
+        await rm(manifest);
+      }
+      await mkdir(manifest);
+      if (workspace)
+        await assert.rejects(
+          prepareLaunch(project, fixture.port),
+          /PREPARATION_FAILED/,
+        );
+      else await prepareLaunch(project, fixture.port);
+      await rm(manifest, { recursive: true });
+      // A FIFO or device must be refused without blocking or reading it (L1).
+      for (const plant of [
+        () => execFileSync("mkfifo", [manifest]),
+        () => symlink("/dev/zero", manifest),
+      ]) {
+        await plant();
+        if (workspace)
+          await assert.rejects(
+            prepareLaunch(project, fixture.port),
+            /PREPARATION_FAILED/,
+          );
+        else await prepareLaunch(project, fixture.port);
+        await rm(manifest);
+      }
+      const bin = join(above, "node_modules", ".bin");
+      for (const name of ["node", "npm"]) {
+        await mkdir(bin, { recursive: true });
+        await writeFile(join(bin, name), "#!/bin/sh\n");
+        await assert.rejects(
+          prepareLaunch(project, fixture.port),
+          /PREPARATION_FAILED/,
+          name,
+        );
+        await rm(join(above, "node_modules"), { recursive: true });
+      }
+      // A dangling link still shadows nothing, but is refused all the same.
+      await mkdir(bin, { recursive: true });
+      await symlink(join(above, "missing"), join(bin, "node"));
+      await assert.rejects(
+        prepareLaunch(project, fixture.port),
+        /PREPARATION_FAILED/,
+      );
+      await rm(join(above, "node_modules"), { recursive: true });
+      // A file where the directory would be cannot hold a .bin.
+      await writeFile(join(above, "node_modules"), "");
+      await prepareLaunch(project, fixture.port);
+      await rm(join(above, "node_modules"));
+      // An unreadable directory above the root cannot be ruled out.
+      await mkdir(bin, { recursive: true });
+      await chmod(join(above, "node_modules"), 0o000);
+      await assert.rejects(
+        prepareLaunch(project, fixture.port),
+        /PREPARATION_FAILED/,
+      );
+      await chmod(join(above, "node_modules"), 0o755);
+      await rm(join(above, "node_modules"), { recursive: true });
+      // Without the root's own tsx link, PATH would search above the root.
+      await rm(join(root, "node_modules", ".bin", "tsx"));
+      await assert.rejects(
+        prepareLaunch(project, fixture.port),
+        /PREPARATION_FAILED/,
+      );
+    } finally {
+      await chmod(join(above, "node_modules"), 0o755).catch(() => {});
+      await rm(above, { recursive: true, force: true });
+      await rm(fixture.root, { recursive: true, force: true });
+    }
+  }
+});
+test("recipe matchers cover the Node catalog", () => {
+  assert.ok(
+    entryMatches(
+      recipes.node.standalone[0]!.replace("port: 49191,", "port: 5000,"),
+      5000,
+      false,
+      "node",
+    ),
+  );
+  assert.ok(runnerMatches(recipes.node.runner[0]!, "node"));
+  assert.equal(runnerMatches(recipes.node.runner[0]!), false);
+  assert.ok(scriptMatches("tsx main.dev.ts", true));
+  assert.ok(scriptMatches("tsx dev.ts", false));
+  assert.equal(scriptMatches("tsx main.dev.ts", false), false);
+  assert.equal(scriptMatches(1, false), false);
+});
+test("npm settings that redirect which script runs are recognised in any spelling", () => {
+  for (const text of [
+    "workspace=apps/worker",
+    "  Workspace = apps/worker",
+    "workspaces=true",
+    "workspaces",
+    "include_workspace_root=true",
+    "include-workspace-root=true",
+    "globalconfig=/tmp/other",
+    "workspace[]=apps/worker",
+    "registry=https://r.example\r\nworkspace=b",
+    // Spellings npm reads differently from the text (D06 re-review).
+    "foo=bar\rworkspace=b",
+    '"workspace"=b',
+    "${npm_package_name}=worker",
+    "work\\space=b",
+    "[section]",
+  ])
+    assert.ok(redirectsNpm(text), text);
+  for (const text of [
+    "",
+    "# workspace=apps/worker",
+    "; workspaces=true",
+    "registry=https://r.example",
+    "//r.example/:_authToken=${TOKEN}",
+    "@scope:registry=https://r.example",
+  ])
+    assert.equal(redirectsNpm(text), false, text);
 });

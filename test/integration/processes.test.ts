@@ -35,6 +35,7 @@ for (const early of [false, true])
           port,
           members: ["synthetic"],
           fingerprint: "fixture",
+          runtime: "deno",
         },
         executable,
         resolve("dist/supervisor.mjs"),
@@ -69,6 +70,7 @@ test("pre-aborted launch creates no process; early supervisor failure stays cons
     port: 4919,
     members: ["fixture"],
     fingerprint: "x",
+    runtime: "deno" as const,
   };
   await assert.rejects(
     launchOwned(

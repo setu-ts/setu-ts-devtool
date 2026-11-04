@@ -7,12 +7,12 @@ Linux scope; no release has been published. The
 [roadmap milestone table](ROADMAP.md#milestones) is the status record and links
 each milestone's evidence.
 
-The extension discovers prepared projects, explicitly launches a local Deno
-application, pairs, captures bounded diagnostics and stops its owned processes.
+The extension discovers prepared projects, explicitly launches a local Deno or
+Node application, pairs, captures bounded diagnostics and stops its owned processes.
 The inspection panel presents a bounded composition graph and request timeline.
 
 The first release is a free desktop extension for VS Code and Code OSS. Its main
-workflow is: select a local project, explicitly launch an instrumented Deno
+workflow is: select a local project, explicitly launch an instrumented Deno or Node
 application, inspect plugins and routes, and follow request execution through
 middleware and handlers. Diagnostic data stays local and in memory. No account
 is required.
@@ -40,12 +40,12 @@ the framework repository and its own milestone branch. Each devtool
 implementation milestone gets its own branch and keeps its follow-up fixes there
 until merge.
 
-The contract register is pinned to the framework `v0.10.0` release commit
-`d7a04734be8a4658774c7fe5b5e30297d5103ef3`. It covers the core M98a–c
-contracts, M98o session renewal, generated development entries and credential
-handoff. Local builds use that exact revision; released-package and VSIX
+The contract register is pinned to the framework `v0.11.0` release commit
+`446d94723cbb0a853dd303022d6c9896ac17bdcd`. It covers the core M98a–c
+contracts, M98o session renewal, the M126 Node listener, generated development
+entries and credential handoff. Local builds use that exact revision; released-package and VSIX
 compatibility still need separate evidence (D04). The devtool accepts the
-development entry `cli@0.10.0` generates for a Deno project. See the
+development entry and scripts `cli@0.11.0` generates for a Deno or Node project. See the
 [roadmap's framework baseline](ROADMAP.md#framework-baseline).
 
 ## Develop and verify
@@ -77,8 +77,11 @@ tests and per-file 90% branch/function/line coverage gate.
 Press F5 to start the development extension host. Open **Setu-TS Projects** in
 Explorer or run **Setu-TS: Refresh Projects**, then select a discovered project.
 Selection does not execute application code. Discovery accepts standalone Deno
-configs importing Setu packages and v1 `setu.workspace.json` manifests with
-members under `apps/<name>`. A discovered `dev` task is only a launch candidate.
+configs importing Setu packages, standalone Node projects whose `package.json`
+depends on a Setu package, and v1 `setu.workspace.json` manifests for Deno or
+Node with members under `apps/<name>`. A folder with a Deno config is a Deno
+project even when it also has a `package.json`. Bun projects are reported as
+unsupported. A discovered `dev` task is only a launch candidate.
 
 For a synthetic preview, the development host's Debug Console can invoke
 `vscode.commands.executeCommand("setuDevtool.sample")` while paused in extension
@@ -93,10 +96,16 @@ launch. **Setu-TS: Clear Capture** drops retained events without rewinding the
 cursor. Native status separates connection and application state; the inspection
 panel persists no state and is rebuilt from the bounded host capture.
 
-Only qualified CLI-generated Deno recipes are accepted. The extension does not
+Only qualified CLI-generated Deno and Node recipes are accepted. A Node project
+runs its `dev` script through `npm run dev`; its dependencies must already be
+installed, because the extension never runs `npm install`. A project's
+`.npmrc` cannot change the shell, preload code or run `predev`/`postdev`
+scripts during a launch, and a `.npmrc` that selects another package's script
+(`workspace`, `workspaces` and similar) is refused. The extension does not
 enable or migrate projects automatically, capture application output, or attach
-to an existing process. Optional `setuDevtool.denoPath` is an absolute user-level
-setting; workspace overrides are ignored. A session renews itself at half of its remaining window while the
+to an existing process. Optional `setuDevtool.denoPath` and `setuDevtool.nodePath` are absolute
+user-level settings. Node must be 24.22.1 or later on the 24 line, with npm 11 in
+the same directory; workspace overrides are ignored. A session renews itself at half of its remaining window while the
 application allows it: generated entries allow 8 hours of awake time. The status
 bar shows how much of that is left. A session that cannot be renewed, or has
 reached its maximum, stops at its deadline; launch again to continue. A failed

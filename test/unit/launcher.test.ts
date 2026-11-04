@@ -10,6 +10,7 @@ const descriptor = {
     port: 4919,
     members: ["test"],
     fingerprint: "x",
+    runtime: "deno" as const,
   },
   executable = { path: "/deno", identity: "x", pathValue: "/bin" };
 function host(

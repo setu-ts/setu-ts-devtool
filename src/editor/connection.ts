@@ -3,7 +3,12 @@ import { realpath } from "node:fs/promises";
 import { join } from "node:path";
 import type { Project } from "../discovery/discover";
 import { prepareLaunch } from "../launch/preflight";
-import { resolveDeno, verifyDeno } from "../launch/executable";
+import {
+  resolveDeno,
+  resolveNode,
+  verifyDeno,
+  verifyNode,
+} from "../launch/executable";
 import { SessionController, type SessionState } from "../session/controller";
 import { duration } from "../session/lifetime";
 
@@ -97,15 +102,26 @@ export function connectCommands(
         signal.throwIfAborted();
         if (guard() || selected()?.id !== generation) throw new Error();
         const descriptor = await prepareLaunch(project, port);
+        // The executable kind follows the selection; the start message follows
+        // fresh discovery. They must agree (D06 review F3).
+        if (descriptor.runtime !== project.runtime) throw new Error();
+        const node = project.runtime === "node";
         const setting = vscode.workspace
           .getConfiguration("setuDevtool")
-          .inspect<string>("denoPath");
-        const executable = await resolveDeno(setting?.globalValue, roots());
+          .inspect<string>(node ? "nodePath" : "denoPath");
+        // Only the user-level value is read; workspace overrides are ignored.
+        const executable = await (node ? resolveNode : resolveDeno)(
+          setting?.globalValue,
+          roots(),
+        );
+        const runtimeLine = node
+          ? `Node: ${executable.path} (npm ${await verifyNode(executable)})`
+          : `Deno: ${executable.path}`;
         const answer = await vscode.window.showWarningMessage(
           `Launch ${project.label}?`,
           {
             modal: true,
-            detail: `Directory: ${descriptor.root}\nStarts: ${descriptor.members.join(", ")}\nInstrumented: ${project.label}\nDeno: ${executable.path}\nDiagnostics port: ${port}\nThe session renews automatically while the application allows it. Stop terminates all started members. Application output is not captured.`,
+            detail: `Directory: ${descriptor.root}\nStarts: ${descriptor.members.join(", ")}\nInstrumented: ${project.label}\n${runtimeLine}\nDiagnostics port: ${port}\nThe session renews automatically while the application allows it. Stop terminates all started members. Application output is not captured.`,
           },
           "Launch",
         );
@@ -119,8 +135,11 @@ export function connectCommands(
           )
         )
           throw new Error();
-        await verifyDeno(executable);
+        if (node) await verifyNode(executable);
+        else await verifyDeno(executable);
         const fresh = await prepareLaunch(project, port);
+        // A runtime change also changes which manifests are read, so the
+        // fingerprint covers it here.
         if (fresh.fingerprint !== descriptor.fingerprint) throw new Error();
         signal.throwIfAborted();
         if (guard() || selected()?.id !== generation) throw new Error();
@@ -128,7 +147,9 @@ export function connectCommands(
       });
       if (session.status().state === "Failed")
         void vscode.window.showErrorMessage(
-          "Setu-TS could not prepare, launch or verify the connection. Check the prepared project and qualified Deno installation.",
+          selected()?.runtime === "node"
+            ? "Setu-TS could not prepare, launch or verify the connection. Check the prepared project, that its dependencies are installed, and that Node 24.22.1 or later on the 24 line with npm 11 is on PATH or set in setuDevtool.nodePath."
+            : "Setu-TS could not prepare, launch or verify the connection. Check the prepared project and qualified Deno installation.",
         );
     }),
     vscode.commands.registerCommand("setuDevtool.stop", () => session.stop()),

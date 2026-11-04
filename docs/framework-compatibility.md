@@ -1,18 +1,24 @@
 # Framework compatibility and contract register
 
 Source baseline: Setu-TS commit
-[`d7a04734be8a4658774c7fe5b5e30297d5103ef3`](https://github.com/setu-ts/setu-ts/commit/d7a04734be8a4658774c7fe5b5e30297d5103ef3),
-the `v0.10.0` release commit, inspected 2026-10-29 for D03b. The previous pin,
-`26aebd0e` (2026-09-27, M98a–g), qualified D01–D03; D03b requalified them here.
-This commit is an integration reference, not a minimum supported release;
-manifest versions and `@since` comments do not establish availability.
+[`446d94723cbb0a853dd303022d6c9896ac17bdcd`](https://github.com/setu-ts/setu-ts/commit/446d94723cbb0a853dd303022d6c9896ac17bdcd),
+the framework `v0.11.0` release commit (2026-10-30), the first release that
+contains M126 (setu-ts#521). D06 was built against the `develop` merge of M126
+(`4e26f834`, 2026-10-29) and moved to this release before merging. D03b qualified the `v0.10.0` release commit
+`d7a04734`; `26aebd0e` (2026-09-27) qualified D01–D03. The pin is an
+integration reference, not a minimum supported release; manifest versions and
+`@since` comments do not establish availability.
 
 **Publication.** `@setu-ts/diagnostics-plugin` first published in `v0.8.0`
-(JSR, 2026-10-03). Since `v0.9.0` the framework publishes to npm only;
-`@setu-ts/diagnostics-plugin@0.10.0` (2026-10-23) is built from this commit.
-Between `26aebd0e` and this commit the core DTOs below are unchanged apart from
-formatting; the additions are M98h–n observation families, M98o session renewal
-and the CLI's development-entry changes (M101f).
+(JSR, 2026-10-03). Since `v0.9.0` the framework publishes to npm only. The core
+DTOs below are unchanged since `26aebd0e` apart from formatting. Between
+`v0.10.0` and `v0.11.0`, M126 adds the Node listener and the CLI's Node
+`--devtool` arm, and the generated development entry becomes runtime-neutral
+for Deno too (`runtime.env`, `runtime.exit`). Between `4e26f834` and the
+release, the only change on the diagnostics surface is `redis` (node-redis,
+M117) added to the trace instrumentation vocabulary; the bundled client at the
+pin accepts it, and the devtool keeps no list of its own. The development entry,
+the workspace runner and the npm script are unchanged.
 
 This register replaces the earlier M98 proposal baseline. It records observed
 implementation behavior and extension requirements. D02 now has
@@ -31,13 +37,13 @@ private framework modules into the extension.
 
 | Source                                                                                                                                                                                                                                                                                                                      | Implemented surface                                                   | Consumer                  |
 | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | ------------------------- |
-| [Common diagnostics types](https://github.com/setu-ts/setu-ts/blob/d7a04734be8a4658774c7fe5b5e30297d5103ef3/packages/common/src/services/diagnostics.ts) and [application interface](https://github.com/setu-ts/setu-ts/blob/d7a04734be8a4658774c7fe5b5e30297d5103ef3/packages/common/src/plugin.ts)                        | Optional `IApplication.diagnostics`, snapshot and cursor-based reader | D02 adapter, D03 views    |
-| [Kernel collector](https://github.com/setu-ts/setu-ts/blob/d7a04734be8a4658774c7fe5b5e30297d5103ef3/packages/kernel/src/diagnostics/collector.ts) and [projection rules](https://github.com/setu-ts/setu-ts/blob/d7a04734be8a4658774c7fe5b5e30297d5103ef3/packages/kernel/src/diagnostics/projection.ts)                    | Opt-in collection, exact label approvals, bounded topology/events     | D03 interpretation        |
-| [Connector exports](https://github.com/setu-ts/setu-ts/blob/d7a04734be8a4658774c7fe5b5e30297d5103ef3/packages/diagnostics-plugin/src/index.ts) and [interfaces](https://github.com/setu-ts/setu-ts/blob/d7a04734be8a4658774c7fe5b5e30297d5103ef3/packages/diagnostics-plugin/src/interfaces/index.ts)                       | Plugin and injected native client                                     | D02 launch/client adapter |
-| [Client implementation](https://github.com/setu-ts/setu-ts/blob/d7a04734be8a4658774c7fe5b5e30297d5103ef3/packages/diagnostics-plugin/src/client/client.ts) and [protocol validation](https://github.com/setu-ts/setu-ts/blob/d7a04734be8a4658774c7fe5b5e30297d5103ef3/packages/diagnostics-plugin/src/protocol/protocol.ts) | Authenticated, serialized reads; limitations below                    | D02 connection policy     |
-| [Protocol v1](https://github.com/setu-ts/setu-ts/blob/d7a04734be8a4658774c7fe5b5e30297d5103ef3/docs/diagnostics-protocol.md) and [plugin lifecycle](https://github.com/setu-ts/setu-ts/blob/d7a04734be8a4658774c7fe5b5e30297d5103ef3/packages/diagnostics-plugin/src/plugin/diagnostics-plugin.ts)                          | Signed loopback HTTP, finite sessions, teardown                       | D02 trust boundary        |
-| [Development entry](https://github.com/setu-ts/setu-ts/blob/d7a04734be8a4658774c7fe5b5e30297d5103ef3/packages/cli/src/devtool/dev-entry.ts) and [enable planner](https://github.com/setu-ts/setu-ts/blob/d7a04734be8a4658774c7fe5b5e30297d5103ef3/packages/cli/src/devtool/planner.ts)                                      | M98c `main.dev.ts`, `dev` task and credential reads                   | D02 preflight/launch      |
-| [Workspace manifest](https://github.com/setu-ts/setu-ts/blob/d7a04734be8a4658774c7fe5b5e30297d5103ef3/packages/cli/src/workspace/manifest.ts) and [development runner](https://github.com/setu-ts/setu-ts/blob/d7a04734be8a4658774c7fe5b5e30297d5103ef3/packages/cli/src/workspace/dev-runner.ts)                           | Member `devtoolPort`, selection and credential isolation              | D01 discovery, D02 launch |
+| [Common diagnostics types](https://github.com/setu-ts/setu-ts/blob/446d94723cbb0a853dd303022d6c9896ac17bdcd/packages/common/src/services/diagnostics.ts) and [application interface](https://github.com/setu-ts/setu-ts/blob/446d94723cbb0a853dd303022d6c9896ac17bdcd/packages/common/src/plugin.ts)                        | Optional `IApplication.diagnostics`, snapshot and cursor-based reader | D02 adapter, D03 views    |
+| [Kernel collector](https://github.com/setu-ts/setu-ts/blob/446d94723cbb0a853dd303022d6c9896ac17bdcd/packages/kernel/src/diagnostics/collector.ts) and [projection rules](https://github.com/setu-ts/setu-ts/blob/446d94723cbb0a853dd303022d6c9896ac17bdcd/packages/kernel/src/diagnostics/projection.ts)                    | Opt-in collection, exact label approvals, bounded topology/events     | D03 interpretation        |
+| [Connector exports](https://github.com/setu-ts/setu-ts/blob/446d94723cbb0a853dd303022d6c9896ac17bdcd/packages/diagnostics-plugin/src/index.ts) and [interfaces](https://github.com/setu-ts/setu-ts/blob/446d94723cbb0a853dd303022d6c9896ac17bdcd/packages/diagnostics-plugin/src/interfaces/index.ts)                       | Plugin and injected native client                                     | D02 launch/client adapter |
+| [Client implementation](https://github.com/setu-ts/setu-ts/blob/446d94723cbb0a853dd303022d6c9896ac17bdcd/packages/diagnostics-plugin/src/client/client.ts) and [protocol validation](https://github.com/setu-ts/setu-ts/blob/446d94723cbb0a853dd303022d6c9896ac17bdcd/packages/diagnostics-plugin/src/protocol/protocol.ts) | Authenticated, serialized reads; limitations below                    | D02 connection policy     |
+| [Protocol v1](https://github.com/setu-ts/setu-ts/blob/446d94723cbb0a853dd303022d6c9896ac17bdcd/docs/diagnostics-protocol.md) and [plugin lifecycle](https://github.com/setu-ts/setu-ts/blob/446d94723cbb0a853dd303022d6c9896ac17bdcd/packages/diagnostics-plugin/src/plugin/diagnostics-plugin.ts)                          | Signed loopback HTTP, finite sessions, teardown                       | D02 trust boundary        |
+| [Development entry](https://github.com/setu-ts/setu-ts/blob/446d94723cbb0a853dd303022d6c9896ac17bdcd/packages/cli/src/devtool/dev-entry.ts) and [enable planner](https://github.com/setu-ts/setu-ts/blob/446d94723cbb0a853dd303022d6c9896ac17bdcd/packages/cli/src/devtool/planner.ts)                                      | M98c `main.dev.ts`, `dev` task and credential reads                   | D02 preflight/launch      |
+| [Workspace manifest](https://github.com/setu-ts/setu-ts/blob/446d94723cbb0a853dd303022d6c9896ac17bdcd/packages/cli/src/workspace/manifest.ts) and [development runner](https://github.com/setu-ts/setu-ts/blob/446d94723cbb0a853dd303022d6c9896ac17bdcd/packages/cli/src/workspace/dev-runner.ts)                           | Member `devtoolPort`, selection and credential isolation              | D01 discovery, D02 launch |
 
 ## M98a: data and interpretation
 
@@ -209,7 +215,7 @@ setu devtool enable [member] [--dir path] [--devtool-port N] [--dry-run]
 These emit separate `main.dev.ts` and `dev` tasks while preserving the
 production entry. Enabling existing projects checks conflicts and supports
 dry-run; it does not guarantee atomic filesystem changes. It refuses unsupported
-runtimes (Node, Bun, Workers), starter-composed templates, incompatible custom
+runtimes (Bun, Workers; Node too before M126), starter-composed templates, incompatible custom
 factories, and older workspace runners without credential handoff. Compatible
 plugin-list templates include `rest`, `microservice` and `none`. Existing
 projects may need reviewed manual migration before enable succeeds; the
@@ -242,7 +248,10 @@ The entry reads the first two variables directly through **`Deno.env.get`**,
 validates them and exits with a value-free message when missing/malformed. It
 passes `maxSessionLifetimeMs: 28_800_000` to the plugin, and a composition probe
 plugin makes it exit when `setu.config.ts` did not pass the devtool composition
-through (M101f); that message names `npm:@setu-ts/cli@0.10.0`. It
+through (M101f); that message names the CLI at the pin,
+`npm:@setu-ts/cli@0.11.0`. An entry or workspace runner written by an earlier CLI
+therefore differs from the catalog, and preflight refuses it as a stale
+scaffold. It
 never generates credentials, writes an env file, or prints their values. The
 plugin itself remains explicitly configured. The launcher must generate
 credentials with a cryptographic RNG and pass them only in the owned child
@@ -291,6 +300,39 @@ diagnostic endpoint. The connector's optional log banner is not a
 machine-authenticated readiness API. D02 must disclose the full workspace launch
 scope and own teardown of every process it starts. One inspected application
 does not mean one launched application process.
+
+## M126: Node applications (D06)
+
+At this release the runtime binds the local diagnostics listener on Node with
+plain `node:http`, keeping the request-target as sent; the connector suites and
+the two-runtime conformance table run on both runtimes. The CLI's `--devtool`
+on a Node project writes the same runtime-neutral `main.dev.ts` and a
+`package.json` script `"dev": "tsx main.dev.ts"`, with `tsx` and
+`@setu-ts/diagnostics-plugin` as development dependencies. The written entry is
+the render formatted by the CLI with Prettier (the framework locks 3.9.10), and
+it is Prettier-stable under the scaffold's own `.prettierrc.json`.
+
+A Node workspace has `"runtime": "node"` in `setu.workspace.json`, a root
+`package.json` with `"dev": "node scripts/dev.mjs"` and npm `workspaces`, and
+members under `apps/<name>` with their own `package.json`. The runner starts the
+selected member with `npm run dev` and every other member with
+`npm run start:dev`. That is `tsx watch main.ts`, or `tsx dev.ts` for the
+full-stack template. It sets the three session variables to empty strings for
+siblings and detaches no child while a member is selected. It spawns the bare
+name `npm`, so the launch `PATH` leads with the verified Node directory.
+
+| Observation                                                                                                                                              | Devtool treatment                                                                                                                                          |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| npm runs the script through a shell and reads `.npmrc`                                                                                                   | Fixed npm environment: no pre/post scripts, `/bin/sh`, `node_options` a single space, no update/fund/audit; inherited npm settings removed                 |
+| An empty `npm_config_node_options` does not override a project `.npmrc` (measured, npm 11.19.1)                                                          | A single space, which does                                                                                                                                 |
+| Process chain: npm → `tsx` CLI → application `node`, one group (`/bin/sh` execs the single command)                                                      | Existing supervisor group teardown; exercised with an externally killed npm                                                                                |
+| `.npmrc` `workspace`/`workspaces` (directly or through another config file) selects which package's script runs                                          | `npm --no-workspaces run dev`; preflight refuses those keys and any key npm reads differently from its text                                                |
+| `npm run` puts `node_modules/.bin` of every directory up to `/` ahead of the verified node on `PATH`; the chain looks up `node`, `npm` and `tsx` by name | Preflight requires an executable `node_modules/.bin/tsx` in the launch root and refuses a `node` or `npm` in `node_modules/.bin` of any directory above it |
+| The devtool never installs packages                                                                                                                      | Preflight requires `node_modules/tsx` in the project or workspace root                                                                                     |
+| Bun: no listener                                                                                                                                         | Discovery reports Bun projects and workspaces as unsupported                                                                                               |
+
+Node is qualified on 24.22.1 with npm 11.19.1. The launcher accepts Node 24 from
+24.22.1 with npm 11 from the same directory.
 
 ## Development before publication
 
