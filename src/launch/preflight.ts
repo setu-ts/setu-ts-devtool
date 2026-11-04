@@ -134,21 +134,28 @@ export async function prepareLaunch(
     }
     if (project.member !== null) {
       await read("setu.workspace.json");
+      const manifest = readJson(await read("package.json"), false);
+      // The runner's nested `npm run dev` has no --no-workspaces: npm walks up
+      // from the member to the first package.json whose workspaces include
+      // it, and past the root would load that directory's .npmrc (D06
+      // re-review A). Members live in apps/<name>.
       if (
-        (await scripts(project.root)).dev !== rootScript ||
+        object(manifest.scripts).dev !== rootScript ||
+        !Array.isArray(manifest.workspaces) ||
+        !manifest.workspaces.includes("apps/*") ||
         !runnerMatches(await read("scripts/dev.mjs"), "node")
       )
         throw new Error("PREPARATION_FAILED");
     }
     // npm_config_ignore_scripts stops pre/post scripts, so only the named
-    // script is compared. The devtool never installs: tsx must be present.
-    const tsx = join("node_modules", "tsx", "package.json");
+    // script is compared. The devtool never installs: tsx must be present at
+    // the root, where every member's and sibling's lookup reaches it before
+    // any directory above the root.
     if (
-      (!(await exists(project.root, tsx)) &&
-        !(await exists(
-          project.root,
-          join(relative(project.root, selected.directory), tsx),
-        ))) ||
+      !(await exists(
+        project.root,
+        join("node_modules", "tsx", "package.json"),
+      )) ||
       (await shadowedAboveRoot(project.root))
     )
       throw new Error("PREPARATION_FAILED");

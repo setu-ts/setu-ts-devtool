@@ -167,7 +167,37 @@ Projects inside a JavaScript repository whose `node_modules/.bin` has neither
 between the second preparation and the spawn is outside the guarantee, like the
 same-user races below.
 
-Independent re-review: pending.
+**Independent re-review: approved for its stated scope.** A separate agent,
+not the author, assessed `36cbbd3..b446685`. From npm 11's
+`@npmcli/run-script` it confirmed that the lookup directories outside the root
+are exactly the root's ancestors (member scripts walk through `apps/` and the
+root first), that `project.root` and npm's working directory are both physical
+paths, and that the names looked up are `node`, `npm`, `tsx` and npm's default
+shell `sh`. It ran the reproduction, its positive control and the full suite.
+
+- **A (medium, S05/S04): fixed.** The runner's nested `npm run dev` has no
+  `--no-workspaces`. npm walks up from the member to the first `package.json`
+  whose `workspaces` include it; a root whose `workspaces` missed the member let
+  that walk reach an ancestor, whose `.npmrc` `workspace=` ran another package's
+  `dev` with the session key (reproduced on the published workspace). Preflight
+  now requires the root `workspaces` to be an array containing `apps/*`.
+- **B (low, false refusal): fixed.** A `tsx` installed only in the member still
+  passed the package check but failed the root `.bin` check. The member clause
+  is removed: a sibling's lookup would not reach the member's `.bin`, so the
+  root must hold `tsx`.
+- **`sh` (informational): documented.** An ancestor `node_modules/.bin/sh`
+  received the session key under npm's default script shell. The fixed
+  `npm_config_script_shell=/bin/sh` prevents it; `docs/security.md` now names
+  that setting as load-bearing.
+- **C (informational): accepted.** A project under a directory with the `node`
+  or `npm` package installed is refused with the generic preparation message.
+- **D (informational): documented** in `docs/security.md` as a limit of a
+  check without a lock.
+- **E (informational): accepted.** The unreadable-directory case does not fail
+  as root, which CI does not run as.
+
+A and B were fixed in the authoring session after this re-review; see the
+follow-up below.
 
 ## Verdict
 

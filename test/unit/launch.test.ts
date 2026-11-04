@@ -258,6 +258,19 @@ test("Node preflight compares the scripts, entry and runner, and requires an ins
                 join(fixture.root, "package.json"),
                 (t: string) => t.replace("node scripts/dev.mjs", "node x.mjs"),
               ],
+              // npm would walk past a root whose workspaces miss the member.
+              [
+                join(fixture.root, "package.json"),
+                (t: string) => t.replace('"apps/*"', '"libs/*"'),
+              ],
+              [
+                join(fixture.root, "package.json"),
+                (t: string) =>
+                  t.replace(
+                    /"workspaces":\s*\[[^\]]*\]/,
+                    '"workspaces":"apps/*"',
+                  ),
+              ],
               [
                 join(fixture.root, "apps/worker/package.json"),
                 (t: string) => t.replace("tsx watch main.ts", "tsx main.ts"),
