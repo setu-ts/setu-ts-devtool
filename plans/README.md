@@ -12,9 +12,9 @@ and the canonical plan for each.
 4. [D03b renewal](d03b-renewal.md): the contract pin moved to `v0.10.0`, and
    session renewal without relaunch (framework M98o).
 5. [D04 release](d04-release.md): release qualification of the free preview.
-   Requires D03b, D06, the framework `v0.11.0` packages on npm, and editor/OS
-   evidence. The plan was rebased onto `v0.10.0`; it moves to `v0.11.0` when
-   D04 starts.
+   Requires D03b, D06, the framework `0.12.0` packages on npm, and editor/OS
+   evidence. Rebased 2026-11-05 onto `0.12.0` (read at framework `develop`
+   until the release) and onto Node applications.
 6. D05 free follow-ons (health summary, generator/task UI): direction only; plan
    after D04.
 7. [D06 Node applications](d06-node.md): npm project discovery and launch under
